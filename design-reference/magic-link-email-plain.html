@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Equity - Authentification</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+    :root {
+        --color-primary: #000000;
+        --color-ink: #111111;
+        --color-secondary: #5d5f5f;
+        --color-on-secondary: #ffffff;
+        --color-on-primary-container: #858383;
+        --color-surface: #fdf8f8;
+        --color-background: #fdf8f8;
+        --color-hairline: #CACACB;
+        --color-hairline-soft: #E5E5E5;
+        --color-success: #007D48;
+
+        --space-sm: 8px;
+        --space-md: 12px;
+        --space-lg: 18px;
+        --space-xl: 24px;
+        --space-section: 48px;
+        --space-margin-mobile: 20px;
+        --space-margin-desktop: 40px;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    ::selection {
+        background: var(--color-ink);
+        color: #ffffff;
+    }
+
+    body {
+        margin: 0;
+        background: var(--color-surface);
+        color: var(--color-primary);
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Layout shell */
+    .auth-shell {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding-top: var(--space-section);
+        padding-left: var(--space-margin-mobile);
+        padding-right: var(--space-margin-mobile);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: var(--color-surface);
+    }
+    @media (min-width: 768px) {
+        .header {
+            padding-left: var(--space-margin-desktop);
+            padding-right: var(--space-margin-desktop);
+        }
+    }
+
+    .logo {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .logo-text {
+        font-size: 32px;
+        line-height: 1.2;
+        font-weight: 700;
+        letter-spacing: -0.05em;
+        color: var(--color-primary);
+    }
+
+    .logo-underline {
+        height: 2px;
+        width: 32px;
+        background: var(--color-primary);
+    }
+
+    /* Main content */
+    .main {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: var(--space-section);
+        padding-bottom: var(--space-section);
+        padding-left: var(--space-margin-mobile);
+        padding-right: var(--space-margin-mobile);
+    }
+
+    .card {
+        width: 100%;
+        max-width: 576px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-hairline-soft);
+        padding: var(--space-xl);
+    }
+    @media (min-width: 768px) {
+        .card {
+            padding: var(--space-section);
+        }
+    }
+    .card > * + * {
+        margin-top: var(--space-section);
+    }
+
+    /* Display header */
+    .display-header {
+        text-align: center;
+    }
+    .display-header > * + * {
+        margin-top: var(--space-md);
+    }
+
+    .title {
+        font-family: 'Anton', sans-serif;
+        font-size: 56px;
+        line-height: 0.9;
+        font-weight: 500;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        word-break: break-word;
+        margin: 0;
+    }
+    @media (min-width: 768px) {
+        .title {
+            font-size: 96px;
+        }
+    }
+
+    /* Message body */
+    .message {
+        text-align: center;
+        max-width: 384px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .message > * + * {
+        margin-top: var(--space-lg);
+    }
+
+    .message-text {
+        font-size: 16px;
+        line-height: 1.625;
+        font-weight: 400;
+        color: var(--color-secondary);
+        margin: 0;
+    }
+
+    .br-desktop {
+        display: none;
+    }
+    @media (min-width: 768px) {
+        .br-desktop {
+            display: block;
+        }
+    }
+
+    .message-text strong {
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+
+    /* Action section */
+    .actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-xl);
+    }
+
+    .btn-primary {
+        display: inline-block;
+        background: var(--color-ink);
+        color: var(--color-on-secondary);
+        padding: 16px 128px;
+        border-radius: 9999px;
+        font-size: 16px;
+        line-height: 1.5;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .btn-primary:hover {
+        opacity: 0.9;
+    }
+    .btn-primary:active {
+        transform: scale(0.95);
+    }
+
+    /* Backup link */
+    .backup-link {
+        width: 100%;
+        padding-top: var(--space-lg);
+        border-top: 1px solid var(--color-hairline-soft);
+    }
+
+    .backup-label {
+        font-size: 12px;
+        line-height: 1.2;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: var(--color-on-primary-container);
+        text-transform: uppercase;
+        text-align: center;
+        margin: 0 0 var(--space-md) 0;
+    }
+
+    .backup-code-box {
+        background: var(--color-background);
+        border: 1px solid var(--color-hairline);
+        padding: var(--space-md);
+        word-break: break-all;
+        text-align: center;
+    }
+
+    .backup-code {
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 400;
+        color: var(--color-secondary);
+        cursor: pointer;
+        user-select: all;
+        transition: color 0.2s ease;
+    }
+    .backup-code.copied {
+        color: var(--color-success);
+    }
+
+    /* Footer */
+    .footer {
+        width: 100%;
+        padding-top: var(--space-section);
+        padding-bottom: var(--space-section);
+        padding-left: var(--space-margin-mobile);
+        padding-right: var(--space-margin-mobile);
+        border-top: 1px solid var(--color-hairline-soft);
+        background: var(--color-surface);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-md);
+        text-align: center;
+    }
+
+    .footer-brand-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .footer-brand-block > * + * {
+        margin-top: var(--space-sm);
+    }
+
+    .footer-brand {
+        font-size: 12px;
+        line-height: 1.2;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: var(--color-primary);
+        text-transform: uppercase;
+    }
+
+    .footer-copyright {
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 400;
+        color: var(--color-secondary);
+        margin: 0;
+    }
+
+    .footer-links {
+        display: flex;
+        gap: var(--space-lg);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .footer-link {
+        font-size: 14px;
+        line-height: 1.4;
+        font-weight: 400;
+        color: var(--color-secondary);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    .footer-link:hover {
+        text-decoration: underline;
+        color: var(--color-primary);
+    }
+
+    .footer-separator {
+        color: var(--color-hairline);
+    }
+
+    .footer-disclaimer {
+        margin-top: var(--space-md);
+        font-size: 10px;
+        color: var(--color-on-primary-container);
+        max-width: 448px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.25;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        opacity: 0.5;
+    }
+</style>
+</head>
+<body>
+<div class="auth-shell">
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <span class="logo-text">EQUITY</span>
+            <div class="logo-underline"></div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main">
+        <div class="card">
+            <!-- Display header -->
+            <div class="display-header">
+                <h1 class="title">CONNEXION</h1>
+            </div>
+
+            <!-- Message body -->
+            <div class="message">
+                <p class="message-text">
+                    Cliquez sur le lien ci-dessous pour vous connecter. <br class="br-desktop"/>
+                    <strong>Ce lien est valable pendant 15 minutes.</strong>
+                </p>
+            </div>
+
+            <!-- Action section -->
+            <div class="actions">
+                <a class="btn-primary" href="http://localhost:3000/auth/callback?token=418f2e04a941593abaa9a95ff4905e02d34a46927f9a54e0bca698da85106f7f">
+                    SE CONNECTER
+                </a>
+
+                <!-- Backup link -->
+                <div class="backup-link">
+                    <p class="backup-label">Lien de secours</p>
+                    <div class="backup-code-box">
+                        <code class="backup-code">http://localhost:3000/auth/callback?token=418f2e04a941593abaa9a95ff4905e02d34a46927f9a54e0bca698da85106f7f</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-brand-block">
+            <span class="footer-brand">EQUITY PERFORMANCE</span>
+            <p class="footer-copyright">© 2024 Performance Finance. All rights reserved.</p>
+        </div>
+        <div class="footer-links">
+            <a class="footer-link" href="#">Support</a>
+            <span class="footer-separator">•</span>
+            <a class="footer-link" href="#">Privacy Policy</a>
+            <span class="footer-separator">•</span>
+            <a class="footer-link" href="#">Security</a>
+        </div>
+        <div class="footer-disclaimer">
+            Ceci est un e-mail automatique de sécurité. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.
+        </div>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const codeBlock = document.querySelector('.backup-code');
+        codeBlock.addEventListener('click', () => {
+            codeBlock.classList.add('copied');
+            setTimeout(() => {
+                codeBlock.classList.remove('copied');
+            }, 1000);
+        });
+    });
+</script>
+</body>
+</html>

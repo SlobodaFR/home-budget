@@ -1,0 +1,23 @@
+{
+  "name": "foyer-budget",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Application de gestion de budget de foyer (3 comptes prelevements + 1 compte entrees)",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build": "npm run build:frontend && npm run build:backend",
+    "test:backend": "npm run test --workspace=backend",
+    "test:frontend": "npm run test --workspace=frontend",
+    "test": "npm run test:backend && npm run test:frontend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
