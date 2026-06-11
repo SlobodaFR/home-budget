@@ -20,7 +20,9 @@ export class TypeOrmUserRepository extends UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    const row = await this.repository.findOne({ where: { email: email.trim().toLowerCase() } });
+    const row = await this.repository.findOne({
+      where: { email: email.trim().toLowerCase() },
+    });
     return row ? toDomain(row) : null;
   }
 

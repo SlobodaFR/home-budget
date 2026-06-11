@@ -28,7 +28,10 @@ export class RecurringTransaction {
     if (props.amount.toCents() === 0) {
       throw new Error('Recurring transaction amount must not be zero');
     }
-    if (props.dayOfMonth !== null && (props.dayOfMonth < 1 || props.dayOfMonth > 31)) {
+    if (
+      props.dayOfMonth !== null &&
+      (props.dayOfMonth < 1 || props.dayOfMonth > 31)
+    ) {
       throw new Error('Day of month must be between 1 and 31');
     }
     if (props.endDate && props.endDate < props.startDate) {
@@ -113,9 +116,16 @@ export class RecurringTransaction {
     let year = from.getUTCFullYear();
     let month = from.getUTCMonth();
 
-    while (year < to.getUTCFullYear() || (year === to.getUTCFullYear() && month <= to.getUTCMonth())) {
+    while (
+      year < to.getUTCFullYear() ||
+      (year === to.getUTCFullYear() && month <= to.getUTCMonth())
+    ) {
       const occurrence = this.occurrenceDateForMonth(year, month);
-      if (occurrence > from && occurrence <= to && this.isActiveOn(occurrence)) {
+      if (
+        occurrence > from &&
+        occurrence <= to &&
+        this.isActiveOn(occurrence)
+      ) {
         occurrences.push(occurrence);
       }
       month += 1;

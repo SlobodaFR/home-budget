@@ -17,12 +17,21 @@ import { TypeOrmTransactionRepository } from '../../../infrastructure/persistenc
 import { RecurringTransactionsController } from '../controllers/recurring-transactions.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AccountOrmEntity, TransactionOrmEntity, RecurringTransactionOrmEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      AccountOrmEntity,
+      TransactionOrmEntity,
+      RecurringTransactionOrmEntity,
+    ]),
+  ],
   controllers: [RecurringTransactionsController],
   providers: [
     { provide: AccountRepository, useClass: TypeOrmAccountRepository },
     { provide: TransactionRepository, useClass: TypeOrmTransactionRepository },
-    { provide: RecurringTransactionRepository, useClass: TypeOrmRecurringTransactionRepository },
+    {
+      provide: RecurringTransactionRepository,
+      useClass: TypeOrmRecurringTransactionRepository,
+    },
     ListRecurringTransactionsUseCase,
     CreateRecurringTransactionUseCase,
     UpdateRecurringTransactionUseCase,

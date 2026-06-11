@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Money } from '../../domain/shared/money';
-import {
-  ListAccountsWithBalancesUseCase,
-} from './list-accounts-with-balances.use-case';
+import { ListAccountsWithBalancesUseCase } from './list-accounts-with-balances.use-case';
 
 export interface EquitySummaryDto {
   totalBalanceCents: number;
@@ -14,7 +12,9 @@ export interface EquitySummaryDto {
  */
 @Injectable()
 export class GetEquitySummaryUseCase {
-  constructor(private readonly listAccountsWithBalances: ListAccountsWithBalancesUseCase) {}
+  constructor(
+    private readonly listAccountsWithBalances: ListAccountsWithBalancesUseCase,
+  ) {}
 
   async execute(userId: string): Promise<EquitySummaryDto> {
     const accounts = await this.listAccountsWithBalances.execute(userId);

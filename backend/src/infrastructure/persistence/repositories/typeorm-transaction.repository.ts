@@ -17,7 +17,10 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
 
   async findAll(limit?: number, userId?: string): Promise<Transaction[]> {
     if (!userId) {
-      const rows = await this.repository.find({ order: { date: 'DESC' }, take: limit });
+      const rows = await this.repository.find({
+        order: { date: 'DESC' },
+        take: limit,
+      });
       return rows.map(toDomain);
     }
 

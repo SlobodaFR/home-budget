@@ -139,7 +139,10 @@ describe('GetBalanceForecastUseCase', () => {
       new InMemoryRecurringTransactionRepository(recurringTransactions),
     );
 
-    const result = await useCase.execute('user-1', new Date('2026-07-31T00:00:00Z'));
+    const result = await useCase.execute(
+      'user-1',
+      new Date('2026-07-31T00:00:00Z'),
+    );
 
     const [accountForecast] = result.accounts;
     expect(accountForecast.currentBalanceCents).toBe(-80000);
@@ -151,7 +154,9 @@ describe('GetBalanceForecastUseCase', () => {
       date: '2026-06-05T00:00:00.000Z',
       estimated: false,
     });
-    expect(result.upcomingOccurrences.find((o) => o.label === 'Remboursement secu')).toMatchObject({
+    expect(
+      result.upcomingOccurrences.find((o) => o.label === 'Remboursement secu'),
+    ).toMatchObject({
       estimated: true,
     });
   });
@@ -172,7 +177,10 @@ describe('GetBalanceForecastUseCase', () => {
       new InMemoryRecurringTransactionRepository([]),
     );
 
-    const result = await useCase.execute('user-1', new Date('2026-06-01T00:00:00Z'));
+    const result = await useCase.execute(
+      'user-1',
+      new Date('2026-06-01T00:00:00Z'),
+    );
 
     expect(result.accounts[0].currentBalanceCents).toBe(0);
     expect(result.accounts[0].projectedBalanceCents).toBe(0);

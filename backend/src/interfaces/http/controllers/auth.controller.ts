@@ -1,11 +1,23 @@
-import { Body, Controller, Get, HttpCode, Post, Query, Res, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Query,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { OAuthClient } from '../../../domain/auth/oauth-client';
 import { clearAuthCookies, setAuthCookies } from '../auth-cookies';
-import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
 import { SessionRevokedDto } from '../dto/session-revoked.dto';
 
@@ -26,8 +38,14 @@ export class AuthController {
 
   @Public()
   @Get('callback')
-  async callback(@Query('code') code: string, @Res() res: Response): Promise<void> {
-    const { tokens } = await this.handleOAuthCallback.execute(code, this.callbackUrl());
+  async callback(
+    @Query('code') code: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { tokens } = await this.handleOAuthCallback.execute(
+      code,
+      this.callbackUrl(),
+    );
     setAuthCookies(res, tokens, this.config);
     res.redirect(this.config.getOrThrow<string>('FRONTEND_URL'));
   }
@@ -48,7 +66,10 @@ export class AuthController {
   @Public()
   @Post('disconnect')
   @HttpCode(204)
-  async disconnect(@Body() dto: SessionRevokedDto, @Query('secret') secret?: string): Promise<void> {
+  async disconnect(
+    @Body() dto: SessionRevokedDto,
+    @Query('secret') secret?: string,
+  ): Promise<void> {
     if (secret !== this.config.getOrThrow<string>('AUTH_WEBHOOK_SECRET')) {
       throw new UnauthorizedException();
     }
@@ -56,6 +77,9 @@ export class AuthController {
   }
 
   private callbackUrl(): string {
-    return new URL('/api/auth/callback', this.config.getOrThrow<string>('FRONTEND_URL')).toString();
+    return new URL(
+      '/api/auth/callback',
+      this.config.getOrThrow<string>('FRONTEND_URL'),
+    ).toString();
   }
 }

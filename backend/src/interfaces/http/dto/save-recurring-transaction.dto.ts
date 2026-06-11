@@ -1,5 +1,19 @@
-import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min, NotEquals } from 'class-validator';
-import { TRANSACTION_CATEGORIES, TransactionCategory } from '../../../domain/transaction/transaction-category';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  NotEquals,
+} from 'class-validator';
+import {
+  TRANSACTION_CATEGORIES,
+  TransactionCategory,
+} from '../../../domain/transaction/transaction-category';
 
 export class SaveRecurringTransactionDto {
   @IsUUID()

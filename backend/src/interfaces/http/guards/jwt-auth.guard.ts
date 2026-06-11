@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Request, Response } from 'express';
@@ -42,8 +47,15 @@ export class JwtAuthGuard implements CanActivate {
     const accessToken = request.cookies[ACCESS_TOKEN_COOKIE_NAME];
     if (accessToken) {
       const payload = await this.accessTokenVerifier.verify(accessToken);
-      if (payload && (await this.isSessionValid(payload.sub, payload.issuedAt))) {
-        request.user = { id: payload.sub, email: payload.email, name: payload.name };
+      if (
+        payload &&
+        (await this.isSessionValid(payload.sub, payload.issuedAt))
+      ) {
+        request.user = {
+          id: payload.sub,
+          email: payload.email,
+          name: payload.name,
+        };
         return true;
       }
     }
@@ -52,10 +64,19 @@ export class JwtAuthGuard implements CanActivate {
     if (refreshToken) {
       try {
         const tokenPair = await this.oauthClient.refresh(refreshToken);
-        const payload = await this.accessTokenVerifier.verify(tokenPair.accessToken);
-        if (payload && (await this.isSessionValid(payload.sub, payload.issuedAt))) {
+        const payload = await this.accessTokenVerifier.verify(
+          tokenPair.accessToken,
+        );
+        if (
+          payload &&
+          (await this.isSessionValid(payload.sub, payload.issuedAt))
+        ) {
           setAuthCookies(response, tokenPair, this.config);
-          request.user = { id: payload.sub, email: payload.email, name: payload.name };
+          request.user = {
+            id: payload.sub,
+            email: payload.email,
+            name: payload.name,
+          };
           return true;
         }
       } catch {
@@ -66,7 +87,10 @@ export class JwtAuthGuard implements CanActivate {
     throw new UnauthorizedException();
   }
 
-  private async isSessionValid(userId: string, issuedAt: Date): Promise<boolean> {
+  private async isSessionValid(
+    userId: string,
+    issuedAt: Date,
+  ): Promise<boolean> {
     const revokedAt = await this.revokedSessionRepository.getRevokedAt(userId);
     return !revokedAt || issuedAt >= revokedAt;
   }

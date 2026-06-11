@@ -3,11 +3,16 @@ import { AccountRepository } from '../../domain/account/account.repository';
 import { Money } from '../../domain/shared/money';
 import { RecurringTransactionRepository } from '../../domain/recurring-transaction/recurring-transaction.repository';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
-import { BalanceForecastDto, UpcomingOccurrenceDto } from './balance-forecast.dto';
+import {
+  BalanceForecastDto,
+  UpcomingOccurrenceDto,
+} from './balance-forecast.dto';
 
 function startOfTodayUtc(): Date {
   const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 }
 
 /**
@@ -26,19 +31,24 @@ export class GetBalanceForecastUseCase {
   async execute(userId: string, targetDate: Date): Promise<BalanceForecastDto> {
     const today = startOfTodayUtc();
     const accounts = await this.accountRepository.findAll(userId);
-    const recurringTransactions = await this.recurringTransactionRepository.findAll(userId);
+    const recurringTransactions =
+      await this.recurringTransactionRepository.findAll(userId);
 
     const upcomingOccurrences: UpcomingOccurrenceDto[] = [];
 
     const accountForecasts = await Promise.all(
       accounts.map(async (account) => {
-        const transactions = await this.transactionRepository.findByAccountId(account.id);
+        const transactions = await this.transactionRepository.findByAccountId(
+          account.id,
+        );
         const currentBalance = transactions.reduce(
           (total, transaction) => total.add(transaction.amount),
           Money.zero(),
         );
 
-        const accountRecurring = recurringTransactions.filter((rt) => rt.accountId === account.id);
+        const accountRecurring = recurringTransactions.filter(
+          (rt) => rt.accountId === account.id,
+        );
 
         let projectedBalance = currentBalance;
         for (const rt of accountRecurring) {
@@ -69,8 +79,14 @@ export class GetBalanceForecastUseCase {
 
     upcomingOccurrences.sort((a, b) => a.date.localeCompare(b.date));
 
-    const totalCurrentBalanceCents = accountForecasts.reduce((sum, a) => sum + a.currentBalanceCents, 0);
-    const totalProjectedBalanceCents = accountForecasts.reduce((sum, a) => sum + a.projectedBalanceCents, 0);
+    const totalCurrentBalanceCents = accountForecasts.reduce(
+      (sum, a) => sum + a.currentBalanceCents,
+      0,
+    );
+    const totalProjectedBalanceCents = accountForecasts.reduce(
+      (sum, a) => sum + a.projectedBalanceCents,
+      0,
+    );
 
     return {
       asOfDate: today.toISOString(),

@@ -22,7 +22,10 @@ export class CreateTransactionUseCase {
     private readonly transactionRepository: TransactionRepository,
   ) {}
 
-  async execute(command: CreateTransactionCommand, userId: string): Promise<TransactionDto> {
+  async execute(
+    command: CreateTransactionCommand,
+    userId: string,
+  ): Promise<TransactionDto> {
     const account = await this.accountRepository.findById(command.accountId);
     if (!account || account.userId !== userId) {
       throw new NotFoundException(`Account ${command.accountId} not found`);

@@ -4,7 +4,9 @@ import { RevokedSessionRepository } from '../../domain/auth/revoked-session.repo
 /** Records that a user's sessions were revoked centrally (auth-service logout webhook). */
 @Injectable()
 export class HandleSessionRevokedUseCase {
-  constructor(private readonly revokedSessionRepository: RevokedSessionRepository) {}
+  constructor(
+    private readonly revokedSessionRepository: RevokedSessionRepository,
+  ) {}
 
   async execute(userId: string): Promise<void> {
     await this.revokedSessionRepository.markRevoked(userId, new Date());

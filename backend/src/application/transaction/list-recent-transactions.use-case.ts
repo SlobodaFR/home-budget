@@ -8,8 +8,14 @@ const DEFAULT_LIMIT = 10;
 export class ListRecentTransactionsUseCase {
   constructor(private readonly transactionRepository: TransactionRepository) {}
 
-  async execute(userId: string, limit: number = DEFAULT_LIMIT): Promise<TransactionDto[]> {
-    const transactions = await this.transactionRepository.findAll(limit, userId);
+  async execute(
+    userId: string,
+    limit: number = DEFAULT_LIMIT,
+  ): Promise<TransactionDto[]> {
+    const transactions = await this.transactionRepository.findAll(
+      limit,
+      userId,
+    );
 
     return transactions.map((transaction) => ({
       id: transaction.id,

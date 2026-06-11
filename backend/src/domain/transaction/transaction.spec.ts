@@ -11,23 +11,35 @@ describe('Transaction', () => {
   };
 
   it('creates a debit transaction', () => {
-    const txn = Transaction.create({ ...baseProps, amount: Money.fromEuros(-84.5) });
+    const txn = Transaction.create({
+      ...baseProps,
+      amount: Money.fromEuros(-84.5),
+    });
     expect(txn.isCredit()).toBe(false);
     expect(txn.amount.toEuros()).toBe(-84.5);
   });
 
   it('creates a credit transaction', () => {
-    const txn = Transaction.create({ ...baseProps, amount: Money.fromEuros(2800) });
+    const txn = Transaction.create({
+      ...baseProps,
+      amount: Money.fromEuros(2800),
+    });
     expect(txn.isCredit()).toBe(true);
   });
 
   it('rejects a zero amount', () => {
-    expect(() => Transaction.create({ ...baseProps, amount: Money.zero() })).toThrow();
+    expect(() =>
+      Transaction.create({ ...baseProps, amount: Money.zero() }),
+    ).toThrow();
   });
 
   it('rejects an empty label', () => {
     expect(() =>
-      Transaction.create({ ...baseProps, label: '  ', amount: Money.fromEuros(10) }),
+      Transaction.create({
+        ...baseProps,
+        label: '  ',
+        amount: Money.fromEuros(10),
+      }),
     ).toThrow();
   });
 });

@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { CreateAccountUseCase } from '../../../application/account/create-account.use-case';
 import { DeleteAccountUseCase } from '../../../application/account/delete-account.use-case';
 import { GetEquitySummaryUseCase } from '../../../application/account/get-equity-summary.use-case';
 import { ListAccountsWithBalancesUseCase } from '../../../application/account/list-accounts-with-balances.use-case';
 import { UpdateAccountUseCase } from '../../../application/account/update-account.use-case';
-import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../decorators/current-user.decorator';
 import { SaveAccountDto } from '../dto/save-account.dto';
 
 @Controller('accounts')
@@ -42,7 +55,11 @@ export class AccountsController {
 
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  update(@Param('id') id: string, @Body() dto: SaveAccountDto, @CurrentUser() user: CurrentUserPayload) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: SaveAccountDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.updateAccount.execute(
       id,
       {

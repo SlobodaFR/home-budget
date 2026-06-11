@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { CreateRecurringTransactionUseCase } from '../../../application/recurring-transaction/create-recurring-transaction.use-case';
 import { DeleteRecurringTransactionUseCase } from '../../../application/recurring-transaction/delete-recurring-transaction.use-case';
 import { ListRecurringTransactionsUseCase } from '../../../application/recurring-transaction/list-recurring-transactions.use-case';
 import { UpdateRecurringTransactionUseCase } from '../../../application/recurring-transaction/update-recurring-transaction.use-case';
 import { GetBalanceForecastUseCase } from '../../../application/forecast/get-balance-forecast.use-case';
-import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../decorators/current-user.decorator';
 import { ForecastQueryDto } from '../dto/forecast-query.dto';
 import { SaveRecurringTransactionDto } from '../dto/save-recurring-transaction.dto';
 
@@ -24,18 +37,28 @@ export class RecurringTransactionsController {
   }
 
   @Get('forecast')
-  forecast(@CurrentUser() user: CurrentUserPayload, @Query() query: ForecastQueryDto) {
+  forecast(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: ForecastQueryDto,
+  ) {
     return this.getBalanceForecast.execute(user.id, new Date(query.date));
   }
 
   @Post()
-  create(@Body() dto: SaveRecurringTransactionDto, @CurrentUser() user: CurrentUserPayload) {
+  create(
+    @Body() dto: SaveRecurringTransactionDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.createRecurringTransaction.execute(toInput(dto), user.id);
   }
 
   @Put(':id')
   @HttpCode(204)
-  update(@Param('id') id: string, @Body() dto: SaveRecurringTransactionDto, @CurrentUser() user: CurrentUserPayload) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: SaveRecurringTransactionDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.updateRecurringTransaction.execute(id, toInput(dto), user.id);
   }
 

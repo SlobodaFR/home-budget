@@ -49,7 +49,16 @@ export class User {
   }
 
   /** Returns a copy with the profile fields refreshed from the auth service. */
-  withProfile(profile: { email: string; name: string; avatarUrl: string }): User {
-    return new User({ ...this.props, email: profile.email, name: profile.name, avatarUrl: profile.avatarUrl });
+  withProfile(profile: {
+    email: string;
+    name: string;
+    avatarUrl: string;
+  }): User {
+    return new User({
+      ...this.props,
+      email: profile.email,
+      name: profile.name,
+      avatarUrl: profile.avatarUrl,
+    });
   }
 }
