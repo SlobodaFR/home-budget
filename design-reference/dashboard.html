@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EQUITY | Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f4f0ef",
+                        "secondary": "#5d5f5f",
+                        "mute": "#707072",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#1d1b1a",
+                        "on-secondary-fixed-variant": "#454747",
+                        "primary-fixed": "#e5e2e1",
+                        "surface-container": "#f1edec",
+                        "on-secondary-container": "#5f6161",
+                        "outline": "#747878",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-primary": "#ffffff",
+                        "charcoal": "#39393B",
+                        "hairline": "#CACACB",
+                        "secondary-fixed": "#e2e2e2",
+                        "info": "#1151FF",
+                        "inverse-primary": "#c8c6c5",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#1d1b1a",
+                        "tertiary": "#000000",
+                        "on-background": "#1c1b1b",
+                        "surface-dim": "#ddd9d8",
+                        "on-primary-container": "#858383",
+                        "background": "#fdf8f8",
+                        "surface": "#fdf8f8",
+                        "on-tertiary-container": "#868381",
+                        "hairline-soft": "#E5E5E5",
+                        "secondary-container": "#dcdddd",
+                        "ash": "#4B4B4D",
+                        "sale": "#D30005",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "on-surface-variant": "#444748",
+                        "on-primary-fixed-variant": "#474646",
+                        "surface-bright": "#fdf8f8",
+                        "primary-container": "#1c1b1b",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "primary": "#000000",
+                        "on-surface": "#1c1b1b",
+                        "success": "#007D48",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#313030",
+                        "surface-tint": "#5f5e5e",
+                        "on-primary-fixed": "#1c1b1b",
+                        "outline-variant": "#c4c7c7",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f7f3f2",
+                        "ink": "#111111",
+                        "surface-variant": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#484645",
+                        "stone": "#9E9EA0",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed": "#e6e1df",
+                        "surface-container-high": "#ebe7e6",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#cac6c3",
+                        "primary-fixed-dim": "#c8c6c5",
+                        "soft-cloud": "#F5F5F5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px",
+                        "none": "0px"
+                    },
+                    "spacing": {
+                        "md": "12px",
+                        "margin-mobile": "20px",
+                        "lg": "18px",
+                        "section": "48px",
+                        "margin-desktop": "40px",
+                        "xl": "24px",
+                        "sm": "8px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "heading-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "heading-xl": ["Inter"],
+                        "display-campaign-mobile": ["Anton"],
+                        "button-md": ["Inter"],
+                        "display-campaign": ["Anton"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "heading-lg": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "heading-xl": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-campaign-mobile": ["56px", {"lineHeight": "0.9", "fontWeight": "500"}],
+                        "button-md": ["16px", {"lineHeight": "1.5", "fontWeight": "600"}],
+                        "display-campaign": ["96px", {"lineHeight": "0.9", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fdf8f8;
+            color: #111111;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at 50% 50%, #fdf8f8 0%, #F5F5F5 100%);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface border-b border-hairline-soft flex justify-between items-center px-margin-mobile py-md md:px-margin-desktop max-w-full z-40">
+<div class="font-display-campaign text-display-campaign-mobile uppercase tracking-tighter text-ink">EQUITY</div>
+<div class="hidden md:flex gap-xl">
+<a class="text-ink font-bold border-b-2 border-ink py-1" href="#">Flux</a>
+<a class="text-mute font-medium hover:text-ink transition-colors duration-200 py-1" href="#">Comptes</a>
+<a class="text-mute font-medium hover:text-ink transition-colors duration-200 py-1" href="#">Historique</a>
+<a class="text-mute font-medium hover:text-ink transition-colors duration-200 py-1" href="#">Plan</a>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined p-sm rounded-full hover:bg-surface-container-low transition-colors">notifications</button>
+<button class="material-symbols-outlined p-sm rounded-full hover:bg-surface-container-low transition-colors">settings</button>
+<div class="w-10 h-10 rounded-full bg-ash overflow-hidden">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A clean, minimalist portrait of a modern professional against a neutral, high-key white background. The lighting is soft and even, highlighting subtle facial features without harsh shadows. The overall aesthetic is polished, modern, and aligned with a premium financial application's visual identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjWIjhOXAUnZrdRZmcvMSIBDZ01ugdPBYXPnR9VbuGm3Mt_t9HQYykoO0fN70fOv36WIOdNZhcMXNKL7nqq81HJPC6xxWFKi3iQICT7tRFMmb8tEHGoBZmDeXXP_9K0zrHpRHbj6rjY6J2ZjJyG9m9RQfe9nPmrp7AounTEEIrbaNCAnEGWfw8DkOYg7G0zZ7jvH0yHf16o6ZkKas46fzIC5EsQcZY7aNn8ou3mREx0mrZUOn1GlYmDqQQMt6EoGLpfBFMdn-enZI"/>
+</div>
+</div>
+</header>
+<main class="pb-32">
+<!-- Hero Section -->
+<section class="hero-gradient px-margin-mobile md:px-margin-desktop py-section flex flex-col items-center justify-center text-center">
+<h2 class="font-label-caps text-label-caps text-mute mb-md uppercase">Solde Total</h2>
+<h1 class="font-display-campaign text-display-campaign-mobile md:text-display-campaign text-ink leading-none">
+                4.250,00 €
+            </h1>
+<div class="mt-xl flex flex-wrap justify-center gap-md">
+<button class="bg-ink text-surface px-xl py-md rounded-full font-button-md active:scale-95 transition-transform duration-150 flex items-center gap-sm">
+<span class="material-symbols-outlined text-lg">add</span>
+                    Ajouter une dépense
+                </button>
+<button class="bg-transparent border border-ink text-ink px-xl py-md rounded-full font-button-md active:scale-95 transition-transform duration-150">
+                    Gérer les comptes
+                </button>
+</div>
+</section>
+<!-- Accounts Grid -->
+<section class="px-margin-mobile md:px-margin-desktop py-section">
+<div class="flex justify-between items-end mb-xl">
+<h3 class="font-heading-xl text-heading-xl text-ink">Mes Comptes</h3>
+<a class="font-label-caps text-label-caps text-mute border-b border-mute" href="#">TOUT VOIR</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Account 1 -->
+<div class="bg-soft-cloud p-xl flex flex-col justify-between min-h-[220px]">
+<div>
+<span class="material-symbols-outlined text-error mb-md">account_balance_wallet</span>
+<h4 class="font-label-caps text-label-caps text-mute mb-sm">Compte Prélèvements 1</h4>
+<p class="font-heading-xl text-heading-xl text-ink">1.120,00 €</p>
+</div>
+<div class="pt-xl">
+<div class="w-full h-1 bg-hairline-soft mb-sm">
+<div class="w-3/4 h-full bg-error"></div>
+</div>
+<p class="font-body-sm text-body-sm text-mute">Budget : 1.500 €</p>
+</div>
+</div>
+<!-- Account 2 -->
+<div class="bg-soft-cloud p-xl flex flex-col justify-between min-h-[220px]">
+<div>
+<span class="material-symbols-outlined text-error mb-md">shopping_bag</span>
+<h4 class="font-label-caps text-label-caps text-mute mb-sm">Compte Prélèvements 2</h4>
+<p class="font-heading-xl text-heading-xl text-ink">450,20 €</p>
+</div>
+<div class="pt-xl">
+<div class="w-full h-1 bg-hairline-soft mb-sm">
+<div class="w-1/2 h-full bg-error"></div>
+</div>
+<p class="font-body-sm text-body-sm text-mute">Budget : 900 €</p>
+</div>
+</div>
+<!-- Account 3 -->
+<div class="bg-soft-cloud p-xl flex flex-col justify-between min-h-[220px]">
+<div>
+<span class="material-symbols-outlined text-error mb-md">home</span>
+<h4 class="font-label-caps text-label-caps text-mute mb-sm">Compte Prélèvements 3</h4>
+<p class="font-heading-xl text-heading-xl text-ink">2.180,50 €</p>
+</div>
+<div class="pt-xl">
+<div class="w-full h-1 bg-hairline-soft mb-sm">
+<div class="w-4/5 h-full bg-error"></div>
+</div>
+<p class="font-body-sm text-body-sm text-mute">Budget : 2.500 €</p>
+</div>
+</div>
+<!-- Account Income -->
+<div class="bg-soft-cloud p-xl flex flex-col justify-between border-2 border-ink min-h-[220px]">
+<div>
+<div class="flex justify-between">
+<span class="material-symbols-outlined text-success mb-md" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="bg-success text-white px-md py-1 font-label-caps text-[10px] h-fit">ENTRÉES</span>
+</div>
+<h4 class="font-label-caps text-label-caps text-mute mb-sm">Compte Entrées</h4>
+<p class="font-heading-xl text-heading-xl text-ink">5.400,00 €</p>
+</div>
+<div class="pt-xl">
+<button class="w-full bg-ink text-surface py-sm rounded-full font-label-caps text-label-caps uppercase">Voir détails</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Transactions -->
+<section class="px-margin-mobile md:px-margin-desktop py-section max-w-4xl mx-auto">
+<h3 class="font-heading-xl text-heading-xl text-ink mb-xl">Transactions Récentes</h3>
+<div class="space-y-0 border-t border-hairline">
+<!-- Transaction Item -->
+<div class="flex items-center justify-between py-xl border-b border-hairline-soft hover:bg-surface-container-low px-md transition-colors group">
+<div class="flex items-center gap-xl">
+<div class="w-12 h-12 flex items-center justify-center bg-ink text-surface rounded-full">
+<span class="material-symbols-outlined">train</span>
+</div>
+<div>
+<p class="font-heading-lg text-heading-lg text-ink">SNCF Voyage</p>
+<p class="font-body-sm text-body-sm text-mute">12 Octobre • Transport</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-heading-lg text-heading-lg text-ink">- 84,50 €</p>
+<p class="font-label-caps text-label-caps text-error group-hover:opacity-100 opacity-0 transition-opacity">PRÉLÈVEMENT 1</p>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="flex items-center justify-between py-xl border-b border-hairline-soft hover:bg-surface-container-low px-md transition-colors group">
+<div class="flex items-center gap-xl">
+<div class="w-12 h-12 flex items-center justify-center bg-ink text-surface rounded-full">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<p class="font-heading-lg text-heading-lg text-ink">Salaire Mensuel</p>
+<p class="font-body-sm text-body-sm text-mute">01 Octobre • Revenus</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-heading-lg text-heading-lg text-success">+ 2.800,00 €</p>
+<p class="font-label-caps text-label-caps text-success group-hover:opacity-100 opacity-0 transition-opacity">ENTRÉES</p>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="flex items-center justify-between py-xl border-b border-hairline-soft hover:bg-surface-container-low px-md transition-colors group">
+<div class="flex items-center gap-xl">
+<div class="w-12 h-12 flex items-center justify-center bg-ink text-surface rounded-full">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+<div>
+<p class="font-heading-lg text-heading-lg text-ink">Monoprix Paris</p>
+<p class="font-body-sm text-body-sm text-mute">28 Septembre • Alimentation</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-heading-lg text-heading-lg text-ink">- 126,30 €</p>
+<p class="font-label-caps text-label-caps text-error group-hover:opacity-100 opacity-0 transition-opacity">PRÉLÈVEMENT 2</p>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="flex items-center justify-between py-xl border-b border-hairline-soft hover:bg-surface-container-low px-md transition-colors group">
+<div class="flex items-center gap-xl">
+<div class="w-12 h-12 flex items-center justify-center bg-ink text-surface rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">stadia_controller</span>
+</div>
+<div>
+<p class="font-heading-lg text-heading-lg text-ink">Playstation Store</p>
+<p class="font-body-sm text-body-sm text-mute">25 Septembre • Loisirs</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-heading-lg text-heading-lg text-ink">- 69,99 €</p>
+<p class="font-label-caps text-label-caps text-error group-hover:opacity-100 opacity-0 transition-opacity">PRÉLÈVEMENT 1</p>
+</div>
+</div>
+</div>
+<div class="mt-xl text-center">
+<button class="text-ink font-button-md border-b-2 border-ink pb-1">Charger plus de transactions</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile only) -->
+<nav class="md:hidden fixed bottom-md left-1/2 -translate-x-1/2 w-[calc(100%-40px)] max-w-md rounded-full bg-ink z-50 flex justify-around items-center p-sm shadow-xl">
+<a class="flex flex-col items-center justify-center bg-surface text-ink rounded-full px-xl py-sm transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-caps text-[10px] mt-1 uppercase">Flux</span>
+</a>
+<a class="flex flex-col items-center justify-center text-surface opacity-60 px-xl py-sm hover:opacity-100 transition-opacity duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-label-caps text-[10px] mt-1 uppercase">Comptes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-surface opacity-60 px-xl py-sm hover:opacity-100 transition-opacity duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-caps text-[10px] mt-1 uppercase">Historique</span>
+</a>
+<a class="flex flex-col items-center justify-center text-surface opacity-60 px-xl py-sm hover:opacity-100 transition-opacity duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined">track_changes</span>
+<span class="font-label-caps text-[10px] mt-1 uppercase">Plan</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', (e) => {
+                // Potential feedback logic
+            });
+        });
+
+        // Sticky header transparency effect on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-sm');
+                header.classList.remove('bg-surface');
+                header.style.backgroundColor = 'rgba(253, 248, 248, 0.95)';
+                header.style.backdropFilter = 'blur(10px)';
+            } else {
+                header.classList.remove('shadow-sm');
+                header.classList.add('bg-surface');
+                header.style.backgroundColor = '#fdf8f8';
+                header.style.backdropFilter = 'none';
+            }
+        });
+    </script>
+</body></html>

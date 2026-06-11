@@ -1,0 +1,11 @@
+dbs:
+  - path: ${DATABASE_PATH}
+    replicas:
+      - type: s3
+        bucket: ${MINIO_BUCKET}
+        path: ${MINIO_REPLICA_PATH}
+        endpoint: ${MINIO_ENDPOINT}
+        region: ${MINIO_REGION}
+        access-key-id: ${MINIO_ACCESS_KEY_ID}
+        secret-access-key: ${MINIO_SECRET_ACCESS_KEY}
+        force-path-style: true

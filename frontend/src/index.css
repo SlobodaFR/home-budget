@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+body {
+  background-color: #fdf8f8;
+  color: #111111;
+}
+
+.hero-gradient {
+  background: radial-gradient(circle at 50% 50%, #fdf8f8 0%, #f5f5f5 100%);
+}
