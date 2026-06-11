@@ -5,10 +5,13 @@ import { toRecurringTransactionDto } from './recurring-transaction.mapper';
 
 @Injectable()
 export class ListRecurringTransactionsUseCase {
-  constructor(private readonly recurringTransactionRepository: RecurringTransactionRepository) {}
+  constructor(
+    private readonly recurringTransactionRepository: RecurringTransactionRepository,
+  ) {}
 
   async execute(userId: string): Promise<RecurringTransactionDto[]> {
-    const recurringTransactions = await this.recurringTransactionRepository.findAll(userId);
+    const recurringTransactions =
+      await this.recurringTransactionRepository.findAll(userId);
     return recurringTransactions.map(toRecurringTransactionDto);
   }
 }

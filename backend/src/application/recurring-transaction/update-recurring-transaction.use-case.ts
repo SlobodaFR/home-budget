@@ -12,18 +12,26 @@ export class UpdateRecurringTransactionUseCase {
     private readonly recurringTransactionRepository: RecurringTransactionRepository,
   ) {}
 
-  async execute(id: string, input: RecurringTransactionInput, userId: string): Promise<void> {
+  async execute(
+    id: string,
+    input: RecurringTransactionInput,
+    userId: string,
+  ): Promise<void> {
     const existing = await this.recurringTransactionRepository.findById(id);
     if (!existing) {
       throw new NotFoundException(`Recurring transaction ${id} not found`);
     }
 
-    const currentAccount = await this.accountRepository.findById(existing.accountId);
+    const currentAccount = await this.accountRepository.findById(
+      existing.accountId,
+    );
     if (!currentAccount || currentAccount.userId !== userId) {
       throw new NotFoundException(`Recurring transaction ${id} not found`);
     }
 
-    const targetAccount = await this.accountRepository.findById(input.accountId);
+    const targetAccount = await this.accountRepository.findById(
+      input.accountId,
+    );
     if (!targetAccount || targetAccount.userId !== userId) {
       throw new NotFoundException(`Account ${input.accountId} not found`);
     }

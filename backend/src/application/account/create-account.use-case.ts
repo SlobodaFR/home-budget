@@ -10,7 +10,10 @@ import { AccountSummaryDto } from './account-summary.dto';
 export class CreateAccountUseCase {
   constructor(private readonly accountRepository: AccountRepository) {}
 
-  async execute(input: AccountInput, userId: string): Promise<AccountSummaryDto> {
+  async execute(
+    input: AccountInput,
+    userId: string,
+  ): Promise<AccountSummaryDto> {
     let account: Account;
     try {
       account = Account.create({
@@ -19,10 +22,15 @@ export class CreateAccountUseCase {
         name: input.name,
         type: input.type,
         icon: input.icon,
-        monthlyBudget: input.monthlyBudgetCents === null ? null : Money.fromCents(input.monthlyBudgetCents),
+        monthlyBudget:
+          input.monthlyBudgetCents === null
+            ? null
+            : Money.fromCents(input.monthlyBudgetCents),
       });
     } catch (error) {
-      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid account');
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid account',
+      );
     }
 
     await this.accountRepository.save(account);

@@ -21,7 +21,10 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
   controllers: [AuthController],
   providers: [
     { provide: UserRepository, useClass: TypeOrmUserRepository },
-    { provide: RevokedSessionRepository, useClass: TypeOrmRevokedSessionRepository },
+    {
+      provide: RevokedSessionRepository,
+      useClass: TypeOrmRevokedSessionRepository,
+    },
     { provide: OAuthClient, useClass: HttpOAuthClient },
     { provide: AccessTokenVerifier, useClass: JwksAccessTokenVerifier },
     HandleOAuthCallbackUseCase,

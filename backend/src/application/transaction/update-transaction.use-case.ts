@@ -20,13 +20,19 @@ export class UpdateTransactionUseCase {
     private readonly transactionRepository: TransactionRepository,
   ) {}
 
-  async execute(id: string, command: UpdateTransactionCommand, userId: string): Promise<void> {
+  async execute(
+    id: string,
+    command: UpdateTransactionCommand,
+    userId: string,
+  ): Promise<void> {
     const existing = await this.transactionRepository.findById(id);
     if (!existing) {
       throw new NotFoundException(`Transaction ${id} not found`);
     }
 
-    const existingAccount = await this.accountRepository.findById(existing.accountId);
+    const existingAccount = await this.accountRepository.findById(
+      existing.accountId,
+    );
     if (!existingAccount || existingAccount.userId !== userId) {
       throw new NotFoundException(`Transaction ${id} not found`);
     }

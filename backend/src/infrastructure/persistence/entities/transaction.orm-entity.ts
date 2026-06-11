@@ -1,4 +1,11 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryColumn,
+} from 'typeorm';
 import { TransactionCategory } from '../../../domain/transaction/transaction-category';
 import { AccountOrmEntity } from './account.orm-entity';
 
@@ -11,7 +18,9 @@ export class TransactionOrmEntity {
   @Column({ type: 'text', name: 'account_id' })
   accountId!: string;
 
-  @ManyToOne(() => AccountOrmEntity, (account) => account.transactions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => AccountOrmEntity, (account) => account.transactions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'account_id' })
   account!: AccountOrmEntity;
 

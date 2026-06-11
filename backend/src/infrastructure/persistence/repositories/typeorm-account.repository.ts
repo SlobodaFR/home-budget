@@ -52,6 +52,9 @@ function toDomain(row: AccountOrmEntity): Account {
     name: row.name,
     type: row.type,
     icon: row.icon,
-    monthlyBudget: row.monthlyBudgetCents === null ? null : Money.fromCents(row.monthlyBudgetCents),
+    monthlyBudget:
+      row.monthlyBudgetCents === null
+        ? null
+        : Money.fromCents(row.monthlyBudgetCents),
   });
 }

@@ -1,9 +1,22 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { CreateTransactionUseCase } from '../../../application/transaction/create-transaction.use-case';
 import { DeleteTransactionUseCase } from '../../../application/transaction/delete-transaction.use-case';
 import { ListRecentTransactionsUseCase } from '../../../application/transaction/list-recent-transactions.use-case';
 import { UpdateTransactionUseCase } from '../../../application/transaction/update-transaction.use-case';
-import { CurrentUser, CurrentUserPayload } from '../decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../decorators/current-user.decorator';
 import { SaveTransactionDto } from '../dto/save-transaction.dto';
 
 @Controller('transactions')
@@ -16,12 +29,21 @@ export class TransactionsController {
   ) {}
 
   @Get()
-  list(@CurrentUser() user: CurrentUserPayload, @Query('limit') limit?: string) {
-    return this.listRecentTransactions.execute(user.id, limit ? Number(limit) : undefined);
+  list(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('limit') limit?: string,
+  ) {
+    return this.listRecentTransactions.execute(
+      user.id,
+      limit ? Number(limit) : undefined,
+    );
   }
 
   @Post()
-  create(@Body() dto: SaveTransactionDto, @CurrentUser() user: CurrentUserPayload) {
+  create(
+    @Body() dto: SaveTransactionDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.createTransaction.execute(
       {
         accountId: dto.accountId,
@@ -36,7 +58,11 @@ export class TransactionsController {
 
   @Put(':id')
   @HttpCode(204)
-  update(@Param('id') id: string, @Body() dto: SaveTransactionDto, @CurrentUser() user: CurrentUserPayload) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: SaveTransactionDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.updateTransaction.execute(
       id,
       {

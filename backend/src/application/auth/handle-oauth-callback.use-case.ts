@@ -16,14 +16,23 @@ export class HandleOAuthCallbackUseCase {
     private readonly userRepository: UserRepository,
   ) {}
 
-  async execute(code: string, redirectUri: string): Promise<OAuthCallbackResult> {
+  async execute(
+    code: string,
+    redirectUri: string,
+  ): Promise<OAuthCallbackResult> {
     const tokens = await this.oauthClient.exchangeCode(code, redirectUri);
     const profile = await this.oauthClient.fetchUserInfo(tokens.accessToken);
 
     const existing = await this.userRepository.findById(profile.id);
     const user = existing
       ? existing.withProfile(profile)
-      : User.create({ id: profile.id, email: profile.email, name: profile.name, avatarUrl: profile.avatarUrl, createdAt: new Date() });
+      : User.create({
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+          avatarUrl: profile.avatarUrl,
+          createdAt: new Date(),
+        });
 
     await this.userRepository.save(user);
 

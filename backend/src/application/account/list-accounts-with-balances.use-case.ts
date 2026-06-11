@@ -20,7 +20,9 @@ export class ListAccountsWithBalancesUseCase {
 
     return Promise.all(
       accounts.map(async (account) => {
-        const transactions = await this.transactionRepository.findByAccountId(account.id);
+        const transactions = await this.transactionRepository.findByAccountId(
+          account.id,
+        );
         const balance = transactions.reduce(
           (total, transaction) => total.add(transaction.amount),
           Money.zero(),

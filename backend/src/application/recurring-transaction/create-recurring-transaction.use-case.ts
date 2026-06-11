@@ -26,7 +26,10 @@ export class CreateRecurringTransactionUseCase {
     private readonly recurringTransactionRepository: RecurringTransactionRepository,
   ) {}
 
-  async execute(input: RecurringTransactionInput, userId: string): Promise<RecurringTransactionDto> {
+  async execute(
+    input: RecurringTransactionInput,
+    userId: string,
+  ): Promise<RecurringTransactionDto> {
     const account = await this.accountRepository.findById(input.accountId);
     if (!account || account.userId !== userId) {
       throw new NotFoundException(`Account ${input.accountId} not found`);
