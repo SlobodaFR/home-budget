@@ -21,5 +21,11 @@ if ! command -v caddy >/dev/null 2>&1; then
   sudo apt-get install -y -qq caddy
 fi
 
-sudo cp "$DEPLOY_DIR/deploy/Caddyfile" /etc/caddy/Caddyfile
+sudo mkdir -p /etc/caddy/sites
+sudo cp "$DEPLOY_DIR/deploy/Caddyfile" /etc/caddy/sites/budget.Caddyfile
+
+if ! grep -q '^import sites/\*$' /etc/caddy/Caddyfile 2>/dev/null; then
+  echo 'import sites/*' | sudo tee -a /etc/caddy/Caddyfile >/dev/null
+fi
+
 sudo systemctl reload caddy
