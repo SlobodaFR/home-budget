@@ -1,0 +1,12 @@
+services:
+  budget:
+    image: ${IMAGE}:${IMAGE_TAG}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - budget-data:/app/backend/data
+
+volumes:
+  budget-data:

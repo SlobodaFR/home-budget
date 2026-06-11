@@ -1,0 +1,124 @@
+name: Deploy to VPS
+
+on:
+  workflow_run:
+    workflows: [Build & Publish]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          echo "value=sha-$(echo '${{ github.event.workflow_run.head_sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Load secrets from 1Password
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          VPS_HOST: op://TECH/thomassloboda_home_secrets/VPS_HOST
+          VPS_USER: op://TECH/thomassloboda_home_secrets/VPS_USER
+          VPS_SSH_KEY: op://TECH/thomassloboda_home_secrets/VPS_PRIVATE_KEY
+          AUTH_SERVICE_URL: op://TECH/thomassloboda_home_secrets/AUTH_BASE_URL
+          AUTH_CLIENT_ID: op://TECH/thomassloboda_home_secrets/BUDGET_AUTH_CLIENT_ID
+          AUTH_CLIENT_SECRET: op://TECH/thomassloboda_home_secrets/BUDGET_AUTH_SECRET
+          AUTH_WEBHOOK_SECRET: op://TECH/thomassloboda_home_secrets/BUDGET_AUTH_WEBHOOK_SECRET
+          FRONTEND_URL: op://TECH/thomassloboda_home_secrets/BUDGET_FRONTEND_URL
+          DATABASE_PATH: op://TECH/thomassloboda_home_secrets/BUDGET_DATABASE_PATH
+          MINIO_ENDPOINT: op://TECH/thomassloboda_home_secrets/MINIO_ENDPOINT
+          MINIO_BUCKET: op://TECH/thomassloboda_home_secrets/MINIO_BUCKET
+          MINIO_REPLICA_PATH: op://TECH/thomassloboda_home_secrets/BUDGET_MINIO_REPLICA_PATH
+          MINIO_REGION: op://TECH/thomassloboda_home_secrets/MINIO_REGION
+          MINIO_ACCESS_KEY_ID: op://TECH/thomassloboda_home_secrets/MINIO_ACCESS_KEY_ID
+          MINIO_SECRET_ACCESS_KEY: op://TECH/thomassloboda_home_secrets/MINIO_SECRET_ACCESS_KEY
+          GHCR_PAT: op://TECH/thomassloboda_home_secrets/GITHUB_PAT_FULL_ACCESS
+
+      - name: Normalize VPS_SSH_KEY
+        # The 1Password field stores only the base64 body (no BEGIN/END
+        # markers, possibly with stray spaces from line-wrap collapsing).
+        # Strip spaces (base64 never contains any) and wrap with markers.
+        run: |
+          {
+            echo "VPS_SSH_KEY<<EOF_SSH_KEY"
+            echo "-----BEGIN OPENSSH PRIVATE KEY-----"
+            printf '%s' "$VPS_SSH_KEY" | tr -d ' '
+            echo
+            echo "-----END OPENSSH PRIVATE KEY-----"
+            echo "EOF_SSH_KEY"
+          } >> "$GITHUB_ENV"
+
+          {
+            printf '%s' "$VPS_SSH_KEY" | tr -d ' '
+          } > /tmp/key_body
+          {
+            echo "-----BEGIN OPENSSH PRIVATE KEY-----"
+            cat /tmp/key_body
+            echo
+            echo "-----END OPENSSH PRIVATE KEY-----"
+          } > /tmp/key
+          echo "::add-mask::$(cat /tmp/key_body)"
+          rm -f /tmp/key_body /tmp/key
+
+      - name: Write remote .env
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ env.VPS_SSH_KEY }}
+          envs: AUTH_SERVICE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REPLICA_PATH,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY
+          script: |
+            mkdir -p /opt/budget/deploy
+            cat > /opt/budget/deploy/.env <<EOF
+            NODE_ENV=production
+            PORT=3000
+            DATABASE_PATH=$DATABASE_PATH
+            AUTH_SERVICE_URL=$AUTH_SERVICE_URL
+            AUTH_CLIENT_ID=$AUTH_CLIENT_ID
+            AUTH_CLIENT_SECRET=$AUTH_CLIENT_SECRET
+            AUTH_WEBHOOK_SECRET=$AUTH_WEBHOOK_SECRET
+            FRONTEND_URL=$FRONTEND_URL
+            MINIO_ENDPOINT=$MINIO_ENDPOINT
+            MINIO_BUCKET=$MINIO_BUCKET
+            MINIO_REPLICA_PATH=$MINIO_REPLICA_PATH
+            MINIO_REGION=$MINIO_REGION
+            MINIO_ACCESS_KEY_ID=$MINIO_ACCESS_KEY_ID
+            MINIO_SECRET_ACCESS_KEY=$MINIO_SECRET_ACCESS_KEY
+            EOF
+
+      - name: Sync deploy files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ env.VPS_SSH_KEY }}
+          source: 'deploy/docker-compose.yml,deploy/scripts/update-vps.sh,deploy/Caddyfile'
+          target: /opt/budget
+          strip_components: 0
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ env.VPS_SSH_KEY }}
+          envs: IMAGE,IMAGE_TAG,DEPLOY_DIR,GHCR_PAT,GHCR_USER
+          script: |
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            chmod +x /opt/budget/deploy/scripts/update-vps.sh
+            sh /opt/budget/deploy/scripts/update-vps.sh
+        env:
+          IMAGE: ${{ steps.tag.outputs.image }}
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          DEPLOY_DIR: /opt/budget
+          GHCR_PAT: ${{ env.GHCR_PAT }}
+          GHCR_USER: ${{ github.repository_owner }}
