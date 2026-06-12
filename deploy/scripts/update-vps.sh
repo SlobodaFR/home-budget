@@ -24,8 +24,23 @@ fi
 sudo mkdir -p /etc/caddy/sites
 sudo cp "$DEPLOY_DIR/deploy/Caddyfile" /etc/caddy/sites/budget.Caddyfile
 
+# Remove any legacy top-level budget.sloboda.fr block from the main Caddyfile
+# (older deploy scripts used to overwrite /etc/caddy/Caddyfile directly,
+# which would now duplicate the block moved into sites/budget.Caddyfile).
+if [ -f /etc/caddy/Caddyfile ] && grep -q '^budget\.sloboda\.fr[[:space:]]*{' /etc/caddy/Caddyfile; then
+  sudo awk '
+    /^budget\.sloboda\.fr[[:space:]]*\{/ { skip=1; next }
+    skip && /^}/ { skip=0; next }
+    skip { next }
+    { print }
+  ' /etc/caddy/Caddyfile | sudo tee /etc/caddy/Caddyfile.tmp >/dev/null
+  sudo mv /etc/caddy/Caddyfile.tmp /etc/caddy/Caddyfile
+fi
+
 if ! grep -q '^import sites/\*$' /etc/caddy/Caddyfile 2>/dev/null; then
   echo 'import sites/*' | sudo tee -a /etc/caddy/Caddyfile >/dev/null
 fi
+
+sudo caddy validate --config /etc/caddy/Caddyfile
 
 sudo systemctl reload caddy
