@@ -9,7 +9,8 @@ import { useSpace } from '../../application/use-space';
 import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { BankIcon, TargetIcon, UploadIcon } from '../components/Icons';
+import { BankIcon, ClipboardCheckIcon, TargetIcon, UploadIcon } from '../components/Icons';
+import { DebtsHomeLink } from '../components/debts/DebtsHomeLink';
 import { AccountsSummary } from '../components/AccountsSummary';
 import { InsightsCard } from '../components/InsightsCard';
 import { LoadingScreen } from '../components/LoadingScreen';
@@ -78,6 +79,14 @@ export function HomePage() {
           <TargetIcon width={18} height={18} />
           Mes projets
         </Link>
+        <Link
+          to="/revue"
+          className="inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full px-md font-body-sm text-body-sm font-semibold underline"
+        >
+          <ClipboardCheckIcon width={18} height={18} />
+          Ma revue du mois
+        </Link>
+        <DebtsHomeLink spaceId={space.id} />
       </div>
 
       <InsightsCard state={insights} />

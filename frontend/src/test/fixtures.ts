@@ -1,5 +1,7 @@
 import { Account } from '../domain/account';
+import { Debt } from '../domain/debt';
 import { Project } from '../domain/project';
+import { MonthlyReview, ReviewHistoryItem, ReviewSnapshot } from '../domain/review';
 import { PreviewRow } from '../domain/statement-import';
 
 export function previewRow(
@@ -53,6 +55,68 @@ export function project(overrides: Partial<Project> = {}): Project {
     expectedSavedCents: 75000,
     archived: false,
     accountId: null,
+    ...overrides,
+  };
+}
+
+export function reviewSnapshot(overrides: Partial<ReviewSnapshot> = {}): ReviewSnapshot {
+  return {
+    incomeCents: 380000,
+    expenseCents: 351000,
+    balanceCents: 29000,
+    savingsRatePercent: 8,
+    blocs: [
+      { bloc: 'FIXE', plannedCents: 175000, actualCents: 171000, deltaCents: -4000 },
+      { bloc: 'COURANT', plannedCents: 100000, actualCents: 140000, deltaCents: 40000 },
+      { bloc: 'PLAISIR', plannedCents: 40000, actualCents: 40000, deltaCents: 0 },
+      { bloc: 'EPARGNE', plannedCents: 50000, actualCents: 30000, deltaCents: -20000 },
+    ],
+    topExpenses: [
+      { label: 'Courses', amountCents: 142300, count: 9 },
+      { label: 'Loyer', amountCents: 120000, count: 1 },
+      { label: 'Essence', amountCents: 21000, count: 3 },
+    ],
+    missingRecurring: [],
+    unassignedTransactionCount: 0,
+    ...overrides,
+  };
+}
+
+export function review(overrides: Partial<MonthlyReview> = {}): MonthlyReview {
+  return {
+    month: '2026-10',
+    status: 'TODO',
+    answers: { wentWell: '', surprise: '', decision: '' },
+    completedAt: null,
+    snapshot: reviewSnapshot(),
+    ...overrides,
+  };
+}
+
+export function reviewHistoryItem(overrides: Partial<ReviewHistoryItem> = {}): ReviewHistoryItem {
+  return { month: '2026-09', status: 'DONE', decision: 'Fixer 400 € pour les courses', completedAt: '2026-10-03T08:00:00.000Z', ...overrides };
+}
+
+export function debt(overrides: Partial<Debt> = {}): Debt {
+  return {
+    id: 'd1',
+    spaceId: 's-common',
+    name: 'Prêt auto',
+    kind: 'CAR',
+    principalCents: 1500000,
+    remainingCents: 1120000,
+    annualRatePercent: 3.9,
+    monthlyPaymentCents: 32000,
+    startDate: '2024-09-01',
+    paymentDay: 5,
+    insuranceMonthlyCents: 1500,
+    monthsRemaining: 38,
+    payoffDate: '2029-12-05',
+    totalInterestRemainingCents: 96000,
+    paidSharePercent: 25,
+    neverPaidOff: false,
+    archived: false,
+    recurringId: null,
     ...overrides,
   };
 }

@@ -285,10 +285,10 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 ```
 - `severity` : `WARNING | ACTION | INFO | GOOD`.
 - `lesson` : numéro de la leçon du cours qui explique la règle, ou `null`.
-- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/`) ou `null`.
+- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
 
 ## Aides officielles (tranche 3)
@@ -531,6 +531,113 @@ plus `"archived"`. `201` + l'objet ; `204` pour `PUT`/`DELETE`. `name` 1-80 car.
 Nouveaux ids : `project-behind` (`WARNING`, un projet `BEHIND` ou `LATE` ; détail : nom, retard en euros, versement
 mensuel conseillé ; lien `/projets`), `projects-exceed-savings` (`ACTION`, `gapCents` > 0 ; lien `/plan`),
 `project-reached` (`GOOD`, un projet atteint dans les 30 derniers jours non archivé ; lien `/projets`).
+
+## Revue mensuelle et export (tranche 7)
+
+Le rituel du cours : une fois par mois, regarder ce qui s'est passé, répondre à trois questions et décider **une**
+chose pour le mois suivant. La revue est propre à un espace (commune pour le foyer, personnelle pour son propriétaire ;
+réponses chiffrées en espace personnel).
+
+### `GET /api/spaces/:spaceId/reviews/:month` (`month` = `AAAA-MM`)
+```json
+{
+  "month": "2026-10",
+  "status": "TODO",
+  "answers": { "wentWell": "", "surprise": "", "decision": "" },
+  "completedAt": null,
+  "snapshot": {
+    "incomeCents": 380000, "expenseCents": 351000, "balanceCents": 29000,
+    "savingsRatePercent": 8,
+    "blocs": [{ "bloc": "FIXE", "plannedCents": 175000, "actualCents": 171000, "deltaCents": -4000 }],
+    "topExpenses": [{ "label": "Courses", "amountCents": 142300, "count": 9 }],
+    "missingRecurring": [{ "label": "Assurance", "amountCents": 5000 }],
+    "unassignedTransactionCount": 0
+  }
+}
+```
+- `status` : `TODO` (rien de saisi), `DRAFT` (réponses sauvegardées non terminées), `DONE` (terminée).
+- `snapshot` est toujours recalculé à la lecture (jamais stocké) à partir des opérations du mois, du plan et des
+  paiements récurrents. `savingsRatePercent` = entier : `balanceCents ÷ incomeCents` arrondi (0 si pas de revenu, peut
+  être négatif). `deltaCents` = réel − prévu. `topExpenses` : 5 libellés au plus (regroupés sans casse ni accents,
+  triés par montant décroissant), `count` = nombre d'opérations. `missingRecurring` : paiements récurrents `MISSING` du
+  mois. Un mois futur renvoie `400`. Mois sans plan : `plannedCents` = 0.
+
+### `PUT /api/spaces/:spaceId/reviews/:month`
+Corps : `{ "answers": { "wentWell", "surprise", "decision" }, "complete": false|true }`. `204`. Chaque réponse ≤ 500
+caractères. `complete: true` exige une `decision` non vide (`400` sinon) et fixe `completedAt` (le garde si déjà
+terminée). Réponses vides + `complete: false` → retombe à `TODO`. Une revue `DONE` reste modifiable.
+
+### `GET /api/spaces/:spaceId/reviews?limit=12`
+Historique des revues non `TODO`, de la plus récente à la plus ancienne :
+`[{ "month": "2026-09", "status": "DONE", "decision": "…", "completedAt": "…" }]`.
+
+### Conseil
+L'insight existant `monthly-review` n'apparaît que si la revue du mois précédent n'est pas `DONE`, avec le lien
+`/revue` (route de l'application ajoutée à la liste) ; une fois `DONE`, il laisse place à un `GOOD` `review-done`
+(jours 1 à 7 du mois seulement) citant la décision prise.
+
+## Export des données (tranche 7)
+
+### `GET /api/export`
+Sauvegarde JSON de **toutes les données auxquelles l'utilisateur a accès** (foyer, espace commun, SON espace personnel,
+déchiffré) : `{ "exportedAt", "version": 1, "household", "spaces": [{ "space", "plan", "transactions", "recurring",
+"accounts", "projects", "reviews" }], "safetyNet", "fiscalProfile" }`. Jamais l'espace personnel d'un autre membre.
+En-tête `Content-Disposition: attachment; filename="budget-export-AAAA-MM-JJ.json"`.
+
+### `GET /api/spaces/:spaceId/transactions/export?from=AAAA-MM-JJ&to=AAAA-MM-JJ`
+CSV (UTF-8 avec BOM, séparateur `;`, décimale `,`, colonnes `Date;Type;Bloc;Libellé;Montant;Compte`) des opérations
+de la période (limites incluses, 366 jours au plus, `400` sinon). Les libellés commençant par `=`, `+`, `-`, `@` sont
+préfixés d'une apostrophe (injection de formules). `Content-Disposition: attachment; filename="operations-AAAA-MM-JJ_AAAA-MM-JJ.csv"`.
+
+## Crédits et dettes (tranche 8)
+
+Suivre un crédit (immobilier, auto, conso) et mesurer ce que rapporterait un remboursement accéléré (leçon sur le
+crédit). Rattaché à un espace ; nom et montants chiffrés en espace personnel. Les calculs sont des estimations.
+
+### `GET /api/spaces/:spaceId/debts`
+```json
+[{
+  "id": "…", "spaceId": "…", "name": "Prêt auto", "kind": "CAR",
+  "principalCents": 1500000, "remainingCents": 1120000, "annualRatePercent": 3.9,
+  "monthlyPaymentCents": 32000, "startDate": "2024-09-01", "paymentDay": 5, "insuranceMonthlyCents": 1500,
+  "monthsRemaining": 38, "payoffDate": "2029-12-05", "totalInterestRemainingCents": 96000,
+  "paidSharePercent": 25, "archived": false, "recurringId": null
+}]
+```
+- `kind` : `MORTGAGE | CAR | CONSUMER | STUDENT | OTHER`.
+- `remainingCents` : capital restant dû **déclaré** (relevé de la banque) ; `principalCents` : capital emprunté.
+- `annualRatePercent` : nombre ≥ 0 (TAEG hors assurance, jusqu'à 2 décimales) ; `monthlyPaymentCents` : mensualité
+  **hors assurance** ; `insuranceMonthlyCents` : assurance emprunteur mensuelle (≥ 0).
+- `monthsRemaining`, `payoffDate`, `totalInterestRemainingCents` : amortissement simulé à partir de `remainingCents`
+  avec intérêts mensuels = capital × taux ÷ 12 (arrondi au centime), paiement fixe `monthlyPaymentCents`, dernière
+  mensualité ajustée. `null` partout si la mensualité ne couvre pas les intérêts (la dette ne diminue pas) :
+  `"neverPaidOff": true` est alors ajouté. `paidSharePercent` = (principal − restant) ÷ principal, entier 0-100.
+- `recurringId` : paiement récurrent de l'espace qui représente la mensualité (optionnel) ; s'il est renseigné, il doit
+  exister dans l'espace (`400` sinon).
+
+### `POST /api/spaces/:spaceId/debts` · `PUT …/:id` · `DELETE …/:id`
+Corps : `{ "name", "kind", "principalCents", "remainingCents", "annualRatePercent", "monthlyPaymentCents", "startDate",
+"paymentDay", "insuranceMonthlyCents", "recurringId"? }` ; `PUT` accepte en plus `"archived"`. `201` + l'objet ;
+`204`. `name` 1-60 car. ; `remainingCents` ≤ `principalCents` ; `paymentDay` 1-28 ; `400` sinon.
+
+### `GET /api/spaces/:spaceId/debts/:id/what-if?extraMonthlyCents=…&lumpSumCents=…`
+Simulation d'un remboursement accéléré (versement mensuel supplémentaire et/ou remboursement partiel immédiat) :
+```json
+{
+  "baseline": { "monthsRemaining": 38, "totalInterestRemainingCents": 96000, "payoffDate": "2029-12-05" },
+  "scenario": { "monthsRemaining": 29, "totalInterestRemainingCents": 69000, "payoffDate": "2029-03-05" },
+  "interestSavedCents": 27000, "monthsSaved": 9,
+  "note": "Vérifiez les indemnités de remboursement anticipé de votre contrat."
+}
+```
+`extraMonthlyCents` et `lumpSumCents` entiers ≥ 0 (au moins un > 0, sinon `400`) ; plafonnés à `remainingCents`.
+
+### `GET /api/spaces/:spaceId/debts/summary`
+`{ "activeCount": 2, "totalRemainingCents": 21800000, "totalMonthlyCents": 112000, "debtToIncomePercent": 31 }` :
+mensualités + assurances des dettes actives ÷ revenus mensuels (somme des revenus du foyer pour le commun ; revenu du
+membre pour le perso ; `null` si inconnu). Au-dessus de 35 %, l'insight `debt-ratio-high` (`WARNING`, lien `/dettes`)
+est émis (seuil de 35 % : repère du cours, pas une règle de droit) ; `debt-never-paid-off` (`ACTION`) si
+`neverPaidOff`.
 
 ## Chiffrement de l'espace personnel (informatif)
 

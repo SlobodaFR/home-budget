@@ -12,6 +12,8 @@ import { SafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
+import { DEBT_RATIO_THRESHOLD_PERCENT, DebtSummary } from '../debt/debt-view';
+import { ReviewStatus } from '../review/month-review';
 import { Provisions } from './provisions';
 import { ProjectView, summarizeProjects } from '../project/project-progress';
 import { MonthSummary } from './month-summary';
@@ -52,6 +54,8 @@ export const REVIEW_LAST_DAY = 7;
 const LESSON_BLOCS = 1;
 const LESSON_SAFETY_NET = 2;
 const LESSON_TRACKING = 4;
+/** Leçon du cours sur le crédit et l'endettement. */
+const LESSON_DEBT = 5;
 
 export interface SafetyNetStatus extends SafetyNetProgress {
   targetMonths: number;
@@ -75,6 +79,19 @@ export interface AccountsInsightContext {
   unassignedTransactionCount: number;
 }
 
+/** Crédits de l'espace utiles aux conseils. */
+export interface DebtsInsightContext {
+  summary: DebtSummary;
+  /** Revenus mensuels connus (somme du foyer pour le commun, revenu du membre pour le perso). */
+  monthlyIncomeCents: number | null;
+  /** Crédits actifs dont la dette ne diminue jamais. */
+  neverPaidOff: {
+    name: string;
+    monthlyPaymentCents: number;
+    nextMonthInterestCents: number;
+  }[];
+}
+
 export interface InsightsInput {
   month: string;
   today: Date;
@@ -90,6 +107,12 @@ export interface InsightsInput {
   provisions: Provisions;
   /** Projets d'épargne de l'espace (archivés compris : le filtre est ici). */
   projects: ProjectView[];
+  /**
+   * Revue du mois PRÉCÉDENT le mois d'aujourd'hui, null si elle n'existe pas
+   * (= à faire). Seul son statut et sa décision comptent ici.
+   */
+  previousReview: { status: ReviewStatus; decision: string } | null;
+  debts: DebtsInsightContext;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -106,7 +129,9 @@ const PRIORITY = [
   'account-negative-projected',
   'bloc-overrun',
   'project-behind',
+  'debt-ratio-high',
   'recurring-missing',
+  'debt-never-paid-off',
   'plan-missing',
   'plan-unassigned',
   'contribution-incomplete',
@@ -121,6 +146,7 @@ const PRIORITY = [
   'safety-net-unset',
   'safety-net-progress',
   'project-reached',
+  'review-done',
   'savings-on-track',
   'all-good',
 ];
@@ -152,6 +178,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...accountInsights(input),
     ...provisionInsights(input),
     ...projectInsights(input),
+    ...debtInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -485,6 +512,62 @@ function projectInsights({
   return result;
 }
 
+/**
+ * Crédits (mois courant seulement, comme les autres conseils liés à aujourd'hui) :
+ * - `debt-ratio-high` : taux d'endettement (mensualités + assurances ÷ revenus
+ *   mensuels connus, entier arrondi) au-dessus de 35 % ; repère du cours ;
+ * - `debt-never-paid-off` : un crédit actif dont la mensualité ne fait pas
+ *   diminuer la dette (ou qui dépasserait 100 ans).
+ * Leçon 5 du cours (crédit). Aucun conseil de placement ni de rachat de crédit.
+ */
+function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
+  if (monthPhase(month, today) !== 'CURRENT') {
+    return [];
+  }
+  const result: Insight[] = [];
+  const { summary, monthlyIncomeCents, neverPaidOff } = debts;
+
+  if (
+    summary.debtToIncomePercent !== null &&
+    summary.debtToIncomePercent > DEBT_RATIO_THRESHOLD_PERCENT
+  ) {
+    result.push({
+      id: 'debt-ratio-high',
+      severity: 'WARNING',
+      title: `Endettement à ${summary.debtToIncomePercent} % de vos revenus`,
+      detail: `Vos crédits coûtent ${formatEuros(summary.totalMonthlyCents)} par mois (assurances comprises) pour ${formatEuros(monthlyIncomeCents ?? 0)} de revenus : au-dessus du repère de ${DEBT_RATIO_THRESHOLD_PERCENT} %, la marge de manœuvre est faible. Évitez un nouveau crédit et regardez l'effet d'un remboursement accéléré.`,
+      lesson: LESSON_DEBT,
+      link: '/dettes',
+    });
+  }
+
+  if (neverPaidOff.length > 0) {
+    const one = neverPaidOff[0];
+    result.push({
+      id: 'debt-never-paid-off',
+      severity: 'ACTION',
+      title:
+        neverPaidOff.length === 1
+          ? `Le crédit « ${one.name} » ne diminue pas`
+          : `${neverPaidOff.length} crédits ne diminuent pas`,
+      detail:
+        neverPaidOff.length === 1
+          ? `Sa mensualité de ${formatEuros(one.monthlyPaymentCents)} ne dépasse pas les intérêts du mois (${formatEuros(one.nextMonthInterestCents)}) ou ne le rembourserait pas en 100 ans. Vérifiez la mensualité et le taux saisis.`
+          : `${joinNames([
+              ...neverPaidOff.slice(0, MAX_LISTED).map((d) => d.name),
+              ...(neverPaidOff.length > MAX_LISTED
+                ? [
+                    `${neverPaidOff.length - MAX_LISTED} ${plural(neverPaidOff.length - MAX_LISTED, 'autre', 'autres')}`,
+                  ]
+                : []),
+            ])} : les mensualités ne couvrent pas les intérêts. Vérifiez les mensualités et les taux saisis.`,
+      lesson: LESSON_DEBT,
+      link: '/dettes',
+    });
+  }
+  return result;
+}
+
 function joinNames(names: string[]): string {
   return names.length === 1
     ? names[0]
@@ -527,7 +610,8 @@ function savingsInsights(input: InsightsInput): Insight[] {
 }
 
 function trackingInsights(input: InsightsInput): Insight[] {
-  const { month, today, summary, forecast, lastActivity } = input;
+  const { month, today, summary, forecast, lastActivity, previousReview } =
+    input;
   const result: Insight[] = [];
   const todayStart = startOfUtcDay(today);
 
@@ -592,50 +676,71 @@ function trackingInsights(input: InsightsInput): Insight[] {
     }
   }
 
-  const review = monthlyReview(month, today, summary);
+  const review = monthlyReview(month, today, summary, previousReview);
   if (review) {
     result.push(review);
   }
   return result;
 }
 
+/** Longueur maximale de la décision citée dans `review-done`. */
+const MAX_QUOTED_DECISION = 120;
+
 /**
- * Bilan mensuel : pendant la première semaine d'un mois, on invite à faire le
- * bilan du mois précédent (depuis le mois en cours) ou on le résume (depuis le
- * mois précédent lui-même).
+ * Bilan mensuel : pendant la première semaine d'un mois, on invite à faire la
+ * revue du mois précédent (depuis le mois en cours) ou on en résume les chiffres
+ * (depuis le mois précédent lui-même), lien `/revue`. Une fois la revue du mois
+ * précédent DONE, `monthly-review` laisse place à `review-done` (GOOD) qui cite
+ * la décision prise : mêmes jours (1 à 7) et mêmes mois consultés.
  */
 function monthlyReview(
   month: string,
   today: Date,
   summary: MonthSummary,
+  previousReview: InsightsInput['previousReview'],
 ): Insight | null {
   if (today.getUTCDate() > REVIEW_LAST_DAY) {
     return null;
   }
   const current = currentMonth(today);
   const previous = previousMonth(current);
+  if (month !== current && month !== previous) {
+    return null;
+  }
+  if (previousReview?.status === 'DONE') {
+    const decision = previousReview.decision;
+    const quoted =
+      decision.length > MAX_QUOTED_DECISION
+        ? `${decision.slice(0, MAX_QUOTED_DECISION - 1).trimEnd()}…`
+        : decision;
+    return {
+      id: 'review-done',
+      severity: 'GOOD',
+      title: `Revue de ${formatMonthLabel(previous)} faite`,
+      detail: `Décision prise : « ${quoted} ». Gardez le cap ce mois-ci.`,
+      lesson: LESSON_TRACKING,
+      link: '/revue',
+    };
+  }
   if (month === current) {
     return {
       id: 'monthly-review',
       severity: 'INFO',
       title: `Faites le bilan de ${formatMonthLabel(previous)}`,
-      detail: `Le mois commence : comparez le prévu et le réel de ${formatMonthLabel(previous)}, puis ajustez votre plan si besoin.`,
+      detail: `Le mois commence : comparez le prévu et le réel de ${formatMonthLabel(previous)}, répondez aux trois questions et décidez une chose pour ce mois-ci.`,
       lesson: LESSON_TRACKING,
-      link: '/',
+      link: '/revue',
     };
   }
-  if (month === previous) {
-    const out = summary.blocs.reduce((sum, b) => sum + b.actualCents, 0);
-    return {
-      id: 'monthly-review',
-      severity: 'INFO',
-      title: `Bilan de ${formatMonthLabel(month)}`,
-      detail: `Revenus ${formatEuros(summary.income.actualCents)}, dépenses ${formatEuros(out)} : solde de ${formatEuros(summary.actualBalanceCents)}. Comparez avec votre plan et ajustez-le si besoin.`,
-      lesson: LESSON_TRACKING,
-      link: '/',
-    };
-  }
-  return null;
+  const out = summary.blocs.reduce((sum, b) => sum + b.actualCents, 0);
+  return {
+    id: 'monthly-review',
+    severity: 'INFO',
+    title: `Bilan de ${formatMonthLabel(month)}`,
+    detail: `Revenus ${formatEuros(summary.income.actualCents)}, dépenses ${formatEuros(out)} : solde de ${formatEuros(summary.actualBalanceCents)}. Faites votre revue pour décider une chose pour ce mois-ci.`,
+    lesson: LESSON_TRACKING,
+    link: '/revue',
+  };
 }
 
 function commonInsights(

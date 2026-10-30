@@ -231,3 +231,23 @@ export const ChevronDownIcon = (props: IconProps) => (
     <path d="M6 9l6 6 6-6" />
   </Icon>
 );
+
+export const ClipboardCheckIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="5" y="4" width="14" height="17" rx="2" />
+    <path d="M9 4V3h6v1M9 13l2 2 4-4" />
+  </Icon>
+);
+
+export const DownloadIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
+  </Icon>
+);
+
+export const CreditCardIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 10h18M7 15h4" />
+  </Icon>
+);

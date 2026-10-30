@@ -9,6 +9,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { ContributionPreview } from '../components/ContributionPreview';
 import { ContributionRule } from '../components/ContributionRule';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
+import { ExportSection } from '../components/ExportSection';
 import { IncomeForm } from '../components/IncomeForm';
 import { InvitationCard } from '../components/InvitationCard';
 import { LoadingScreen } from '../components/LoadingScreen';
@@ -122,6 +123,28 @@ export function FoyerPage() {
         <Link to="/projets" className={`${buttonSecondary} w-full`}>
           Voir mes projets
         </Link>
+      </Section>
+
+      <Section title="Crédits et dettes">
+        <p className="font-body-sm text-body-sm text-mute">
+          Immobilier, auto, consommation : combien il reste à rembourser, pour combien de temps, et l’effet d’un remboursement plus rapide. Ceux de l’espace que vous avez sélectionné (commun ou perso).
+        </p>
+        <Link to="/dettes" className={`${buttonSecondary} w-full`}>
+          Voir mes crédits
+        </Link>
+      </Section>
+
+      <Section title="Revue mensuelle">
+        <p className="font-body-sm text-body-sm text-mute">
+          Une fois par mois : regarder ce qui s’est passé, répondre à trois questions et décider une chose pour le mois suivant.
+        </p>
+        <Link to="/revue" className={`${buttonSecondary} w-full`}>
+          Ma revue du mois
+        </Link>
+      </Section>
+
+      <Section title="Mes données">
+        <ExportSection />
       </Section>
 
       <Section title="Inviter">

@@ -3,6 +3,10 @@ import { AccountRepository } from '../domain/account/account.repository';
 import { Project } from '../domain/project/project';
 import { ProjectDeposit } from '../domain/project/project-deposit';
 import { ProjectRepository } from '../domain/project/project.repository';
+import { MonthReview } from '../domain/review/month-review';
+import { MonthReviewRepository } from '../domain/review/month-review.repository';
+import { Debt } from '../domain/debt/debt';
+import { DebtRepository } from '../domain/debt/debt.repository';
 import { Household } from '../domain/household/household';
 import {
   HouseholdRepository,
@@ -260,5 +264,42 @@ export class InMemoryProjectRepository extends ProjectRepository {
   }
   async deleteDeposit(id: string): Promise<void> {
     this.deposits.delete(id);
+  }
+}
+
+export class InMemoryMonthReviewRepository extends MonthReviewRepository {
+  items = new Map<string, MonthReview>();
+  private key(spaceId: string, month: string) {
+    return `${spaceId}|${month}`;
+  }
+  async find(spaceId: string, month: string): Promise<MonthReview | null> {
+    return this.items.get(this.key(spaceId, month)) ?? null;
+  }
+  async findBySpace(spaceId: string): Promise<MonthReview[]> {
+    return [...this.items.values()]
+      .filter((r) => r.spaceId === spaceId)
+      .sort((a, b) => b.month.localeCompare(a.month));
+  }
+  async save(review: MonthReview): Promise<void> {
+    this.items.set(this.key(review.spaceId, review.month), review);
+  }
+  async delete(spaceId: string, month: string): Promise<void> {
+    this.items.delete(this.key(spaceId, month));
+  }
+}
+
+export class InMemoryDebtRepository extends DebtRepository {
+  items = new Map<string, Debt>();
+  async findBySpace(spaceId: string): Promise<Debt[]> {
+    return [...this.items.values()].filter((d) => d.spaceId === spaceId);
+  }
+  async findById(id: string): Promise<Debt | null> {
+    return this.items.get(id) ?? null;
+  }
+  async save(debt: Debt): Promise<void> {
+    this.items.set(debt.id, debt);
+  }
+  async delete(id: string): Promise<void> {
+    this.items.delete(id);
   }
 }
