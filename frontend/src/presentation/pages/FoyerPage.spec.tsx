@@ -232,6 +232,11 @@ describe('FoyerPage', () => {
       expect(screen.getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
     });
 
+    it('links to the credits page', () => {
+      renderPage();
+      expect(screen.getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
+    });
+
     it('links to the official aids page', () => {
       renderPage();
       expect(screen.getByRole('link', { name: 'Voir mes aides' })).toHaveAttribute('href', '/aides');

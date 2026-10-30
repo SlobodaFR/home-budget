@@ -1,4 +1,5 @@
 import { Account } from '../domain/account';
+import { Debt } from '../domain/debt';
 import { Project } from '../domain/project';
 import { MonthlyReview, ReviewHistoryItem, ReviewSnapshot } from '../domain/review';
 import { PreviewRow } from '../domain/statement-import';
@@ -94,4 +95,28 @@ export function review(overrides: Partial<MonthlyReview> = {}): MonthlyReview {
 
 export function reviewHistoryItem(overrides: Partial<ReviewHistoryItem> = {}): ReviewHistoryItem {
   return { month: '2026-09', status: 'DONE', decision: 'Fixer 400 € pour les courses', completedAt: '2026-10-03T08:00:00.000Z', ...overrides };
+}
+
+export function debt(overrides: Partial<Debt> = {}): Debt {
+  return {
+    id: 'd1',
+    spaceId: 's-common',
+    name: 'Prêt auto',
+    kind: 'CAR',
+    principalCents: 1500000,
+    remainingCents: 1120000,
+    annualRatePercent: 3.9,
+    monthlyPaymentCents: 32000,
+    startDate: '2024-09-01',
+    paymentDay: 5,
+    insuranceMonthlyCents: 1500,
+    monthsRemaining: 38,
+    payoffDate: '2029-12-05',
+    totalInterestRemainingCents: 96000,
+    paidSharePercent: 25,
+    neverPaidOff: false,
+    archived: false,
+    recurringId: null,
+    ...overrides,
+  };
 }

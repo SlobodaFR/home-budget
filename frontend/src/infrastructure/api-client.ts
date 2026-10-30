@@ -2,6 +2,17 @@ import { Account, AccountPayload } from '../domain/account';
 import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, FiscalProfile } from '../domain/aids';
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
 import { backupFilename, csvFilename, ExportRange, filenameFromContentDisposition } from '../domain/export';
+import {
+  Debt,
+  DebtPayload,
+  DebtsSummary,
+  parseDebt,
+  parseDebts,
+  parseDebtsSummary,
+  parseWhatIf,
+  WhatIfQuery,
+  WhatIfResult,
+} from '../domain/debt';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
 import {
@@ -215,6 +226,30 @@ export const apiClient = {
   downloadTransactionsCsv(spaceId: string, range: ExportRange): Promise<DownloadedFile> {
     const query = `from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
     return download(`${spacePath(spaceId)}/transactions/export?${query}`, csvFilename(range));
+  },
+
+  async fetchDebts(spaceId: string): Promise<Debt[]> {
+    return parseDebts(await request<unknown>(`${spacePath(spaceId)}/debts`));
+  },
+  async createDebt(spaceId: string, payload: DebtPayload): Promise<Debt | null> {
+    return parseDebt(await request<unknown>(`${spacePath(spaceId)}/debts`, 'POST', payload));
+  },
+  updateDebt(spaceId: string, id: string, payload: DebtPayload): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/debts/${encodeURIComponent(id)}`, 'PUT', payload);
+  },
+  deleteDebt(spaceId: string, id: string): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/debts/${encodeURIComponent(id)}`, 'DELETE');
+  },
+  async fetchDebtsSummary(spaceId: string): Promise<DebtsSummary> {
+    return parseDebtsSummary(await request<unknown>(`${spacePath(spaceId)}/debts/summary`));
+  },
+  async fetchDebtWhatIf(spaceId: string, id: string, query: WhatIfQuery): Promise<WhatIfResult> {
+    const params = `extraMonthlyCents=${query.extraMonthlyCents}&lumpSumCents=${query.lumpSumCents}`;
+    const result = parseWhatIf(await request<unknown>(`${spacePath(spaceId)}/debts/${encodeURIComponent(id)}/what-if?${params}`));
+    if (!result) {
+      throw new ApiError(502, 'Réponse illisible');
+    }
+    return result;
   },
 
   fetchForecast(spaceId: string, month: string): Promise<Forecast> {

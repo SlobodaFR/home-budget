@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
-import { account, project } from '../../test/fixtures';
+import { account, debt, project } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
@@ -12,6 +12,7 @@ const api = vi.hoisted(() => ({
   createTransaction: vi.fn(),
   fetchAccounts: vi.fn(),
   fetchProjects: vi.fn(),
+  fetchDebts: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -250,5 +251,49 @@ describe('HomePage monthly review', () => {
     renderInApp(<HomePage />);
     const card = await screen.findByRole('region', { name: 'Prochaines actions' });
     expect(within(card).getByRole('link', { name: 'Voir ma revue' })).toHaveAttribute('href', '/revue');
+  });
+});
+
+describe('HomePage credits link', () => {
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchAccounts.mockResolvedValue([]);
+    api.fetchSummary.mockResolvedValue(summary);
+    api.fetchTransactions.mockResolvedValue([]);
+    api.fetchInsights.mockResolvedValue([]);
+  });
+
+  it('links to the credits only when the space has some', async () => {
+    api.fetchDebts.mockResolvedValue([debt()]);
+    renderInApp(<HomePage />);
+    expect(await screen.findByRole('link', { name: 'Mes crédits' })).toHaveAttribute('href', '/dettes');
+    expect(api.fetchDebts).toHaveBeenCalledWith('s-common');
+  });
+
+  it('shows no link when there is no credit', async () => {
+    api.fetchDebts.mockResolvedValue([]);
+    renderInApp(<HomePage />);
+    await screen.findByRole('region', { name: 'Synthèse du mois' });
+    await waitFor(() => expect(api.fetchDebts).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: 'Mes crédits' })).not.toBeInTheDocument();
+  });
+
+  it('shows no link and no error when the endpoint fails', async () => {
+    api.fetchDebts.mockRejectedValue(new ApiError(404, 'nope'));
+    renderInApp(<HomePage />);
+    await screen.findByRole('region', { name: 'Synthèse du mois' });
+    await waitFor(() => expect(api.fetchDebts).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: 'Mes crédits' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('offers to see the credits from the debt insights', async () => {
+    api.fetchDebts.mockResolvedValue([]);
+    api.fetchInsights.mockResolvedValue([
+      { id: 'debt-never-paid-off', severity: 'ACTION', title: 'Un crédit ne diminue pas', detail: 'La mensualité ne couvre pas les intérêts.', lesson: 6, link: '/dettes' },
+    ]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Prochaines actions' });
+    expect(within(card).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
   });
 });
