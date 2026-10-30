@@ -23,6 +23,8 @@ export interface RecurringItemProps {
   endDate: string | null;
   active: boolean;
   aidRuleId: AidRuleId | null;
+  /** Compte bancaire de l'espace ; absent ou null = non rattaché. */
+  accountId?: string | null;
 }
 
 export const MAX_RECURRING_LABEL_LENGTH = 80;
@@ -144,5 +146,9 @@ export class RecurringItem {
 
   get aidRuleId(): AidRuleId | null {
     return this.props.aidRuleId;
+  }
+
+  get accountId(): string | null {
+    return this.props.accountId ?? null;
   }
 }

@@ -17,6 +17,7 @@ import {
   TransactionKind,
 } from '../../domain/transaction/transaction';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
+import { AccountAssignmentService } from '../account/account-assignment.service';
 import { SpaceAccessService } from '../household/space-access.service';
 
 export interface PreviewRowDto {
@@ -43,14 +44,18 @@ export class PreviewImportUseCase {
     private readonly access: SpaceAccessService,
     private readonly rules: SpaceRulesRepository,
     private readonly transactions: TransactionRepository,
+    private readonly assignment: AccountAssignmentService,
   ) {}
 
   async execute(
     userId: string,
     spaceId: string,
     text: string,
+    accountId?: string | null,
   ): Promise<PreviewDto> {
     await this.access.requireSpace(userId, spaceId);
+    // Rien n'est rattaché par l'aperçu, mais un compte invalide est refusé dès maintenant.
+    await this.assignment.resolve(spaceId, accountId);
     const parsed = parseStatement(text);
     const rules = (await this.rules.find(spaceId)) ?? DEFAULT_RULES;
 
@@ -125,14 +130,18 @@ export class CommitImportUseCase {
   constructor(
     private readonly access: SpaceAccessService,
     private readonly transactions: TransactionRepository,
+    private readonly assignment: AccountAssignmentService,
   ) {}
 
   async execute(
     userId: string,
     spaceId: string,
     items: CommitItem[],
+    accountId?: string | null,
   ): Promise<{ created: number }> {
     await this.access.requireSpace(userId, spaceId);
+    // Toutes les opérations créées sont rattachées à ce compte (tout ou rien, comme le reste).
+    const attachedTo = await this.assignment.resolve(spaceId, accountId);
     const built = items.map((item) =>
       Transaction.create({
         id: randomUUID(),
@@ -142,6 +151,7 @@ export class CommitImportUseCase {
         label: item.label,
         amount: Money.fromCents(item.amountCents),
         date: item.date,
+        accountId: attachedTo,
       }),
     );
     await this.transactions.saveMany(built);

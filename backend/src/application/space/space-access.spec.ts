@@ -1,11 +1,13 @@
 import { NotFoundException } from '@nestjs/common';
 import { User } from '../../domain/user/user';
 import {
+  InMemoryAccountRepository,
   InMemoryHouseholdRepository,
   InMemorySpacePlanRepository,
   InMemoryTransactionRepository,
   InMemoryUserRepository,
 } from '../../testing/in-memory-repositories';
+import { AccountAssignmentService } from '../account/account-assignment.service';
 import { CreateHouseholdUseCase } from '../household/create-household.use-case';
 import { CreateInvitationUseCase } from '../household/create-invitation.use-case';
 import { HouseholdViewBuilder } from '../household/household.dto';
@@ -39,6 +41,9 @@ async function twoPeopleHousehold() {
   }
   const view = new HouseholdViewBuilder(users);
   const access = new SpaceAccessService(households);
+  const assignment = new AccountAssignmentService(
+    new InMemoryAccountRepository(),
+  );
   const plans = new InMemorySpacePlanRepository();
   const transactions = new InMemoryTransactionRepository();
 
@@ -60,8 +65,8 @@ async function twoPeopleHousehold() {
     getPlan: new GetSpacePlanUseCase(access, plans),
     savePlan: new SaveSpacePlanUseCase(access, plans),
     list: new ListSpaceTransactionsUseCase(access, transactions),
-    create: new CreateSpaceTransactionUseCase(access, transactions),
-    update: new UpdateSpaceTransactionUseCase(access, transactions),
+    create: new CreateSpaceTransactionUseCase(access, transactions, assignment),
+    update: new UpdateSpaceTransactionUseCase(access, transactions, assignment),
     remove: new DeleteSpaceTransactionUseCase(access, transactions),
     summary: new GetMonthSummaryUseCase(access, plans, transactions),
   };

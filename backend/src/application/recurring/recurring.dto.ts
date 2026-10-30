@@ -15,6 +15,7 @@ export interface RecurringItemDto {
   endDate: string | null;
   active: boolean;
   aidRuleId: AidRuleId | null;
+  accountId: string | null;
 }
 
 export function toRecurringItemDto(item: RecurringItem): RecurringItemDto {
@@ -30,5 +31,6 @@ export function toRecurringItemDto(item: RecurringItem): RecurringItemDto {
     endDate: item.endDate,
     active: item.active,
     aidRuleId: item.aidRuleId,
+    accountId: item.accountId,
   };
 }

@@ -5,6 +5,7 @@ import { RecurringItem } from '../recurring/recurring-item';
 import { buildSafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { buildForecast } from './forecast';
 import {
+  AccountsInsightContext,
   CommonInsightsContext,
   Insight,
   MAX_INSIGHTS,
@@ -21,6 +22,12 @@ const BALANCED = SpacePlan.create({
   epargneCents: 0,
 });
 
+const NO_ACCOUNTS: AccountsInsightContext = {
+  accountCount: 0,
+  negativeProjected: [],
+  unassignedTransactionCount: 0,
+};
+
 interface Scenario {
   month?: string;
   today?: string;
@@ -29,6 +36,7 @@ interface Scenario {
   recurring?: RecurringItem[];
   lastActivity?: Date | null;
   common?: CommonInsightsContext | null;
+  accounts?: AccountsInsightContext;
 }
 
 function run(scenario: Scenario = {}): Insight[] {
@@ -48,9 +56,17 @@ function run(scenario: Scenario = {}): Insight[] {
     today,
     plan,
     summary: summarizeMonth(month, plan, transactions),
-    forecast: buildForecast({ month, today, plan, transactions, recurring }),
+    forecast: buildForecast({
+      month,
+      today,
+      plan,
+      transactions,
+      recurring,
+      commonSpace: scenario.common !== undefined && scenario.common !== null,
+    }),
     lastActivity,
     common: scenario.common ?? null,
+    accounts: scenario.accounts ?? NO_ACCOUNTS,
   });
 }
 
@@ -523,6 +539,179 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('common space funded by contributions', () => {
+    const COMMON_PLAN = SpacePlan.create({
+      incomeCents: 0,
+      fixeCents: 175000,
+      courantCents: 100000,
+      plaisirCents: 45000,
+      epargneCents: 0,
+    });
+    const common: CommonInsightsContext = {
+      safetyNet: status(700000, 6),
+      contributionIncomplete: false,
+    };
+
+    it('raises no false deficit, overcommitment or unassigned income on an unfunded plan', () => {
+      const insights = run({
+        plan: COMMON_PLAN,
+        transactions: [tx('EXPENSE', 'COURANT', 'Courses', 5000, '2026-11-18')],
+        common,
+      });
+      const found = ids(insights);
+      for (const id of [
+        'month-deficit',
+        'plan-overcommitted',
+        'plan-unassigned',
+        'plan-missing',
+      ]) {
+        expect(found).not.toContain(id);
+      }
+    });
+
+    it('still warns when the common space really overspends its plan', () => {
+      const insights = run({
+        plan: COMMON_PLAN,
+        transactions: [
+          tx('EXPENSE', 'COURANT', 'Courses', 400000, '2026-11-18'),
+        ],
+        common,
+      });
+      // Contributions supposées 320 000, dépenses 400 000 : déficit de 800 €.
+      expect(byId(insights, 'month-deficit').title).toBe(
+        `Déficit de 800${nbsp}€ attendu ce mois-ci`,
+      );
+    });
+
+    it('would have flagged the same plan as a deficit in a personal space', () => {
+      const insights = run({
+        plan: COMMON_PLAN,
+        transactions: [
+          tx('INCOME', null, 'Petit revenu', 1000, '2026-11-01'),
+          tx('EXPENSE', 'COURANT', 'Courses', 5000, '2026-11-18'),
+        ],
+      });
+      expect(ids(insights)).toContain('month-deficit');
+    });
+  });
+
+  describe('accounts', () => {
+    const accounts = (over: Partial<AccountsInsightContext> = {}) => ({
+      accountCount: 2,
+      negativeProjected: [],
+      unassignedTransactionCount: 0,
+      ...over,
+    });
+
+    it('warns about an account projected below zero (current month only)', () => {
+      const insight = byId(
+        run({
+          transactions: recent,
+          accounts: accounts({
+            negativeProjected: [
+              { name: 'Compte commun', projectedMonthEndCents: -12050 },
+            ],
+          }),
+        }),
+        'account-negative-projected',
+      );
+      expect(insight).toEqual({
+        id: 'account-negative-projected',
+        severity: 'WARNING',
+        title: 'Compte commun passerait sous zéro',
+        detail: `Solde prévu en fin de mois : -120,50${nbsp}€. Approvisionnez ce compte ou décalez une dépense.`,
+        lesson: 4,
+        link: '/comptes',
+      });
+      for (const month of ['2026-10', '2027-01']) {
+        expect(
+          ids(
+            run({
+              month,
+              transactions: recent,
+              accounts: accounts({
+                negativeProjected: [
+                  { name: 'Compte commun', projectedMonthEndCents: -1 },
+                ],
+              }),
+            }),
+          ),
+        ).not.toContain('account-negative-projected');
+      }
+    });
+
+    it('groups several accounts and names the lowest balance', () => {
+      const insight = byId(
+        run({
+          transactions: recent,
+          accounts: accounts({
+            negativeProjected: [
+              { name: 'Courant', projectedMonthEndCents: -500 },
+              { name: 'Livret', projectedMonthEndCents: -20000 },
+            ],
+          }),
+        }),
+        'account-negative-projected',
+      );
+      expect(insight.title).toBe('2 comptes passeraient sous zéro');
+      expect(insight.detail).toBe(
+        `Courant et Livret : le plus bas serait à -200${nbsp}€ en fin de mois. Approvisionnez ces comptes ou décalez une dépense.`,
+      );
+    });
+
+    it('invites to attach unassigned operations, only when the space has an account', () => {
+      const one = byId(
+        run({
+          transactions: recent,
+          accounts: accounts({ unassignedTransactionCount: 1 }),
+        }),
+        'accounts-unassigned',
+      );
+      expect(one).toMatchObject({
+        severity: 'INFO',
+        title: '1 opération sans compte',
+        link: '/comptes',
+      });
+      expect(
+        byId(
+          run({
+            transactions: recent,
+            accounts: accounts({ unassignedTransactionCount: 12 }),
+          }),
+          'accounts-unassigned',
+        ).title,
+      ).toBe('12 opérations sans compte');
+      expect(
+        ids(
+          run({
+            transactions: recent,
+            accounts: accounts({
+              accountCount: 0,
+              unassignedTransactionCount: 12,
+              negativeProjected: [{ name: 'x', projectedMonthEndCents: -1 }],
+            }),
+          }),
+        ),
+      ).toEqual(['all-good']);
+    });
+
+    it('ranks the negative balance among the warnings and keeps all-good out', () => {
+      const insights = run({
+        transactions: recent,
+        plan: SpacePlan.empty(),
+        accounts: accounts({
+          negativeProjected: [{ name: 'Courant', projectedMonthEndCents: -1 }],
+          unassignedTransactionCount: 3,
+        }),
+      });
+      expect(ids(insights)).toEqual([
+        'account-negative-projected',
+        'plan-missing',
+        'accounts-unassigned',
+      ]);
+    });
+  });
+
   describe('ordering and limits', () => {
     const crowded: Scenario = {
       today: '2026-11-12T08:00:00Z',
@@ -573,7 +762,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
       );
       const insights = [
         ...run(crowded),

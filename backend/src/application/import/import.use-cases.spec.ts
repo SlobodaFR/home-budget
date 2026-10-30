@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { User } from '../../domain/user/user';
 import {
+  InMemoryAccountRepository,
   InMemoryHouseholdRepository,
   InMemorySpaceRulesRepository,
   InMemoryTransactionRepository,
@@ -10,6 +11,7 @@ import { CreateHouseholdUseCase } from '../household/create-household.use-case';
 import { CreateInvitationUseCase } from '../household/create-invitation.use-case';
 import { HouseholdViewBuilder } from '../household/household.dto';
 import { JoinHouseholdUseCase } from '../household/join-household.use-case';
+import { AccountAssignmentService } from '../account/account-assignment.service';
 import { SpaceAccessService } from '../household/space-access.service';
 import {
   CommitImportUseCase,
@@ -34,6 +36,9 @@ async function setup() {
   }
   const view = new HouseholdViewBuilder(users);
   const access = new SpaceAccessService(households);
+  const assignment = new AccountAssignmentService(
+    new InMemoryAccountRepository(),
+  );
   const rules = new InMemorySpaceRulesRepository();
   const transactions = new InMemoryTransactionRepository();
   const created = await new CreateHouseholdUseCase(households, view).execute(
@@ -49,8 +54,8 @@ async function setup() {
     transactions,
     commonId: created.spaces.find((s) => s.kind === 'COMMON')!.id,
     alicePersonalId: created.spaces.find((s) => s.kind === 'PERSONAL')!.id,
-    preview: new PreviewImportUseCase(access, rules, transactions),
-    commit: new CommitImportUseCase(access, transactions),
+    preview: new PreviewImportUseCase(access, rules, transactions, assignment),
+    commit: new CommitImportUseCase(access, transactions, assignment),
     getRules: new GetRulesUseCase(access, rules),
     saveRules: new SaveRulesUseCase(access, rules),
   };

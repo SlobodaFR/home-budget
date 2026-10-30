@@ -14,6 +14,7 @@ import { SpacePlan } from '../../domain/space/space-plan';
 import { SpacePlanRepository } from '../../domain/space/space-plan.repository';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
 import { SpaceAccessService } from '../household/space-access.service';
+import { AccountViewsService } from '../account/account-views.service';
 import { SafetyNetProgressService } from '../safety-net/safety-net-progress.service';
 
 /** Prochaines actions : conseils déterministes issus des règles du cours (aucun conseil de placement). */
@@ -26,6 +27,7 @@ export class GetInsightsUseCase {
     private readonly recurring: RecurringItemRepository,
     private readonly safetyNets: SafetyNetRepository,
     private readonly safetyNetProgress: SafetyNetProgressService,
+    private readonly accountViews: AccountViewsService,
     private readonly clock: Clock,
   ) {}
 
@@ -52,6 +54,7 @@ export class GetInsightsUseCase {
       plan,
       transactions: monthTransactions,
       recurring,
+      commonSpace: !space.isPersonal(),
     });
 
     let common: CommonInsightsContext | null = null;
@@ -71,6 +74,8 @@ export class GetInsightsUseCase {
       }
     }
 
+    const views = await this.accountViews.forSpace(spaceId);
+
     return {
       insights: buildInsights({
         month,
@@ -80,6 +85,18 @@ export class GetInsightsUseCase {
         forecast,
         lastActivity,
         common,
+        accounts: {
+          accountCount: views.length,
+          negativeProjected: views
+            .filter((v) => !v.account.archived && v.projectedMonthEndCents < 0)
+            .map((v) => ({
+              name: v.account.name,
+              projectedMonthEndCents: v.projectedMonthEndCents,
+            })),
+          unassignedTransactionCount: monthTransactions.filter(
+            (t) => t.accountId === null,
+          ).length,
+        },
       }),
     };
   }

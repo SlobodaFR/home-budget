@@ -12,6 +12,7 @@ export interface TransactionDto {
   label: string;
   amountCents: number;
   date: string;
+  accountId: string | null;
 }
 
 export function toTransactionDto(transaction: Transaction): TransactionDto {
@@ -23,5 +24,6 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
     label: transaction.label,
     amountCents: transaction.amount.toCents(),
     date: transaction.date.toISOString(),
+    accountId: transaction.accountId,
   };
 }

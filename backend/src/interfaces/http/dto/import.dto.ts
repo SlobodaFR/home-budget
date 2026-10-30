@@ -7,6 +7,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MaxLength,
   Min,
@@ -21,6 +22,11 @@ export class PreviewImportDto {
   @IsString()
   @MaxLength(1_000_000)
   text!: string;
+
+  @IsOptional()
+  @IsString({ message: 'accountId doit être un identifiant de compte ou null' })
+  @MaxLength(100, { message: 'accountId est trop long' })
+  accountId?: string | null;
 }
 
 export class CommitItemDto {
@@ -52,6 +58,11 @@ export class CommitImportDto {
   @ValidateNested({ each: true })
   @Type(() => CommitItemDto)
   items!: CommitItemDto[];
+
+  @IsOptional()
+  @IsString({ message: 'accountId doit être un identifiant de compte ou null' })
+  @MaxLength(100, { message: 'accountId est trop long' })
+  accountId?: string | null;
 }
 
 export class RuleDto {

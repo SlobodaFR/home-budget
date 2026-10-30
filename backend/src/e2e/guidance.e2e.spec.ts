@@ -132,6 +132,7 @@ describe('Guidance API (tranche 3, end to end, AUTH_MODE=dev, in-memory SQLite)'
         endDate: null,
         active: true,
         aidRuleId: null,
+        accountId: null,
       });
 
       // Champs optionnels absents : dayOfMonth, endDate et aidRuleId valent null.
@@ -382,6 +383,7 @@ describe('Guidance API (tranche 3, end to end, AUTH_MODE=dev, in-memory SQLite)'
           actualCents: 0,
           expectedRemainingCents: 380000,
           projectedCents: 380000,
+          contributionAssumed: false,
         },
         blocs: [
           {

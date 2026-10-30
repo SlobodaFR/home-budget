@@ -39,6 +39,18 @@ import {
   ListAidRulesUseCase,
   SaveFiscalProfileUseCase,
 } from '../../../application/aid/aid.use-cases';
+import { AccountAssignmentService } from '../../../application/account/account-assignment.service';
+import { AccountViewsService } from '../../../application/account/account-views.service';
+import {
+  CreateAccountUseCase,
+  DeleteAccountUseCase,
+  ListAccountsUseCase,
+  UpdateAccountUseCase,
+} from '../../../application/account/account.use-cases';
+import { AccountRepository } from '../../../domain/account/account.repository';
+import { AccountOrmEntity } from '../../../infrastructure/persistence/entities/account.orm-entity';
+import { TypeOrmAccountRepository } from '../../../infrastructure/persistence/repositories/typeorm-account.repository';
+import { AccountsController } from '../controllers/accounts.controller';
 import { GetForecastUseCase } from '../../../application/forecast/get-forecast.use-case';
 import { GetInsightsUseCase } from '../../../application/insights/get-insights.use-case';
 import {
@@ -95,6 +107,7 @@ import { AuthModule } from './auth.module';
       RecurringItemOrmEntity,
       SafetyNetOrmEntity,
       HouseholdFiscalProfileOrmEntity,
+      AccountOrmEntity,
     ]),
   ],
   controllers: [
@@ -105,6 +118,7 @@ import { AuthModule } from './auth.module';
     GuidanceController,
     HouseholdGuidanceController,
     AidRulesController,
+    AccountsController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -113,6 +127,7 @@ import { AuthModule } from './auth.module';
     { provide: SpaceRulesRepository, useClass: TypeOrmSpaceRulesRepository },
     { provide: TransactionRepository, useClass: TypeOrmTransactionRepository },
     { provide: Clock, useClass: SystemClock },
+    { provide: AccountRepository, useClass: TypeOrmAccountRepository },
     {
       provide: RecurringItemRepository,
       useClass: TypeOrmRecurringItemRepository,
@@ -157,6 +172,12 @@ import { AuthModule } from './auth.module';
     GetAidsUseCase,
     ListAidRulesUseCase,
     EstimateCrecheUseCase,
+    AccountViewsService,
+    AccountAssignmentService,
+    ListAccountsUseCase,
+    CreateAccountUseCase,
+    UpdateAccountUseCase,
+    DeleteAccountUseCase,
   ],
 })
 export class HouseholdModule {}

@@ -55,6 +55,7 @@ describe('FoyerSchema migration', () => {
     await ds.undoLastMigration();
     await ds.undoLastMigration();
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );
@@ -85,7 +86,8 @@ describe('FoyerSchema migration', () => {
       expect.arrayContaining(['label', 'amount_cents', 'secret_payload']),
     );
 
-    await ds.undoLastMigration();
+    await ds.undoLastMigration(); // tranche 4
+    await ds.undoLastMigration(); // tranche 3
     const after = await tables(ds);
     for (const dropped of [
       'recurring_items',
@@ -97,6 +99,48 @@ describe('FoyerSchema migration', () => {
     expect(after).toContain('space_rules');
     await ds.runMigrations();
     expect(await tables(ds)).toContain('recurring_items');
+    await ds.destroy();
+  });
+
+  it('creates the tranche 4 accounts and account_id columns, and undoes them', async () => {
+    const columnsOf = async (ds: DataSource, table: string) => {
+      const rows: { name: string }[] = await ds.query(
+        `SELECT name FROM pragma_table_info('${table}')`,
+      );
+      return rows.map((row) => row.name);
+    };
+    const ds = await dataSource().initialize();
+    await ds.runMigrations();
+    expect(await columnsOf(ds, 'accounts')).toEqual(
+      expect.arrayContaining([
+        'id',
+        'space_id',
+        'kind',
+        'opening_date',
+        'archived',
+        'name',
+        'opening_balance_cents',
+        'secret_payload',
+      ]),
+    );
+    expect(await columnsOf(ds, 'transactions')).toContain('account_id');
+    expect(await columnsOf(ds, 'recurring_items')).toContain('account_id');
+
+    await ds.query(
+      `INSERT INTO "transactions" ("id","space_id","kind","date","account_id") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','a1')`,
+    );
+    await ds.undoLastMigration();
+    expect(await columnsOf(ds, 'accounts')).toEqual([]);
+    expect(await columnsOf(ds, 'transactions')).not.toContain('account_id');
+    expect(await columnsOf(ds, 'recurring_items')).not.toContain('account_id');
+    // Les données existantes survivent à l'annulation.
+    expect(await ds.query(`SELECT id FROM transactions`)).toEqual([
+      { id: 't1' },
+    ]);
+    await ds.runMigrations();
+    expect(await columnsOf(ds, 'transactions')).toContain('account_id');
+    const drift = await ds.driver.createSchemaBuilder().log();
+    expect(drift.upQueries.map((q) => q.query)).toEqual([]);
     await ds.destroy();
   });
 

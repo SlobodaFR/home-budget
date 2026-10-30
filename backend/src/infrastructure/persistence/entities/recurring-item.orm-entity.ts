@@ -35,6 +35,9 @@ export class RecurringItemOrmEntity {
   @Column({ type: 'text', name: 'aid_rule_id', nullable: true })
   aidRuleId!: string | null;
 
+  @Column({ type: 'text', name: 'account_id', nullable: true })
+  accountId!: string | null;
+
   @Column({ type: 'text', nullable: true })
   label!: string | null;
 
