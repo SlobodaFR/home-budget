@@ -5,6 +5,8 @@ import { ProjectDeposit } from '../domain/project/project-deposit';
 import { ProjectRepository } from '../domain/project/project.repository';
 import { MonthReview } from '../domain/review/month-review';
 import { MonthReviewRepository } from '../domain/review/month-review.repository';
+import { Debt } from '../domain/debt/debt';
+import { DebtRepository } from '../domain/debt/debt.repository';
 import { Household } from '../domain/household/household';
 import {
   HouseholdRepository,
@@ -283,5 +285,21 @@ export class InMemoryMonthReviewRepository extends MonthReviewRepository {
   }
   async delete(spaceId: string, month: string): Promise<void> {
     this.items.delete(this.key(spaceId, month));
+  }
+}
+
+export class InMemoryDebtRepository extends DebtRepository {
+  items = new Map<string, Debt>();
+  async findBySpace(spaceId: string): Promise<Debt[]> {
+    return [...this.items.values()].filter((d) => d.spaceId === spaceId);
+  }
+  async findById(id: string): Promise<Debt | null> {
+    return this.items.get(id) ?? null;
+  }
+  async save(debt: Debt): Promise<void> {
+    this.items.set(debt.id, debt);
+  }
+  async delete(id: string): Promise<void> {
+    this.items.delete(id);
   }
 }

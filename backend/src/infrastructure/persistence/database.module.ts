@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HouseholdOrmEntity } from './entities/household.orm-entity';
 import { AccountOrmEntity } from './entities/account.orm-entity';
+import { DebtOrmEntity } from './entities/debt.orm-entity';
 import { HouseholdFiscalProfileOrmEntity } from './entities/household-fiscal-profile.orm-entity';
 import { InvitationOrmEntity } from './entities/invitation.orm-entity';
 import { MembershipOrmEntity } from './entities/membership.orm-entity';
@@ -36,6 +37,7 @@ export const ORM_ENTITIES = [
   ProjectOrmEntity,
   ProjectDepositOrmEntity,
   MonthReviewOrmEntity,
+  DebtOrmEntity,
 ];
 
 @Module({

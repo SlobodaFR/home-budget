@@ -285,10 +285,10 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 ```
 - `severity` : `WARNING | ACTION | INFO | GOOD`.
 - `lesson` : numéro de la leçon du cours qui explique la règle, ou `null`.
-- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/`) ou `null`.
+- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
 
 ## Aides officielles (tranche 3)
@@ -588,6 +588,56 @@ En-tête `Content-Disposition: attachment; filename="budget-export-AAAA-MM-JJ.js
 CSV (UTF-8 avec BOM, séparateur `;`, décimale `,`, colonnes `Date;Type;Bloc;Libellé;Montant;Compte`) des opérations
 de la période (limites incluses, 366 jours au plus, `400` sinon). Les libellés commençant par `=`, `+`, `-`, `@` sont
 préfixés d'une apostrophe (injection de formules). `Content-Disposition: attachment; filename="operations-AAAA-MM-JJ_AAAA-MM-JJ.csv"`.
+
+## Crédits et dettes (tranche 8)
+
+Suivre un crédit (immobilier, auto, conso) et mesurer ce que rapporterait un remboursement accéléré (leçon sur le
+crédit). Rattaché à un espace ; nom et montants chiffrés en espace personnel. Les calculs sont des estimations.
+
+### `GET /api/spaces/:spaceId/debts`
+```json
+[{
+  "id": "…", "spaceId": "…", "name": "Prêt auto", "kind": "CAR",
+  "principalCents": 1500000, "remainingCents": 1120000, "annualRatePercent": 3.9,
+  "monthlyPaymentCents": 32000, "startDate": "2024-09-01", "paymentDay": 5, "insuranceMonthlyCents": 1500,
+  "monthsRemaining": 38, "payoffDate": "2029-12-05", "totalInterestRemainingCents": 96000,
+  "paidSharePercent": 25, "archived": false, "recurringId": null
+}]
+```
+- `kind` : `MORTGAGE | CAR | CONSUMER | STUDENT | OTHER`.
+- `remainingCents` : capital restant dû **déclaré** (relevé de la banque) ; `principalCents` : capital emprunté.
+- `annualRatePercent` : nombre ≥ 0 (TAEG hors assurance, jusqu'à 2 décimales) ; `monthlyPaymentCents` : mensualité
+  **hors assurance** ; `insuranceMonthlyCents` : assurance emprunteur mensuelle (≥ 0).
+- `monthsRemaining`, `payoffDate`, `totalInterestRemainingCents` : amortissement simulé à partir de `remainingCents`
+  avec intérêts mensuels = capital × taux ÷ 12 (arrondi au centime), paiement fixe `monthlyPaymentCents`, dernière
+  mensualité ajustée. `null` partout si la mensualité ne couvre pas les intérêts (la dette ne diminue pas) :
+  `"neverPaidOff": true` est alors ajouté. `paidSharePercent` = (principal − restant) ÷ principal, entier 0-100.
+- `recurringId` : paiement récurrent de l'espace qui représente la mensualité (optionnel) ; s'il est renseigné, il doit
+  exister dans l'espace (`400` sinon).
+
+### `POST /api/spaces/:spaceId/debts` · `PUT …/:id` · `DELETE …/:id`
+Corps : `{ "name", "kind", "principalCents", "remainingCents", "annualRatePercent", "monthlyPaymentCents", "startDate",
+"paymentDay", "insuranceMonthlyCents", "recurringId"? }` ; `PUT` accepte en plus `"archived"`. `201` + l'objet ;
+`204`. `name` 1-60 car. ; `remainingCents` ≤ `principalCents` ; `paymentDay` 1-28 ; `400` sinon.
+
+### `GET /api/spaces/:spaceId/debts/:id/what-if?extraMonthlyCents=…&lumpSumCents=…`
+Simulation d'un remboursement accéléré (versement mensuel supplémentaire et/ou remboursement partiel immédiat) :
+```json
+{
+  "baseline": { "monthsRemaining": 38, "totalInterestRemainingCents": 96000, "payoffDate": "2029-12-05" },
+  "scenario": { "monthsRemaining": 29, "totalInterestRemainingCents": 69000, "payoffDate": "2029-03-05" },
+  "interestSavedCents": 27000, "monthsSaved": 9,
+  "note": "Vérifiez les indemnités de remboursement anticipé de votre contrat."
+}
+```
+`extraMonthlyCents` et `lumpSumCents` entiers ≥ 0 (au moins un > 0, sinon `400`) ; plafonnés à `remainingCents`.
+
+### `GET /api/spaces/:spaceId/debts/summary`
+`{ "activeCount": 2, "totalRemainingCents": 21800000, "totalMonthlyCents": 112000, "debtToIncomePercent": 31 }` :
+mensualités + assurances des dettes actives ÷ revenus mensuels (somme des revenus du foyer pour le commun ; revenu du
+membre pour le perso ; `null` si inconnu). Au-dessus de 35 %, l'insight `debt-ratio-high` (`WARNING`, lien `/dettes`)
+est émis (seuil de 35 % : repère du cours, pas une règle de droit) ; `debt-never-paid-off` (`ACTION`) si
+`neverPaidOff`.
 
 ## Chiffrement de l'espace personnel (informatif)
 

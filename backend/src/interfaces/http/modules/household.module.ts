@@ -69,6 +69,19 @@ import { MonthReviewOrmEntity } from '../../../infrastructure/persistence/entiti
 import { TypeOrmMonthReviewRepository } from '../../../infrastructure/persistence/repositories/typeorm-month-review.repository';
 import { ExportController } from '../controllers/export.controller';
 import { ReviewsController } from '../controllers/reviews.controller';
+import { DebtViewsService } from '../../../application/debt/debt-views.service';
+import {
+  CreateDebtUseCase,
+  DebtWhatIfUseCase,
+  DeleteDebtUseCase,
+  GetDebtsSummaryUseCase,
+  ListDebtsUseCase,
+  UpdateDebtUseCase,
+} from '../../../application/debt/debt.use-cases';
+import { DebtRepository } from '../../../domain/debt/debt.repository';
+import { DebtOrmEntity } from '../../../infrastructure/persistence/entities/debt.orm-entity';
+import { TypeOrmDebtRepository } from '../../../infrastructure/persistence/repositories/typeorm-debt.repository';
+import { DebtsController } from '../controllers/debts.controller';
 import { ProjectViewsService } from '../../../application/project/project-views.service';
 import {
   AddDepositUseCase,
@@ -145,6 +158,7 @@ import { AuthModule } from './auth.module';
       ProjectOrmEntity,
       ProjectDepositOrmEntity,
       MonthReviewOrmEntity,
+      DebtOrmEntity,
     ]),
   ],
   controllers: [
@@ -159,6 +173,7 @@ import { AuthModule } from './auth.module';
     ProjectsController,
     ReviewsController,
     ExportController,
+    DebtsController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -169,6 +184,7 @@ import { AuthModule } from './auth.module';
     { provide: Clock, useClass: SystemClock },
     { provide: AccountRepository, useClass: TypeOrmAccountRepository },
     { provide: ProjectRepository, useClass: TypeOrmProjectRepository },
+    { provide: DebtRepository, useClass: TypeOrmDebtRepository },
     { provide: MonthReviewRepository, useClass: TypeOrmMonthReviewRepository },
     {
       provide: RecurringItemRepository,
@@ -218,6 +234,13 @@ import { AuthModule } from './auth.module';
     GetProvisionsUseCase,
     GetYearForecastUseCase,
     ProjectViewsService,
+    DebtViewsService,
+    ListDebtsUseCase,
+    GetDebtsSummaryUseCase,
+    CreateDebtUseCase,
+    UpdateDebtUseCase,
+    DeleteDebtUseCase,
+    DebtWhatIfUseCase,
     GetReviewUseCase,
     SaveReviewUseCase,
     ListReviewsUseCase,

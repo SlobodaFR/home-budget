@@ -19,6 +19,8 @@ import { SpaceAccessService } from '../household/space-access.service';
 import { MonthReviewRepository } from '../../domain/review/month-review.repository';
 import { currentMonth } from '../../domain/budget/month';
 import { previousMonth } from '../../domain/shared/format';
+import { summarizeDebts, isActiveDebt } from '../../domain/debt/debt-view';
+import { DebtViewsService } from '../debt/debt-views.service';
 import { ProjectViewsService } from '../project/project-views.service';
 import { AccountViewsService } from '../account/account-views.service';
 import { SafetyNetProgressService } from '../safety-net/safety-net-progress.service';
@@ -36,6 +38,7 @@ export class GetInsightsUseCase {
     private readonly accountViews: AccountViewsService,
     private readonly projectViews: ProjectViewsService,
     private readonly reviews: MonthReviewRepository,
+    private readonly debtViews: DebtViewsService,
     private readonly clock: Clock,
   ) {}
 
@@ -87,6 +90,11 @@ export class GetInsightsUseCase {
       this.projectViews.forSpace(spaceId),
     ]);
 
+    const [debts, monthlyIncome] = await Promise.all([
+      this.debtViews.forSpace(spaceId),
+      this.debtViews.monthlyIncomeCents(userId, space),
+    ]);
+
     // Revue du mois précédent : utile seulement la première semaine du mois.
     const previousReview =
       today.getUTCDate() <= REVIEW_LAST_DAY
@@ -104,6 +112,17 @@ export class GetInsightsUseCase {
         common,
         provisions: buildProvisions(recurring, today),
         projects,
+        debts: {
+          summary: summarizeDebts(debts, monthlyIncome),
+          monthlyIncomeCents: monthlyIncome,
+          neverPaidOff: debts
+            .filter((v) => isActiveDebt(v) && v.neverPaidOff)
+            .map((v) => ({
+              name: v.debt.name,
+              monthlyPaymentCents: v.debt.monthlyPaymentCents,
+              nextMonthInterestCents: v.nextMonthInterestCents,
+            })),
+        },
         previousReview: previousReview
           ? {
               status: previousReview.status,

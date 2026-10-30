@@ -12,6 +12,7 @@ import { SafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
+import { DEBT_RATIO_THRESHOLD_PERCENT, DebtSummary } from '../debt/debt-view';
 import { ReviewStatus } from '../review/month-review';
 import { Provisions } from './provisions';
 import { ProjectView, summarizeProjects } from '../project/project-progress';
@@ -53,6 +54,8 @@ export const REVIEW_LAST_DAY = 7;
 const LESSON_BLOCS = 1;
 const LESSON_SAFETY_NET = 2;
 const LESSON_TRACKING = 4;
+/** Leçon du cours sur le crédit et l'endettement. */
+const LESSON_DEBT = 5;
 
 export interface SafetyNetStatus extends SafetyNetProgress {
   targetMonths: number;
@@ -76,6 +79,19 @@ export interface AccountsInsightContext {
   unassignedTransactionCount: number;
 }
 
+/** Crédits de l'espace utiles aux conseils. */
+export interface DebtsInsightContext {
+  summary: DebtSummary;
+  /** Revenus mensuels connus (somme du foyer pour le commun, revenu du membre pour le perso). */
+  monthlyIncomeCents: number | null;
+  /** Crédits actifs dont la dette ne diminue jamais. */
+  neverPaidOff: {
+    name: string;
+    monthlyPaymentCents: number;
+    nextMonthInterestCents: number;
+  }[];
+}
+
 export interface InsightsInput {
   month: string;
   today: Date;
@@ -96,6 +112,7 @@ export interface InsightsInput {
    * (= à faire). Seul son statut et sa décision comptent ici.
    */
   previousReview: { status: ReviewStatus; decision: string } | null;
+  debts: DebtsInsightContext;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -112,7 +129,9 @@ const PRIORITY = [
   'account-negative-projected',
   'bloc-overrun',
   'project-behind',
+  'debt-ratio-high',
   'recurring-missing',
+  'debt-never-paid-off',
   'plan-missing',
   'plan-unassigned',
   'contribution-incomplete',
@@ -159,6 +178,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...accountInsights(input),
     ...provisionInsights(input),
     ...projectInsights(input),
+    ...debtInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -487,6 +507,62 @@ function projectInsights({
           : `${joinNames(reached.map((v) => v.project.name))} : objectifs atteints. Bravo !`,
       lesson: LESSON_BLOCS,
       link: '/projets',
+    });
+  }
+  return result;
+}
+
+/**
+ * Crédits (mois courant seulement, comme les autres conseils liés à aujourd'hui) :
+ * - `debt-ratio-high` : taux d'endettement (mensualités + assurances ÷ revenus
+ *   mensuels connus, entier arrondi) au-dessus de 35 % ; repère du cours ;
+ * - `debt-never-paid-off` : un crédit actif dont la mensualité ne fait pas
+ *   diminuer la dette (ou qui dépasserait 100 ans).
+ * Leçon 5 du cours (crédit). Aucun conseil de placement ni de rachat de crédit.
+ */
+function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
+  if (monthPhase(month, today) !== 'CURRENT') {
+    return [];
+  }
+  const result: Insight[] = [];
+  const { summary, monthlyIncomeCents, neverPaidOff } = debts;
+
+  if (
+    summary.debtToIncomePercent !== null &&
+    summary.debtToIncomePercent > DEBT_RATIO_THRESHOLD_PERCENT
+  ) {
+    result.push({
+      id: 'debt-ratio-high',
+      severity: 'WARNING',
+      title: `Endettement à ${summary.debtToIncomePercent} % de vos revenus`,
+      detail: `Vos crédits coûtent ${formatEuros(summary.totalMonthlyCents)} par mois (assurances comprises) pour ${formatEuros(monthlyIncomeCents ?? 0)} de revenus : au-dessus du repère de ${DEBT_RATIO_THRESHOLD_PERCENT} %, la marge de manœuvre est faible. Évitez un nouveau crédit et regardez l'effet d'un remboursement accéléré.`,
+      lesson: LESSON_DEBT,
+      link: '/dettes',
+    });
+  }
+
+  if (neverPaidOff.length > 0) {
+    const one = neverPaidOff[0];
+    result.push({
+      id: 'debt-never-paid-off',
+      severity: 'ACTION',
+      title:
+        neverPaidOff.length === 1
+          ? `Le crédit « ${one.name} » ne diminue pas`
+          : `${neverPaidOff.length} crédits ne diminuent pas`,
+      detail:
+        neverPaidOff.length === 1
+          ? `Sa mensualité de ${formatEuros(one.monthlyPaymentCents)} ne dépasse pas les intérêts du mois (${formatEuros(one.nextMonthInterestCents)}) ou ne le rembourserait pas en 100 ans. Vérifiez la mensualité et le taux saisis.`
+          : `${joinNames([
+              ...neverPaidOff.slice(0, MAX_LISTED).map((d) => d.name),
+              ...(neverPaidOff.length > MAX_LISTED
+                ? [
+                    `${neverPaidOff.length - MAX_LISTED} ${plural(neverPaidOff.length - MAX_LISTED, 'autre', 'autres')}`,
+                  ]
+                : []),
+            ])} : les mensualités ne couvrent pas les intérêts. Vérifiez les mensualités et les taux saisis.`,
+      lesson: LESSON_DEBT,
+      link: '/dettes',
     });
   }
   return result;
