@@ -12,6 +12,7 @@ import { SafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
+import { Provisions } from './provisions';
 import { MonthSummary } from './month-summary';
 
 export type InsightSeverity = 'WARNING' | 'ACTION' | 'INFO' | 'GOOD';
@@ -31,6 +32,11 @@ export const MAX_INSIGHTS = 8;
 
 /** Au-delà de ce nombre de jours sans opération, on invite à importer le relevé. */
 export const STALE_ACTIVITY_DAYS = 10;
+/** Un paiement non mensuel est « gros » à partir de 500 € ou de 20 % du revenu mensuel connu. */
+export const BIG_PAYMENT_MIN_CENTS = 50000;
+export const BIG_PAYMENT_INCOME_SHARE_PERCENT = 20;
+/** Fenêtre de `upcoming-big-payment`, en jours. */
+export const BIG_PAYMENT_DAYS = 60;
 /** Fenêtre des « paiements à venir ». */
 export const UPCOMING_DAYS = 7;
 /** Jusqu'à ce jour du mois (inclus), on propose le bilan du mois précédent. */
@@ -77,6 +83,8 @@ export interface InsightsInput {
   /** null pour un espace personnel. */
   common: CommonInsightsContext | null;
   accounts: AccountsInsightContext;
+  /** Paiements non mensuels de l'espace, à partir d'aujourd'hui. */
+  provisions: Provisions;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -99,7 +107,9 @@ const PRIORITY = [
   'savings-behind',
   'no-recent-activity',
   'upcoming-payments',
+  'upcoming-big-payment',
   'accounts-unassigned',
+  'provision-suggestion',
   'monthly-review',
   'safety-net-unset',
   'safety-net-progress',
@@ -132,6 +142,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...savingsInsights(input),
     ...trackingInsights(input),
     ...accountInsights(input),
+    ...provisionInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -284,6 +295,84 @@ function accountInsights({ month, today, accounts }: InsightsInput): Insight[] {
         'Rattachez-les à un compte (ou importez votre relevé en choisissant le compte) pour suivre vos soldes.',
       lesson: LESSON_TRACKING,
       link: '/comptes',
+    });
+  }
+  return result;
+}
+
+/**
+ * Paiements non mensuels : un gros paiement dans les 60 jours (mois courant
+ * seulement, comme `upcoming-payments`) et une provision mensuelle que le bloc
+ * EPARGNE du plan ne couvre pas.
+ */
+function provisionInsights({
+  month,
+  today,
+  plan,
+  forecast,
+  provisions,
+}: InsightsInput): Insight[] {
+  const result: Insight[] = [];
+  const todayStart = startOfUtcDay(today).getTime();
+
+  if (monthPhase(month, today) === 'CURRENT') {
+    const income =
+      forecast.income.plannedCents || forecast.income.projectedCents;
+    const alreadyPaid = new Set(
+      forecast.occurrences
+        .filter((o) => o.status === 'PAID')
+        .map((o) => `${o.recurringId}|${o.date.getTime()}`),
+    );
+    const big = provisions.items.filter(
+      (item) =>
+        item.nextDueDate.getTime() >= todayStart &&
+        item.nextDueDate.getTime() <= todayStart + BIG_PAYMENT_DAYS * DAY_MS &&
+        !alreadyPaid.has(`${item.recurringId}|${item.nextDueDate.getTime()}`) &&
+        (item.amountCents >= BIG_PAYMENT_MIN_CENTS ||
+          (income > 0 &&
+            item.amountCents * 100 >=
+              income * BIG_PAYMENT_INCOME_SHARE_PERCENT)),
+    );
+    if (big.length > 0) {
+      const monthly = big.reduce((sum, i) => sum + i.monthlyProvisionCents, 0);
+      result.push({
+        id: 'upcoming-big-payment',
+        severity: 'INFO',
+        title:
+          big.length === 1
+            ? `Gros paiement à venir : ${big[0].label}`
+            : `${big.length} gros paiements à venir`,
+        detail:
+          big.length === 1
+            ? `${big[0].label} (${formatShortDate(big[0].nextDueDate)}) : ${formatEuros(big[0].amountCents)}. Mettez ${formatEuros(big[0].monthlyProvisionCents)} par mois de côté pour le lisser.`
+            : `${joinNames([
+                ...big
+                  .slice(0, MAX_LISTED)
+                  .map(
+                    (i) =>
+                      `${i.label} (${formatEuros(i.amountCents)}, ${formatShortDate(i.nextDueDate)})`,
+                  ),
+                ...(big.length > MAX_LISTED
+                  ? [
+                      `${big.length - MAX_LISTED} ${plural(big.length - MAX_LISTED, 'autre', 'autres')}`,
+                    ]
+                  : []),
+              ])}. Provision conseillée : ${formatEuros(monthly)} par mois au total.`,
+        lesson: LESSON_BLOCS,
+        link: '/previsionnel',
+      });
+    }
+  }
+
+  const total = provisions.totalMonthlyProvisionCents;
+  if (provisions.items.length > 0 && plan.epargneCents < total) {
+    result.push({
+      id: 'provision-suggestion',
+      severity: 'INFO',
+      title: 'Provisionnez vos paiements non mensuels',
+      detail: `Vos paiements non mensuels demandent ${formatEuros(total)} par mois à mettre de côté, mais le bloc Épargne de votre plan n'en prévoit que ${formatEuros(plan.epargneCents)}. Relevez-le d'au moins ${formatEuros(total - plan.epargneCents)}.`,
+      lesson: LESSON_BLOCS,
+      link: '/plan',
     });
   }
   return result;

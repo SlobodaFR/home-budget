@@ -2,9 +2,17 @@ import { AidRuleId, isAidRuleId } from '../aid/aid-rules';
 import { isIsoDate } from '../shared/calendar';
 import { Bloc, isBloc } from '../shared/bloc';
 import { DomainError } from '../shared/domain-error';
+import { roundDiv } from '../shared/rounding';
 import { Money } from '../shared/money';
 import { Space } from '../space/space';
 import { TransactionKind } from '../transaction/transaction';
+
+export const RECURRING_FREQUENCIES = [
+  'MONTHLY',
+  'QUARTERLY',
+  'YEARLY',
+] as const;
+export type RecurringFrequency = (typeof RECURRING_FREQUENCIES)[number];
 
 export interface RecurringItemProps {
   id: string;
@@ -25,6 +33,13 @@ export interface RecurringItemProps {
   aidRuleId: AidRuleId | null;
   /** Compte bancaire de l'espace ; absent ou null = non rattaché. */
   accountId?: string | null;
+  /** Périodicité ; absente = MONTHLY. */
+  frequency?: RecurringFrequency;
+  /**
+   * Mois (1-12) de l'occurrence annuelle (YEARLY) ou d'ancrage de la série
+   * m, m+3, m+6, m+9 (QUARTERLY) ; null pour MONTHLY.
+   */
+  monthOfYear?: number | null;
 }
 
 export const MAX_RECURRING_LABEL_LENGTH = 80;
@@ -76,6 +91,27 @@ export class RecurringItem {
           'La date de fin ne peut pas précéder la date de début',
         );
       }
+    }
+    const frequency = props.frequency ?? 'MONTHLY';
+    const monthOfYear = props.monthOfYear ?? null;
+    if (!(RECURRING_FREQUENCIES as readonly string[]).includes(frequency)) {
+      throw new DomainError(
+        'Périodicité invalide : MONTHLY, QUARTERLY ou YEARLY',
+      );
+    }
+    if (frequency === 'MONTHLY') {
+      if (monthOfYear !== null) {
+        throw new DomainError("Un paiement mensuel n'a pas de mois de l'année");
+      }
+    } else if (
+      monthOfYear === null ||
+      !Number.isInteger(monthOfYear) ||
+      monthOfYear < 1 ||
+      monthOfYear > 12
+    ) {
+      throw new DomainError(
+        "Le mois de l'année (1 à 12) est obligatoire pour un paiement trimestriel ou annuel",
+      );
     }
     if (props.aidRuleId !== null) {
       if (!isAidRuleId(props.aidRuleId)) {
@@ -146,6 +182,45 @@ export class RecurringItem {
 
   get aidRuleId(): AidRuleId | null {
     return this.props.aidRuleId;
+  }
+
+  get frequency(): RecurringFrequency {
+    return this.props.frequency ?? 'MONTHLY';
+  }
+
+  get monthOfYear(): number | null {
+    return this.props.monthOfYear ?? null;
+  }
+
+  /** Vrai pour un paiement qui ne tombe pas chaque mois. */
+  isNonMonthly(): boolean {
+    return this.frequency !== 'MONTHLY';
+  }
+
+  /** Montant lissé par mois : le montant tel quel (mensuel), ÷ 3 (trimestriel) ou ÷ 12 (annuel), arrondi au centime. */
+  monthlyEquivalentCents(): number {
+    const cents = this.props.amount.toCents();
+    switch (this.frequency) {
+      case 'YEARLY':
+        return roundDiv(cents, 12);
+      case 'QUARTERLY':
+        return roundDiv(cents, 3);
+      default:
+        return cents;
+    }
+  }
+
+  /** Provision mensuelle à mettre de côté : montant ÷ 12 (annuel) ou ÷ 3 (trimestriel), arrondi à l'entier SUPÉRIEUR ; 0 si mensuel. */
+  monthlyProvisionCents(): number {
+    const cents = this.props.amount.toCents();
+    switch (this.frequency) {
+      case 'YEARLY':
+        return Math.ceil(cents / 12);
+      case 'QUARTERLY':
+        return Math.ceil(cents / 3);
+      default:
+        return 0;
+    }
   }
 
   get accountId(): string | null {

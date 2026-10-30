@@ -5,6 +5,7 @@ import {
   Insight,
   buildInsights,
 } from '../../domain/budget/insights';
+import { buildProvisions } from '../../domain/budget/provisions';
 import { parseMonth } from '../../domain/budget/month';
 import { summarizeMonth } from '../../domain/budget/month-summary';
 import { RecurringItemRepository } from '../../domain/recurring/recurring-item.repository';
@@ -85,6 +86,7 @@ export class GetInsightsUseCase {
         forecast,
         lastActivity,
         common,
+        provisions: buildProvisions(recurring, today),
         accounts: {
           accountCount: views.length,
           negativeProjected: views

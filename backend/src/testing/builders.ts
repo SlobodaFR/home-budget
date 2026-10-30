@@ -1,4 +1,7 @@
-import { RecurringItem } from '../domain/recurring/recurring-item';
+import {
+  RecurringFrequency,
+  RecurringItem,
+} from '../domain/recurring/recurring-item';
 import { Bloc } from '../domain/shared/bloc';
 import { Money } from '../domain/shared/money';
 import { Transaction } from '../domain/transaction/transaction';
@@ -35,6 +38,8 @@ export interface RecurringOverrides {
   endDate?: string | null;
   active?: boolean;
   aidRuleId?: AidRuleId | null;
+  frequency?: RecurringFrequency;
+  monthOfYear?: number | null;
 }
 
 /** Gabarit récurrent de test (dépense FIXE par défaut, depuis le 2026-01-01, sans fin). */
@@ -58,5 +63,7 @@ export function rec(
     endDate: overrides.endDate ?? null,
     active: overrides.active ?? true,
     aidRuleId: overrides.aidRuleId ?? null,
+    frequency: overrides.frequency ?? 'MONTHLY',
+    monthOfYear: overrides.monthOfYear ?? null,
   });
 }

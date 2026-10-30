@@ -21,6 +21,10 @@ import {
   ListAidRulesUseCase,
   SaveFiscalProfileUseCase,
 } from '../aid/aid.use-cases';
+import {
+  GetProvisionsUseCase,
+  GetYearForecastUseCase,
+} from '../provision/provision.use-cases';
 import { GetForecastUseCase } from '../forecast/get-forecast.use-case';
 import { CreateHouseholdUseCase } from '../household/create-household.use-case';
 import { CreateInvitationUseCase } from '../household/create-invitation.use-case';
@@ -129,6 +133,8 @@ async function setup(today = '2026-11-12T09:00:00Z') {
     saveProfile: new SaveFiscalProfileUseCase(access, profiles),
     aids: new GetAidsUseCase(access, recurring, transactions, profiles, clock),
     catalogue: new ListAidRulesUseCase(),
+    provisions: new GetProvisionsUseCase(access, recurring, clock),
+    yearForecast: new GetYearForecastUseCase(access, plans, recurring, clock),
     creche: new EstimateCrecheUseCase(),
   };
 }
@@ -615,5 +621,230 @@ describe('aids use cases', () => {
         kind: 'COLLECTIVE',
       }).hourlyRateCents,
     ).toBe(193);
+  });
+});
+
+describe('non-monthly payments use cases', () => {
+  const taxe: SaveRecurringCommand = {
+    kind: 'EXPENSE',
+    bloc: 'FIXE',
+    label: 'Taxe foncière',
+    amountCents: 120000,
+    dayOfMonth: 15,
+    startDate: '2026-01-01',
+    endDate: null,
+    active: true,
+    frequency: 'YEARLY',
+    monthOfYear: 10,
+  };
+
+  it('stores and exposes frequency and monthOfYear, MONTHLY by default', async () => {
+    const s = await setup();
+    const yearly = await s.create.execute('alice', s.commonId, taxe);
+    expect(yearly).toMatchObject({ frequency: 'YEARLY', monthOfYear: 10 });
+    const monthly = await s.create.execute('alice', s.commonId, {
+      ...rent,
+      label: 'Loyer',
+      frequency: undefined,
+      monthOfYear: undefined,
+    });
+    expect(monthly).toMatchObject({ frequency: 'MONTHLY', monthOfYear: null });
+    await s.update.execute('alice', s.commonId, monthly.id, {
+      ...rent,
+      frequency: 'QUARTERLY',
+      monthOfYear: 11,
+    });
+    expect(
+      (await s.list.execute('alice', s.commonId)).find(
+        (i) => i.id === monthly.id,
+      ),
+    ).toMatchObject({ frequency: 'QUARTERLY', monthOfYear: 11 });
+  });
+
+  it('refuses inconsistent periodicity with a domain error', async () => {
+    const s = await setup();
+    for (const bad of [
+      { frequency: 'YEARLY' as const, monthOfYear: null },
+      { frequency: 'QUARTERLY' as const, monthOfYear: undefined },
+      { frequency: 'YEARLY' as const, monthOfYear: 13 },
+      { frequency: 'MONTHLY' as const, monthOfYear: 3 },
+      { frequency: 'WEEKLY' as never, monthOfYear: null },
+    ]) {
+      await expect(
+        s.create.execute('alice', s.commonId, { ...taxe, ...bad }),
+      ).rejects.toBeInstanceOf(DomainError);
+    }
+  });
+
+  it('lists provisions as of a date (default: the clock) and totals them', async () => {
+    const s = await setup('2026-10-30T09:00:00Z');
+    await s.create.execute('alice', s.commonId, taxe);
+    await s.create.execute('alice', s.commonId, rent);
+    const byClock = await s.provisions.execute('bob', s.commonId);
+    expect(byClock).toEqual({
+      asOf: '2026-10-30',
+      items: [
+        {
+          recurringId: expect.any(String),
+          label: 'Taxe foncière',
+          bloc: 'FIXE',
+          frequency: 'YEARLY',
+          amountCents: 120000,
+          nextDueDate: '2027-10-15',
+          monthsUntilDue: 11,
+          monthlyProvisionCents: 10000,
+          provisionedSoFarCents: null,
+        },
+      ],
+      totalMonthlyProvisionCents: 10000,
+      totalNextTwelveMonthsCents: 120000,
+    });
+    const explicit = await s.provisions.execute(
+      'bob',
+      s.commonId,
+      '2026-10-01',
+    );
+    expect(explicit.asOf).toBe('2026-10-01');
+    expect(explicit.items[0]).toMatchObject({
+      nextDueDate: '2026-10-15',
+      monthsUntilDue: 0,
+    });
+    await expect(
+      s.provisions.execute('bob', s.commonId, '2026-02-30'),
+    ).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it('builds the year forecast, completing the common income and defaulting to the clock year', async () => {
+    const s = await setup('2026-10-30T09:00:00Z');
+    await s.savePlan.execute('alice', s.commonId, {
+      incomeCents: 0,
+      fixeCents: 175000,
+      courantCents: 100000,
+      plaisirCents: 45000,
+      epargneCents: 20000,
+    });
+    await s.create.execute('alice', s.commonId, taxe);
+    const year = await s.yearForecast.execute('bob', s.commonId);
+    expect(year.year).toBe(2026);
+    expect(year.months).toHaveLength(12);
+    expect(year.months[0].incomeCents).toBe(340000);
+    expect(year.months[9].items.map((i) => i.label)).toEqual(['Taxe foncière']);
+    expect(year.months[9].peak).toBe(true);
+    expect(year.provisionHintCents).toBe(10000);
+    expect((await s.yearForecast.execute('bob', s.commonId, 2027)).year).toBe(
+      2027,
+    );
+  });
+
+  it('hides the provisions and the year forecast of a personal space from the other member', async () => {
+    const s = await setup();
+    await s.create.execute('alice', s.alicePersonalId, taxe);
+    await expect(
+      s.provisions.execute('bob', s.alicePersonalId),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      s.yearForecast.execute('bob', s.alicePersonalId, 2026),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(
+      (await s.provisions.execute('alice', s.alicePersonalId)).items,
+    ).toHaveLength(1);
+  });
+
+  describe('aids with non-monthly payments', () => {
+    const aided = (
+      over: Partial<SaveRecurringCommand>,
+    ): SaveRecurringCommand => ({
+      ...cleaning,
+      ...over,
+    });
+
+    it('counts a yearly occurrence once in the year and smooths it per month', async () => {
+      const s = await setup();
+      await s.create.execute(
+        'alice',
+        s.commonId,
+        aided({
+          amountCents: 120000,
+          frequency: 'YEARLY',
+          monthOfYear: 3,
+          dayOfMonth: 10,
+        }),
+      );
+      const aids = await s.aids.execute('alice', s.commonId, 2026);
+      expect(aids.rules[0]).toMatchObject({
+        spentCents: 120000,
+        expectedCreditCents: 60000,
+      });
+      // Lissé : 120 000 / 12 = 10 000 par mois, dont la moitié revient.
+      expect(aids.rules[0].lines[0]).toMatchObject({
+        yearlySpentCents: 120000,
+        monthlyCents: 10000,
+        netMonthlyCents: 5000,
+      });
+    });
+
+    it('counts four occurrences for a quarterly payment', async () => {
+      const s = await setup();
+      await s.create.execute(
+        'alice',
+        s.commonId,
+        aided({
+          amountCents: 30000,
+          frequency: 'QUARTERLY',
+          monthOfYear: 2,
+          dayOfMonth: 10,
+        }),
+      );
+      const aids = await s.aids.execute('alice', s.commonId, 2026);
+      expect(aids.rules[0].spentCents).toBe(120000);
+      expect(aids.rules[0].lines[0].monthlyCents).toBe(10000);
+    });
+
+    it('uses the real amount of the found occurrence and skips a yearly date before startDate', async () => {
+      const s = await setup();
+      await s.create.execute(
+        'alice',
+        s.commonId,
+        aided({
+          amountCents: 120000,
+          frequency: 'YEARLY',
+          monthOfYear: 3,
+          dayOfMonth: 10,
+        }),
+      );
+      await s.createTransaction.execute(
+        'alice',
+        s.commonId,
+        expense(
+          'FEMME DE MENAGE ANNUEL',
+          130000,
+          '2026-03-12T00:00:00Z',
+          'COURANT',
+        ),
+      );
+      expect(
+        (await s.aids.execute('alice', s.commonId, 2026)).rules[0].spentCents,
+      ).toBe(130000);
+
+      const late = await setup();
+      await late.create.execute(
+        'alice',
+        late.commonId,
+        aided({
+          frequency: 'YEARLY',
+          monthOfYear: 3,
+          dayOfMonth: 10,
+          startDate: '2026-06-01',
+        }),
+      );
+      // 10 mars 2026 est avant startDate : rien en 2026, une occurrence en 2027.
+      expect(
+        (await late.aids.execute('alice', late.commonId, 2026)).rules,
+      ).toEqual([]);
+      expect(
+        (await late.aids.execute('alice', late.commonId, 2027)).rules[0]
+          .spentCents,
+      ).toBe(10000);
+    });
   });
 });

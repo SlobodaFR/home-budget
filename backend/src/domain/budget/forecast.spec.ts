@@ -510,3 +510,189 @@ describe('buildForecast: common space funded by contributions', () => {
     });
   });
 });
+
+describe('periodicity engine (single source of occurrences)', () => {
+  const yearly = (month: number, over = {}) =>
+    rec('EXPENSE', 'FIXE', 'Taxe foncière', 120000, {
+      frequency: 'YEARLY',
+      monthOfYear: month,
+      dayOfMonth: 15,
+      ...over,
+    });
+  const quarterly = (month: number, over = {}) =>
+    rec('EXPENSE', 'FIXE', 'Assurance', 30000, {
+      frequency: 'QUARTERLY',
+      monthOfYear: month,
+      dayOfMonth: 5,
+      ...over,
+    });
+  /** Dates d'occurrence d'un gabarit sur une liste de mois. */
+  const dates = (item: ReturnType<typeof rec>, months: string[]) =>
+    months.flatMap((m) =>
+      expandOccurrences([item], m).map((o) =>
+        o.date.toISOString().slice(0, 10),
+      ),
+    );
+  const YEAR_2027 = Array.from(
+    { length: 12 },
+    (_, i) => `2027-${String(i + 1).padStart(2, '0')}`,
+  );
+
+  it('places a yearly occurrence in its month only', () => {
+    expect(dates(yearly(10), YEAR_2027)).toEqual(['2027-10-15']);
+    expect(dates(yearly(1), YEAR_2027)).toEqual(['2027-01-15']);
+    expect(dates(yearly(12), YEAR_2027)).toEqual(['2027-12-15']);
+  });
+
+  it('places a quarterly series on m, m+3, m+6 and m+9', () => {
+    expect(dates(quarterly(1), YEAR_2027)).toEqual([
+      '2027-01-05',
+      '2027-04-05',
+      '2027-07-05',
+      '2027-10-05',
+    ]);
+    expect(dates(quarterly(12), YEAR_2027)).toEqual([
+      '2027-03-05',
+      '2027-06-05',
+      '2027-09-05',
+      '2027-12-05',
+    ]);
+  });
+
+  it('wraps a quarterly series starting in November onto February, May and August', () => {
+    expect(dates(quarterly(11), YEAR_2027)).toEqual([
+      '2027-02-05',
+      '2027-05-05',
+      '2027-08-05',
+      '2027-11-05',
+    ]);
+    // Démarrant le 1er novembre 2026 : la série commence en novembre, pas en février.
+    const fromNovember = quarterly(11, { startDate: '2026-11-01' });
+    expect(
+      dates(fromNovember, [
+        '2026-02',
+        '2026-05',
+        '2026-08',
+        '2026-11',
+        '2026-12',
+        '2027-01',
+        '2027-02',
+        '2027-05',
+        '2027-08',
+        '2027-11',
+      ]),
+    ).toEqual([
+      '2026-11-05',
+      '2027-02-05',
+      '2027-05-05',
+      '2027-08-05',
+      '2027-11-05',
+    ]);
+  });
+
+  it('drops a yearly occurrence falling before startDate and keeps the next year', () => {
+    // 15 octobre 2026 est avant le 1er novembre 2026 : première occurrence en 2027.
+    const item = yearly(10, { startDate: '2026-11-01' });
+    expect(dates(item, ['2026-10', '2026-11', '2027-10'])).toEqual([
+      '2027-10-15',
+    ]);
+    // Le jour même de startDate : retenue.
+    expect(dates(yearly(10, { startDate: '2026-10-15' }), ['2026-10'])).toEqual(
+      ['2026-10-15'],
+    );
+  });
+
+  it('cuts the series at endDate (inclusive)', () => {
+    const cut = yearly(3, { dayOfMonth: 10, endDate: '2027-03-09' });
+    expect(dates(cut, ['2026-03', '2027-03', '2028-03'])).toEqual([
+      '2026-03-10',
+    ]);
+    const onTheDay = yearly(3, { dayOfMonth: 10, endDate: '2027-03-10' });
+    expect(dates(onTheDay, ['2026-03', '2027-03', '2028-03'])).toEqual([
+      '2026-03-10',
+      '2027-03-10',
+    ]);
+    const quarterCut = quarterly(1, { endDate: '2027-04-04' });
+    expect(dates(quarterCut, YEAR_2027)).toEqual(['2027-01-05']);
+  });
+
+  it('falls back to the last day of the month, leap years included', () => {
+    const feb29 = yearly(2, { dayOfMonth: 29 });
+    expect(dates(feb29, ['2027-02', '2028-02', '2100-02'])).toEqual([
+      '2027-02-28',
+      '2028-02-29',
+      '2100-02-28',
+    ]);
+    const day31 = quarterly(11, { dayOfMonth: 31 });
+    expect(
+      dates(day31, ['2027-02', '2028-02', '2027-05', '2027-08', '2027-11']),
+    ).toEqual([
+      '2027-02-28',
+      '2028-02-29',
+      '2027-05-31',
+      '2027-08-31',
+      '2027-11-30',
+    ]);
+  });
+
+  it('estimates the day of a yearly occurrence without day at the end of its month', () => {
+    const [occurrence] = expandOccurrences(
+      [yearly(2, { dayOfMonth: null })],
+      '2028-02',
+    );
+    expect(occurrence.estimated).toBe(true);
+    expect(occurrence.date.toISOString()).toBe('2028-02-29T00:00:00.000Z');
+  });
+
+  it('applies to incomes too, and still ignores inactive items', () => {
+    const bonus = rec('INCOME', null, 'Prime annuelle', 200000, {
+      frequency: 'YEARLY',
+      monthOfYear: 12,
+      dayOfMonth: 20,
+    });
+    expect(dates(bonus, ['2027-11', '2027-12'])).toEqual(['2027-12-20']);
+    expect(expandOccurrences([bonus], '2027-12')[0].kind).toBe('INCOME');
+    expect(dates(yearly(10, { active: false }), YEAR_2027)).toEqual([]);
+  });
+
+  it('feeds the forecast: a yearly payment of the month is DUE then PAID, other months stay empty', () => {
+    const insurance = yearly(11, {
+      label: 'Assurance habitation',
+      dayOfMonth: 20,
+    });
+    const base = {
+      today: TODAY,
+      plan: PLAN,
+      recurring: [insurance],
+    };
+    const due = buildForecast({ ...base, month: '2026-11', transactions: [] });
+    expect(due.occurrences.map((o) => o.status)).toEqual(['DUE']);
+    expect(due.blocs[0]).toMatchObject({
+      expectedRemainingCents: 120000,
+      projectedCents: 120000,
+    });
+    const paid = buildForecast({
+      ...base,
+      month: '2026-11',
+      transactions: [
+        tx('EXPENSE', 'FIXE', 'TAXE FONCIERE 2026', 118000, '2026-11-18'),
+      ],
+    });
+    expect(paid.occurrences[0].status).toBe('PAID');
+    expect(paid.blocs[0].projectedCents).toBe(118000);
+    for (const month of ['2026-10', '2026-12', '2027-01']) {
+      const other = buildForecast({ ...base, month, transactions: [] });
+      expect(other.occurrences).toEqual([]);
+      expect(other.blocs[0].projectedCents).toBe(0);
+    }
+    // Annuelle passée sans opération : MISSING (mois passé : rien n'est ajouté).
+    const missing = buildForecast({
+      ...base,
+      month: '2026-11',
+      today: new Date('2026-12-02T09:00:00Z'),
+      transactions: [],
+    });
+    expect(missing.occurrences[0].status).toBe('MISSING');
+    expect(missing.blocs[0].projectedCents).toBe(0);
+  });
+});

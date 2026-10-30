@@ -4,6 +4,7 @@ import { Transaction } from '../transaction/transaction';
 import { RecurringItem } from '../recurring/recurring-item';
 import { buildSafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { buildForecast } from './forecast';
+import { buildProvisions } from './provisions';
 import {
   AccountsInsightContext,
   CommonInsightsContext,
@@ -67,6 +68,7 @@ function run(scenario: Scenario = {}): Insight[] {
     lastActivity,
     common: scenario.common ?? null,
     accounts: scenario.accounts ?? NO_ACCOUNTS,
+    provisions: buildProvisions(recurring, today),
   });
 }
 
@@ -712,6 +714,188 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('non-monthly payments', () => {
+    const yearly = (label: string, cents: number, month: number, day: number) =>
+      rec('EXPENSE', 'FIXE', label, cents, {
+        frequency: 'YEARLY',
+        monthOfYear: month,
+        dayOfMonth: day,
+      });
+    const TODAY = '2026-11-12T08:00:00Z';
+    const plan = (income: number, epargne = 20000) =>
+      SpacePlan.create({
+        incomeCents: income,
+        fixeCents: income - 100000 - epargne,
+        courantCents: 70000,
+        plaisirCents: 30000,
+        epargneCents: epargne,
+      });
+
+    it('announces a big non-monthly payment within 60 days, with the monthly provision', () => {
+      const insight = byId(
+        run({
+          today: TODAY,
+          plan: plan(320000),
+          transactions: recent,
+          recurring: [yearly('Taxe foncière', 120000, 11, 15)],
+        }),
+        'upcoming-big-payment',
+      );
+      expect(insight).toEqual({
+        id: 'upcoming-big-payment',
+        severity: 'INFO',
+        title: 'Gros paiement à venir : Taxe foncière',
+        detail: `Taxe foncière (15 nov.) : 1${nbsp}200${nbsp}€. Mettez 100${nbsp}€ par mois de côté pour le lisser.`,
+        lesson: 1,
+        link: '/previsionnel',
+      });
+    });
+
+    it('uses the 60-day window (inclusive) and the 500 € floor', () => {
+      const at = (month: number, day: number, cents = 120000) =>
+        ids(
+          run({
+            today: TODAY,
+            plan: plan(320000),
+            transactions: recent,
+            recurring: [yearly('Taxe', cents, month, day)],
+          }),
+        ).includes('upcoming-big-payment');
+      // 12 novembre + 60 jours = 11 janvier.
+      expect(at(1, 11)).toBe(true);
+      expect(at(1, 12)).toBe(false);
+      expect(at(11, 11)).toBe(false); // hier : prochaine échéance dans un an
+      expect(at(11, 12)).toBe(true); // aujourd'hui
+      expect(at(11, 20, 50000)).toBe(true); // 500 € exactement
+      expect(at(11, 20, 49999)).toBe(false); // sous 500 € et < 20 % de 3 200 €
+    });
+
+    it('also triggers from 20 % of the known monthly income, boundary included', () => {
+      const at = (income: number) =>
+        ids(
+          run({
+            today: TODAY,
+            plan: plan(income),
+            transactions: recent,
+            recurring: [yearly('Taxe', 40000, 11, 20)],
+          }),
+        ).includes('upcoming-big-payment');
+      expect(at(200000)).toBe(true); // 400 € = 20 % de 2 000 €
+      expect(at(201000)).toBe(false);
+      expect(at(150000)).toBe(true);
+    });
+
+    it('ignores monthly payments, incomes, a payment already found and other months', () => {
+      const bonus = rec('INCOME', null, 'Prime', 900000, {
+        frequency: 'YEARLY',
+        monthOfYear: 11,
+        dayOfMonth: 20,
+      });
+      const big = (over: Scenario = {}) =>
+        ids(
+          run({
+            today: TODAY,
+            plan: plan(320000),
+            transactions: recent,
+            recurring: [
+              bonus,
+              rec('EXPENSE', 'FIXE', 'Loyer', 110000, { dayOfMonth: 20 }),
+            ],
+            ...over,
+          }),
+        ).includes('upcoming-big-payment');
+      expect(big()).toBe(false);
+      const taxe = yearly('Taxe foncière', 120000, 11, 20);
+      expect(big({ recurring: [taxe] })).toBe(true);
+      // Déjà retrouvée dans les opérations : plus « à venir ».
+      expect(
+        big({
+          recurring: [taxe],
+          transactions: [
+            ...recent,
+            tx('EXPENSE', 'FIXE', 'TAXE FONCIERE', 118000, '2026-11-10'),
+          ],
+        }),
+      ).toBe(false);
+      expect(big({ recurring: [taxe], month: '2026-10' })).toBe(false);
+      expect(big({ recurring: [taxe], month: '2026-12' })).toBe(false);
+    });
+
+    it('groups several big payments and lists at most three', () => {
+      const insight = byId(
+        run({
+          today: TODAY,
+          plan: plan(320000),
+          transactions: recent,
+          recurring: [
+            yearly('Taxe foncière', 120000, 11, 15),
+            yearly('Impôt', 240000, 11, 20),
+            yearly('Vacances', 90000, 12, 1),
+            yearly('Assurance', 60000, 12, 5),
+          ],
+        }),
+        'upcoming-big-payment',
+      );
+      expect(insight.title).toBe('4 gros paiements à venir');
+      // 10 000 + 20 000 + 7 500 + 5 000 = 42 500 par mois.
+      expect(insight.detail).toBe(
+        `Taxe foncière (1${nbsp}200${nbsp}€, 15 nov.), Impôt (2${nbsp}400${nbsp}€, 20 nov.), Vacances (900${nbsp}€, 1 déc.) et 1 autre. Provision conseillée : 425${nbsp}€ par mois au total.`,
+      );
+    });
+
+    it('suggests a provision when the planned savings do not cover it', () => {
+      const run_ = (
+        epargne: number,
+        recurring = [yearly('Taxe foncière', 120000, 3, 15)],
+      ) =>
+        run({
+          today: TODAY,
+          plan: plan(320000, epargne),
+          transactions: recent,
+          recurring,
+        });
+      // 120 000 / 12 = 100 € par mois.
+      const insight = byId(run_(5000), 'provision-suggestion');
+      expect(insight).toEqual({
+        id: 'provision-suggestion',
+        severity: 'INFO',
+        title: 'Provisionnez vos paiements non mensuels',
+        detail: `Vos paiements non mensuels demandent 100${nbsp}€ par mois à mettre de côté, mais le bloc Épargne de votre plan n'en prévoit que 50${nbsp}€. Relevez-le d'au moins 50${nbsp}€.`,
+        lesson: 1,
+        link: '/plan',
+      });
+      expect(ids(run_(10000))).not.toContain('provision-suggestion'); // égalité : couvert
+      expect(ids(run_(20000))).not.toContain('provision-suggestion');
+      expect(ids(run_(0, []))).not.toContain('provision-suggestion'); // rien de non mensuel
+      expect(
+        ids(run_(0, [rec('EXPENSE', 'FIXE', 'Loyer', 110000)])),
+      ).not.toContain('provision-suggestion');
+    });
+
+    it('sums the provisions of several payments, rounded up, and ignores incomes', () => {
+      const insight = byId(
+        run({
+          today: TODAY,
+          plan: plan(320000, 0),
+          transactions: recent,
+          recurring: [
+            yearly('Taxe foncière', 120001, 3, 15), // 10 001
+            rec('EXPENSE', 'FIXE', 'Assurance', 100, {
+              frequency: 'QUARTERLY',
+              monthOfYear: 2,
+            }), // 34
+            rec('INCOME', null, 'Prime', 900000, {
+              frequency: 'YEARLY',
+              monthOfYear: 12,
+            }),
+          ],
+        }),
+        'provision-suggestion',
+      );
+      expect(insight.detail).toContain(`demandent 100,35${nbsp}€ par mois`);
+    });
+  });
+
   describe('ordering and limits', () => {
     const crowded: Scenario = {
       today: '2026-11-12T08:00:00Z',
@@ -762,7 +946,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
       );
       const insights = [
         ...run(crowded),

@@ -35,6 +35,12 @@ export class RecurringItemOrmEntity {
   @Column({ type: 'text', name: 'aid_rule_id', nullable: true })
   aidRuleId!: string | null;
 
+  @Column({ type: 'text', default: 'MONTHLY' })
+  frequency!: string;
+
+  @Column({ type: 'integer', name: 'month_of_year', nullable: true })
+  monthOfYear!: number | null;
+
   @Column({ type: 'text', name: 'account_id', nullable: true })
   accountId!: string | null;
 

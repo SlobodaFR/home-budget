@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AidRuleId } from '../../../domain/aid/aid-rules';
-import { RecurringItem } from '../../../domain/recurring/recurring-item';
+import {
+  RecurringFrequency,
+  RecurringItem,
+} from '../../../domain/recurring/recurring-item';
 import { RecurringItemRepository } from '../../../domain/recurring/recurring-item.repository';
 import { Bloc } from '../../../domain/shared/bloc';
 import { FieldCipher } from '../../../domain/shared/field-cipher';
@@ -68,6 +71,8 @@ export class TypeOrmRecurringItemRepository extends RecurringItemRepository {
       active: item.active,
       aidRuleId: item.aidRuleId,
       accountId: item.accountId,
+      frequency: item.frequency,
+      monthOfYear: item.monthOfYear,
     };
 
     if (space.ownerUserId) {
@@ -132,6 +137,8 @@ export class TypeOrmRecurringItemRepository extends RecurringItemRepository {
       active: Boolean(row.active),
       aidRuleId: row.aidRuleId as AidRuleId | null,
       accountId: row.accountId,
+      frequency: row.frequency as RecurringFrequency,
+      monthOfYear: row.monthOfYear,
     });
   }
 }

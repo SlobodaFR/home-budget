@@ -358,6 +358,55 @@ describe('account balances and projection', () => {
   });
 });
 
+describe('account projection with non-monthly payments', () => {
+  it('only projects a yearly or quarterly payment in the month where it falls', async () => {
+    const s = await setup(); // 12 novembre 2026
+    const a = await s.create.execute('alice', s.commonId, courant);
+    const projected = async () =>
+      (await s.list.execute('alice', s.commonId))[0].projectedMonthEndCents;
+    expect(await projected()).toBe(100000);
+    // Annuelle en décembre : hors du mois courant.
+    const yearly = await s.createRec.execute(
+      'alice',
+      s.commonId,
+      rent(a.id, { frequency: 'YEARLY', monthOfYear: 12, amountCents: 60000 }),
+    );
+    expect(await projected()).toBe(100000);
+    // Annuelle en novembre, le 20 : à venir.
+    await s.updateRec.execute(
+      'alice',
+      s.commonId,
+      yearly.id,
+      rent(a.id, { frequency: 'YEARLY', monthOfYear: 11, amountCents: 60000 }),
+    );
+    expect(await projected()).toBe(40000);
+    // Trimestrielle ancrée en février (fév., mai, août, nov.) : novembre compte.
+    await s.updateRec.execute(
+      'alice',
+      s.commonId,
+      yearly.id,
+      rent(a.id, {
+        frequency: 'QUARTERLY',
+        monthOfYear: 2,
+        amountCents: 60000,
+      }),
+    );
+    expect(await projected()).toBe(40000);
+    // Trimestrielle ancrée en janvier (janv., avr., juil., oct.) : pas novembre.
+    await s.updateRec.execute(
+      'alice',
+      s.commonId,
+      yearly.id,
+      rent(a.id, {
+        frequency: 'QUARTERLY',
+        monthOfYear: 1,
+        amountCents: 60000,
+      }),
+    );
+    expect(await projected()).toBe(100000);
+  });
+});
+
 describe('attaching operations, recurring items and imports to accounts', () => {
   it('exposes accountId on operations and recurring items', async () => {
     const s = await setup();

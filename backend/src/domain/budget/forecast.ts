@@ -39,11 +39,51 @@ export function monthPhase(month: string, today: Date): MonthPhase {
 }
 
 /**
- * Occurrences d'un mois pour les gabarits actifs. Une occurrence existe si sa
- * date tombe entre `startDate` et `endDate` (inclus). Un jour absent donne une
- * occurrence estimée au dernier jour du mois ; un jour supérieur à la longueur
- * du mois retombe sur le dernier jour. Le statut est ensuite posé par
- * `matchOccurrences`.
+ * MOTEUR UNIQUE de périodicité (prévisionnel, aides, comptes, conseils, provisions,
+ * vue annuelle) : la date de l'occurrence d'un gabarit dans un mois donné, ou
+ * null s'il n'y en a pas.
+ *
+ * - MONTHLY : chaque mois ; YEARLY : le seul mois `monthOfYear` ; QUARTERLY :
+ *   les mois m, m+3, m+6, m+9 (modulo 12) à partir de `monthOfYear`, la série
+ *   étant ancrée sur le mois de l'année, pas sur `startDate`.
+ * - Un jour absent donne le dernier jour du mois (occurrence estimée) ; un jour
+ *   supérieur à la longueur du mois retombe sur le dernier jour (29 février…).
+ * - Gabarit inactif, ou date hors de [startDate, endDate] (inclus) : aucune occurrence.
+ */
+export function occurrenceDateInMonth(
+  item: RecurringItem,
+  yearInput: number,
+  monthIndexInput: number,
+): { date: Date; estimated: boolean } | null {
+  if (!item.active) {
+    return null;
+  }
+  // Un indice de mois hors 0-11 déborde sur l'année suivante (ou précédente).
+  const year = yearInput + Math.floor(monthIndexInput / 12);
+  const monthIndex = ((monthIndexInput % 12) + 12) % 12;
+  const monthOfYear = item.monthOfYear;
+  if (item.frequency === 'YEARLY' && monthIndex + 1 !== monthOfYear) {
+    return null;
+  }
+  if (
+    item.frequency === 'QUARTERLY' &&
+    (((monthIndex + 1 - monthOfYear!) % 3) + 3) % 3 !== 0
+  ) {
+    return null;
+  }
+  const lastDay = daysInMonth(year, monthIndex);
+  const day = Math.min(item.dayOfMonth ?? lastDay, lastDay);
+  const date = new Date(Date.UTC(year, monthIndex, day));
+  const iso = toIsoDate(date);
+  if (iso < item.startDate || (item.endDate !== null && iso > item.endDate)) {
+    return null;
+  }
+  return { date, estimated: item.dayOfMonth === null };
+}
+
+/**
+ * Occurrences d'un mois pour les gabarits actifs (cf. `occurrenceDateInMonth`
+ * pour la périodicité). Le statut est ensuite posé par `matchOccurrences`.
  */
 export function expandOccurrences(
   items: RecurringItem[],
@@ -52,18 +92,11 @@ export function expandOccurrences(
   const { from } = parseMonth(month);
   const year = from.getUTCFullYear();
   const monthIndex = from.getUTCMonth();
-  const lastDay = daysInMonth(year, monthIndex);
 
   const occurrences: Occurrence[] = [];
   for (const item of items) {
-    if (!item.active) {
-      continue;
-    }
-    const estimated = item.dayOfMonth === null;
-    const day = Math.min(item.dayOfMonth ?? lastDay, lastDay);
-    const date = new Date(Date.UTC(year, monthIndex, day));
-    const iso = toIsoDate(date);
-    if (iso < item.startDate || (item.endDate !== null && iso > item.endDate)) {
+    const found = occurrenceDateInMonth(item, year, monthIndex);
+    if (!found) {
       continue;
     }
     occurrences.push({
@@ -72,8 +105,8 @@ export function expandOccurrences(
       kind: item.kind,
       bloc: item.bloc,
       amountCents: item.amount.toCents(),
-      date,
-      estimated,
+      date: found.date,
+      estimated: found.estimated,
       accountId: item.accountId,
       status: 'DUE',
       matchedTransactionId: null,
