@@ -54,10 +54,11 @@ const ACTION_LABELS: Record<string, string> = {
   '/revue': 'Faire ma revue',
   '/dettes': 'Voir mes crédits',
   '/tendances': 'Voir mes tendances',
+  '/evenements': 'Voir mes démarches',
 };
 
 /**
- * Conseils des tranches 5 à 10 : un libellé plus précis et, pour le gros paiement à venir, une ouverture directe sur l'onglet
+ * Conseils des tranches 5 à 11 : un libellé plus précis et, pour le gros paiement à venir, une ouverture directe sur l'onglet
  * « Provisions ». Ils ne s'appliquent que si le serveur envoie bien le lien attendu (sinon on retombe sur le bouton générique).
  */
 const INSIGHT_ACTIONS: Record<string, { link: string; to: string; label: string }> = {

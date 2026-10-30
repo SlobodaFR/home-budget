@@ -126,6 +126,21 @@ describe('InsightsCard', () => {
     expect(within(items[1]).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
   });
 
+  it('sends the life event insights to /evenements with « Voir mes démarches », each with the right severity', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({ id: 'life-event-overdue', severity: 'WARNING', title: '2 démarches de naissance en retard', detail: 'Déclarer la grossesse, Chercher un mode d’accueil.', lesson: null, link: '/evenements' }),
+        insight({ id: 'life-event-due-soon', severity: 'ACTION', title: '3 démarches de naissance à faire sous 14 jours', detail: 'Déclarer la naissance à la mairie.', lesson: null, link: '/evenements' }),
+      ],
+    });
+    const items = screen.getAllByRole('listitem');
+    expect(within(items[0]).getByText(/Attention/)).toBeInTheDocument();
+    expect(within(items[0]).getByRole('link', { name: 'Voir mes démarches' })).toHaveAttribute('href', '/evenements');
+    expect(within(items[1]).getByText(/À faire/)).toBeInTheDocument();
+    expect(within(items[1]).getByRole('link', { name: 'Voir mes démarches' })).toHaveAttribute('href', '/evenements');
+  });
+
   it('sends the spending-riser insight to /tendances with « Voir mes tendances »', () => {
     renderCard({
       status: 'ready',

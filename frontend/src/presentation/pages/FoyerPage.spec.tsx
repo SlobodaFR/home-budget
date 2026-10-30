@@ -239,6 +239,12 @@ describe('FoyerPage', () => {
       expect(screen.getByRole('link', { name: 'Voir mes tendances' })).toHaveAttribute('href', '/tendances');
     });
 
+    it('links to the life events page, whatever the space', () => {
+      renderPage();
+      expect(screen.getByRole('heading', { name: 'Événements de vie' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Voir mes démarches' })).toHaveAttribute('href', '/evenements');
+    });
+
     it('links to the credits page', () => {
       renderPage();
       expect(screen.getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');

@@ -13,6 +13,7 @@ import { BankIcon, ChartIcon, ClipboardCheckIcon, TargetIcon, UploadIcon } from 
 import { DebtsHomeLink } from '../components/debts/DebtsHomeLink';
 import { AccountsSummary } from '../components/AccountsSummary';
 import { InsightsCard } from '../components/InsightsCard';
+import { LifeEventsHomeLink } from '../components/life-events/LifeEventsHomeLink';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MonthPicker } from '../components/MonthPicker';
 import { ProjectsHomeCard } from '../components/projects/ProjectsHomeCard';
@@ -94,6 +95,7 @@ export function HomePage() {
           Mes tendances
         </Link>
         <DebtsHomeLink spaceId={space.id} />
+        <LifeEventsHomeLink />
       </div>
 
       <InsightsCard state={insights} />
