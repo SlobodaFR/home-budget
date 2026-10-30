@@ -53,6 +53,7 @@ describe('FoyerSchema migration', () => {
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);
 
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );

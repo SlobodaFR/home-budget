@@ -136,6 +136,55 @@ Même corps que `POST` pour `PUT` ; `204`.
 `gapCents = actualCents − plannedCents`. `actualBalanceCents = revenus réels − somme des dépenses réelles (4 blocs)`.
 `savingsRate` = épargne réelle ÷ revenus réels (`null` si pas de revenu).
 
+## Import de relevé (tranche 2)
+
+Le relevé est envoyé **en texte** (le client lit le fichier CSV et le décode : UTF-8, sinon Windows-1252). Rien n'est
+enregistré par l'aperçu. Corps JSON limité à 1 Mo, 2 000 lignes au plus.
+
+### `POST /api/spaces/:spaceId/imports/preview`
+Corps : `{ "text": "date;libellé;montant\n02/10/2026;PRLV LOYER;-1100,00\n…" }`. `200` :
+```json
+{
+  "rows": [
+    {
+      "index": 0,
+      "date": "2026-10-02T00:00:00.000Z",
+      "label": "PRLV LOYER",
+      "amountCents": -110000,
+      "suggestion": { "target": "FIXE", "rule": "loyer" },
+      "duplicate": false
+    }
+  ],
+  "skipped": [{ "line": 1, "reason": "en-tête" }],
+  "truncated": false
+}
+```
+- `amountCents` est **signé** : négatif = dépense, positif = revenu.
+- `suggestion.target` : `FIXE`, `COURANT`, `PLAISIR`, `EPARGNE`, `INCOME`, `IGNORE`, ou `null` (« à classer »).
+  `suggestion.rule` : le mot-clé de la règle qui a classé la ligne (`null` si aucune, ou pour un revenu automatique).
+- `duplicate` : une opération identique (même jour, même montant, même libellé) existe déjà dans l'espace.
+- Lignes illisibles ou sans date valide : listées dans `skipped` (numéro de ligne, 1 = première ligne du texte).
+- Formats lus : séparateur `;` ou tabulation ; dates `JJ/MM/AAAA`, `JJ-MM-AAAA`, `JJ.MM.AAAA`, `AAAA-MM-JJ` ;
+  montants `-1 100,00`, `1.100,00`, `-1100.00` ; colonnes « Débit » / « Crédit » séparées si l'en-tête les nomme.
+
+### `POST /api/spaces/:spaceId/imports/commit`
+Corps : `{ "items": [ { "kind": "EXPENSE", "bloc": "FIXE", "label": "PRLV LOYER", "amountCents": 110000, "date": "2026-10-02T00:00:00.000Z" } ] }`
+(`amountCents` **positif** ici, comme pour `POST …/transactions` ; `bloc` obligatoire pour une dépense, absent pour
+un revenu). 1 à 500 éléments. **Tout ou rien** : une ligne invalide renvoie `400` et rien n'est enregistré.
+`201 { "created": 12 }`.
+
+### `GET /api/spaces/:spaceId/rules` · `PUT /api/spaces/:spaceId/rules`
+Règles de classement de l'espace (propres à chaque espace, chiffrées pour un espace personnel).
+```json
+{ "rules": [{ "keyword": "loyer", "target": "FIXE" }, { "keyword": "virement interne", "target": "IGNORE" }], "isDefault": false }
+```
+`GET` renvoie un jeu de règles de départ avec `isDefault: true` tant que rien n'a été enregistré. `PUT` : corps
+`{ "rules": [...] }`, `204`, au plus 200 règles, mot-clé de 2 à 40 caractères, `target` parmi
+`FIXE|COURANT|PLAISIR|EPARGNE|INCOME|IGNORE`.
+Sémantique : un mot-clé correspond s'il est contenu dans le libellé, sans tenir compte de la casse ni des accents ;
+les règles `IGNORE` sont testées en premier ; un montant positif est un revenu sauf règle `IGNORE` ; sinon la
+première règle qui correspond (dans l'ordre) l'emporte.
+
 ## Chiffrement de l'espace personnel (informatif)
 
 Les libellés et montants des opérations de l'espace personnel, ainsi que son plan, sont chiffrés au repos

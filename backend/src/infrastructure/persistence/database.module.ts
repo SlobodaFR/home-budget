@@ -6,6 +6,7 @@ import { InvitationOrmEntity } from './entities/invitation.orm-entity';
 import { MembershipOrmEntity } from './entities/membership.orm-entity';
 import { RevokedSessionOrmEntity } from './entities/revoked-session.orm-entity';
 import { SpacePlanOrmEntity } from './entities/space-plan.orm-entity';
+import { SpaceRulesOrmEntity } from './entities/space-rules.orm-entity';
 import { SpaceOrmEntity } from './entities/space.orm-entity';
 import { TransactionOrmEntity } from './entities/transaction.orm-entity';
 import { UserOrmEntity } from './entities/user.orm-entity';
@@ -19,6 +20,7 @@ export const ORM_ENTITIES = [
   InvitationOrmEntity,
   SpaceOrmEntity,
   SpacePlanOrmEntity,
+  SpaceRulesOrmEntity,
   TransactionOrmEntity,
 ];
 

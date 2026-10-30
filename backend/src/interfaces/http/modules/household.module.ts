@@ -23,6 +23,16 @@ import {
   ListSpaceTransactionsUseCase,
   UpdateSpaceTransactionUseCase,
 } from '../../../application/space/space-transaction.use-cases';
+import {
+  CommitImportUseCase,
+  GetRulesUseCase,
+  PreviewImportUseCase,
+  SaveRulesUseCase,
+} from '../../../application/import/import.use-cases';
+import { SpaceRulesRepository } from '../../../domain/import/space-rules.repository';
+import { SpaceRulesOrmEntity } from '../../../infrastructure/persistence/entities/space-rules.orm-entity';
+import { TypeOrmSpaceRulesRepository } from '../../../infrastructure/persistence/repositories/typeorm-space-rules.repository';
+import { ImportsController } from '../controllers/imports.controller';
 import { HouseholdRepository } from '../../../domain/household/household.repository';
 import { FieldCipher } from '../../../domain/shared/field-cipher';
 import { SpacePlanRepository } from '../../../domain/space/space-plan.repository';
@@ -45,14 +55,16 @@ import { AuthModule } from './auth.module';
     TypeOrmModule.forFeature([
       SpaceOrmEntity,
       SpacePlanOrmEntity,
+      SpaceRulesOrmEntity,
       TransactionOrmEntity,
     ]),
   ],
-  controllers: [HouseholdController, SpacesController],
+  controllers: [HouseholdController, SpacesController, ImportsController],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
     { provide: HouseholdRepository, useClass: TypeOrmHouseholdRepository },
     { provide: SpacePlanRepository, useClass: TypeOrmSpacePlanRepository },
+    { provide: SpaceRulesRepository, useClass: TypeOrmSpaceRulesRepository },
     { provide: TransactionRepository, useClass: TypeOrmTransactionRepository },
     { provide: APP_FILTER, useClass: DomainErrorFilter },
     HouseholdViewBuilder,
@@ -71,6 +83,10 @@ import { AuthModule } from './auth.module';
     UpdateSpaceTransactionUseCase,
     DeleteSpaceTransactionUseCase,
     GetMonthSummaryUseCase,
+    PreviewImportUseCase,
+    CommitImportUseCase,
+    GetRulesUseCase,
+    SaveRulesUseCase,
   ],
 })
 export class HouseholdModule {}

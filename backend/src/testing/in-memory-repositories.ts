@@ -10,6 +10,8 @@ import { SpacePlan } from '../domain/space/space-plan';
 import { SpacePlanRepository } from '../domain/space/space-plan.repository';
 import { Transaction } from '../domain/transaction/transaction';
 import { TransactionRepository } from '../domain/transaction/transaction.repository';
+import { ClassificationRule } from '../domain/import/classification';
+import { SpaceRulesRepository } from '../domain/import/space-rules.repository';
 import { User } from '../domain/user/user';
 import { UserRepository } from '../domain/user/user.repository';
 
@@ -104,6 +106,9 @@ export class InMemoryTransactionRepository extends TransactionRepository {
   async save(t: Transaction): Promise<void> {
     this.items.set(t.id, t);
   }
+  async saveMany(ts: Transaction[]): Promise<void> {
+    for (const t of ts) this.items.set(t.id, t);
+  }
   async delete(id: string): Promise<void> {
     this.items.delete(id);
   }
@@ -119,5 +124,15 @@ export class InMemoryUserRepository extends UserRepository {
   }
   async save(user: User): Promise<void> {
     this.users.set(user.id, user);
+  }
+}
+
+export class InMemorySpaceRulesRepository extends SpaceRulesRepository {
+  rules = new Map<string, ClassificationRule[]>();
+  async find(spaceId: string): Promise<ClassificationRule[] | null> {
+    return this.rules.get(spaceId) ?? null;
+  }
+  async save(spaceId: string, rules: ClassificationRule[]): Promise<void> {
+    this.rules.set(spaceId, rules);
   }
 }

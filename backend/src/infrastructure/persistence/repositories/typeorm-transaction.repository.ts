@@ -63,6 +63,23 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
   }
 
   async save(transaction: Transaction): Promise<void> {
+    await this.transactions.save(await this.toRow(transaction));
+  }
+
+  async saveMany(transactions: Transaction[]): Promise<void> {
+    if (transactions.length === 0) {
+      return;
+    }
+    const rows: TransactionOrmEntity[] = [];
+    for (const transaction of transactions) {
+      rows.push(await this.toRow(transaction));
+    }
+    await this.transactions.manager.transaction(async (manager) => {
+      await manager.save(TransactionOrmEntity, rows);
+    });
+  }
+
+  private async toRow(transaction: Transaction): Promise<TransactionOrmEntity> {
     const space = await this.spaces.findOneByOrFail({
       id: transaction.spaceId,
     });
@@ -79,7 +96,7 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
         label: transaction.label,
         amountCents: transaction.amount.toCents(),
       };
-      await this.transactions.save({
+      return {
         ...base,
         label: null,
         amountCents: null,
@@ -88,16 +105,15 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
           aad(transaction.id, transaction.spaceId),
           JSON.stringify(secret),
         ),
-      });
-      return;
+      };
     }
 
-    await this.transactions.save({
+    return {
       ...base,
       label: transaction.label,
       amountCents: transaction.amount.toCents(),
       secretPayload: null,
-    });
+    };
   }
 
   async delete(id: string): Promise<void> {

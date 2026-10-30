@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
@@ -8,7 +8,7 @@ import { configureApp } from '../configure-app';
 type Agent = ReturnType<typeof request.agent>;
 
 describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
   let dataSource: DataSource;
   const env = { ...process.env };
 
@@ -23,7 +23,7 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>();
     configureApp(app);
     await app.init();
     dataSource = app.get(DataSource);
@@ -241,6 +241,239 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
       [bobPersonal],
     );
     expect(planRows[0].payload.startsWith('v1.')).toBe(true);
+  });
+
+  it('imports a bank statement: preview, commit, duplicates, rules, privacy', async () => {
+    const alice = await login('alice');
+    const bob = await login('bob');
+    const house = (await alice.get('/api/household').expect(200)).body
+      .household;
+    const common = house.spaces.find(
+      (s: { kind: string }) => s.kind === 'COMMON',
+    ).id;
+    const personal = house.spaces.find(
+      (s: { kind: string }) => s.kind === 'PERSONAL',
+    ).id;
+
+    const csv = [
+      'Date;Libellé;Débit;Crédit',
+      '02/11/2026;PRLV LOYER;1 100,00;',
+      '03/11/2026;CB CARREFOUR MARKET;142,30;',
+      '04/11/2026;CB BOULANGERIE DU COIN;12,40;',
+      '05/11/2026;VIR SALAIRE;;3 800,00',
+      '06/11/2026;VIREMENT INTERNE COMPTE JOINT;200,00;',
+      'ligne cassée',
+    ].join('\n');
+
+    const preview = await alice
+      .post(`/api/spaces/${common}/imports/preview`)
+      .send({ text: csv })
+      .expect(200);
+    expect(
+      preview.body.rows.map(
+        (r: { suggestion: { target: string | null } }) => r.suggestion.target,
+      ),
+    ).toEqual(['FIXE', 'COURANT', null, 'INCOME', 'IGNORE']);
+    expect(preview.body.rows[0]).toMatchObject({
+      amountCents: -110000,
+      duplicate: false,
+      date: '2026-11-02T00:00:00.000Z',
+    });
+    expect(preview.body.skipped.map((s: { line: number }) => s.line)).toEqual([
+      1, 7,
+    ]);
+    await alice
+      .get(`/api/spaces/${common}/transactions?month=2026-11`)
+      .expect(200)
+      .expect([]);
+
+    const commit = await alice
+      .post(`/api/spaces/${common}/imports/commit`)
+      .send({
+        items: [
+          {
+            kind: 'EXPENSE',
+            bloc: 'FIXE',
+            label: 'PRLV LOYER',
+            amountCents: 110000,
+            date: '2026-11-02T00:00:00.000Z',
+          },
+          {
+            kind: 'EXPENSE',
+            bloc: 'COURANT',
+            label: 'CB CARREFOUR MARKET',
+            amountCents: 14230,
+            date: '2026-11-03T00:00:00.000Z',
+          },
+          {
+            kind: 'INCOME',
+            label: 'VIR SALAIRE',
+            amountCents: 380000,
+            date: '2026-11-05T00:00:00.000Z',
+          },
+        ],
+      })
+      .expect(201);
+    expect(commit.body).toEqual({ created: 3 });
+
+    const again = await alice
+      .post(`/api/spaces/${common}/imports/preview`)
+      .send({ text: csv })
+      .expect(200);
+    expect(
+      again.body.rows.map((r: { duplicate: boolean }) => r.duplicate),
+    ).toEqual([true, true, false, true, false]);
+
+    const summary = await bob
+      .get(`/api/spaces/${common}/summary?month=2026-11`)
+      .expect(200);
+    expect(summary.body.income.actualCents).toBe(380000);
+    expect(
+      summary.body.blocs.find((b: { bloc: string }) => b.bloc === 'FIXE')
+        .actualCents,
+    ).toBe(110000);
+
+    // Atomic: one bad item and nothing is stored.
+    await alice
+      .post(`/api/spaces/${common}/imports/commit`)
+      .send({
+        items: [
+          {
+            kind: 'EXPENSE',
+            bloc: 'FIXE',
+            label: 'OK',
+            amountCents: 100,
+            date: '2026-11-08T00:00:00.000Z',
+          },
+          {
+            kind: 'EXPENSE',
+            label: 'SANS BLOC',
+            amountCents: 100,
+            date: '2026-11-08T00:00:00.000Z',
+          },
+        ],
+      })
+      .expect(400);
+    expect(
+      (
+        await alice
+          .get(`/api/spaces/${common}/transactions?month=2026-11`)
+          .expect(200)
+      ).body,
+    ).toHaveLength(3);
+
+    // Rules: defaults, then saved, then validation.
+    expect(
+      (await alice.get(`/api/spaces/${common}/rules`).expect(200)).body
+        .isDefault,
+    ).toBe(true);
+    await alice
+      .put(`/api/spaces/${common}/rules`)
+      .send({ rules: [{ keyword: 'Boulangerie', target: 'COURANT' }] })
+      .expect(204);
+    expect(
+      (await bob.get(`/api/spaces/${common}/rules`).expect(200)).body,
+    ).toEqual({
+      rules: [{ keyword: 'boulangerie', target: 'COURANT' }],
+      isDefault: false,
+    });
+    await alice
+      .put(`/api/spaces/${common}/rules`)
+      .send({ rules: [{ keyword: 'x', target: 'FIXE' }] })
+      .expect(400);
+    await alice
+      .put(`/api/spaces/${common}/rules`)
+      .send({ rules: [{ keyword: 'loyer', target: 'AUTRE' }] })
+      .expect(400);
+
+    // Personal space: private for Bob, encrypted at rest (operations and rules).
+    await alice
+      .post(`/api/spaces/${personal}/imports/commit`)
+      .send({
+        items: [
+          {
+            kind: 'EXPENSE',
+            bloc: 'PLAISIR',
+            label: 'LIBRAIRIE SECRETE',
+            amountCents: 2490,
+            date: '2026-11-09T00:00:00.000Z',
+          },
+        ],
+      })
+      .expect(201);
+    await alice
+      .put(`/api/spaces/${personal}/rules`)
+      .send({ rules: [{ keyword: 'librairie', target: 'PLAISIR' }] })
+      .expect(204);
+    await bob
+      .post(`/api/spaces/${personal}/imports/preview`)
+      .send({ text: csv })
+      .expect(404);
+    await bob
+      .post(`/api/spaces/${personal}/imports/commit`)
+      .send({
+        items: [
+          {
+            kind: 'INCOME',
+            label: 'X',
+            amountCents: 1,
+            date: '2026-11-09T00:00:00.000Z',
+          },
+        ],
+      })
+      .expect(404);
+    await bob.get(`/api/spaces/${personal}/rules`).expect(404);
+    const raw: { label: string | null; secret_payload: string }[] =
+      await dataSource.query(
+        `SELECT label, secret_payload FROM transactions WHERE space_id = ?`,
+        [personal],
+      );
+    expect(
+      raw.filter((r) => r.label === null && r.secret_payload.startsWith('v1.'))
+        .length,
+    ).toBeGreaterThan(0);
+    expect(JSON.stringify(raw)).not.toContain('LIBRAIRIE');
+    const ruleRows: { payload: string }[] = await dataSource.query(
+      `SELECT payload FROM space_rules WHERE space_id = ?`,
+      [personal],
+    );
+    expect(ruleRows[0].payload.startsWith('v1.')).toBe(true);
+    expect(ruleRows[0].payload).not.toContain('librairie');
+  });
+
+  it('limits import bodies to 1 MB and the commit to 500 items', async () => {
+    const alice = await login('alice');
+    const house = (await alice.get('/api/household').expect(200)).body
+      .household;
+    const common = house.spaces.find(
+      (s: { kind: string }) => s.kind === 'COMMON',
+    ).id;
+    const big = Array.from(
+      { length: 4000 },
+      (_, i) => `02/11/2026;CB COMMERCANT NUMERO ${i};-1,00`,
+    ).join('\n');
+    expect(big.length).toBeGreaterThan(100_000);
+    expect(big.length).toBeLessThan(1_000_000);
+    const result = await alice
+      .post(`/api/spaces/${common}/imports/preview`)
+      .send({ text: big })
+      .expect(200);
+    expect(result.body.truncated).toBe(true);
+    expect(result.body.rows).toHaveLength(2000);
+    await alice
+      .post(`/api/spaces/${common}/imports/preview`)
+      .send({ text: 'x'.repeat(1_100_000) })
+      .expect(413);
+    const items = Array.from({ length: 501 }, () => ({
+      kind: 'INCOME',
+      label: 'X',
+      amountCents: 1,
+      date: '2026-11-09T00:00:00.000Z',
+    }));
+    await alice
+      .post(`/api/spaces/${common}/imports/commit`)
+      .send({ items })
+      .expect(400);
   });
 
   it('validates input and turns domain errors into 400s', async () => {

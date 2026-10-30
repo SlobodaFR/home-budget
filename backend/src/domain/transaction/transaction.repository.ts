@@ -10,5 +10,7 @@ export abstract class TransactionRepository {
   ): Promise<Transaction[]>;
   abstract findById(id: string): Promise<Transaction | null>;
   abstract save(transaction: Transaction): Promise<void>;
+  /** Enregistre tout ou rien. */
+  abstract saveMany(transactions: Transaction[]): Promise<void>;
   abstract delete(id: string): Promise<void>;
 }
