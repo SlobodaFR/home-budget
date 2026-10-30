@@ -7,7 +7,7 @@ import { cardClass } from './ui';
 function InsightItem({ insight }: { insight: Insight }) {
   const style = SEVERITY_STYLE[insight.severity];
   const Icon = style.icon;
-  const action = insightAction(insight.link);
+  const action = insightAction(insight.link, insight.id);
   const lesson = insight.lesson === null ? null : lessonReference(insight.lesson);
 
   return (

@@ -33,7 +33,7 @@ export function BottomSheet({ title, onClose, children }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="-mr-2 flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-soft-cloud"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink hover:bg-soft-cloud"
           >
             <CloseIcon />
           </button>

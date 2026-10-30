@@ -228,6 +228,8 @@ describe('PrevisionnelPage', () => {
           startDate: '2026-09-01',
           endDate: '2027-07-31',
           active: true,
+          frequency: 'MONTHLY',
+          monthOfYear: null,
           aidRuleId: 'CREDIT_IMPOT_GARDE_HORS_DOMICILE',
         }),
       );
@@ -319,6 +321,8 @@ describe('PrevisionnelPage', () => {
           startDate: '2026-01-01',
           endDate: null,
           active: false,
+          frequency: 'MONTHLY',
+          monthOfYear: null,
         }),
       );
       await waitFor(() => expect(api.fetchForecast).toHaveBeenCalledTimes(2));

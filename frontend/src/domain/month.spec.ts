@@ -7,7 +7,11 @@ import {
   formatDay,
   formatMonthLabel,
   isoToDateInput,
+  isMonthOfYear,
   isValidDateInput,
+  monthName,
+  monthNumberOf,
+  monthShortName,
   shiftMonth,
   toApiDate,
   todayInputValue,
@@ -75,5 +79,25 @@ describe('date formatting helpers', () => {
 
   it('gives the current year', () => {
     expect(currentYear(new Date(2026, 5, 1))).toBe(2026);
+  });
+});
+
+describe('month names', () => {
+  it('names a month in lowercase French', () => {
+    expect(monthName(1)).toBe('janvier');
+    expect(monthName(2)).toBe('février');
+    expect(monthName(12)).toBe('décembre');
+    expect(monthShortName(1)).toMatch(/^janv\.?$/);
+  });
+
+  it('validates a month of the year', () => {
+    expect([1, 12, 6].every(isMonthOfYear)).toBe(true);
+    expect([0, 13, 1.5, '3', null, undefined].some(isMonthOfYear)).toBe(false);
+  });
+
+  it('reads the month number of a month key', () => {
+    expect(monthNumberOf('2026-10')).toBe(10);
+    expect(monthNumberOf('2026-13')).toBeNull();
+    expect(monthNumberOf('nope')).toBeNull();
   });
 });

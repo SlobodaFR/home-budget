@@ -48,6 +48,22 @@ describe('parseInsights', () => {
   });
 });
 
+describe('insightAction for the non monthly payments insights', () => {
+  it('opens the provisions tab for an upcoming big payment', () => {
+    expect(insightAction('/previsionnel', 'upcoming-big-payment')).toEqual({ to: '/previsionnel?vue=provisions', label: 'Voir mes provisions' });
+  });
+
+  it('offers to adjust the plan for a provision suggestion', () => {
+    expect(insightAction('/plan', 'provision-suggestion')).toEqual({ to: '/plan', label: 'Ajuster mon plan' });
+  });
+
+  it('falls back to the generic button when the server links elsewhere or the id is another one', () => {
+    expect(insightAction('/aides', 'upcoming-big-payment')).toEqual({ to: '/aides', label: 'Voir les aides' });
+    expect(insightAction('/previsionnel', 'recurring-missing')).toEqual({ to: '/previsionnel', label: 'Voir le prévisionnel' });
+    expect(insightAction('/previsionnel', 'constructor')).toEqual({ to: '/previsionnel', label: 'Voir le prévisionnel' });
+  });
+});
+
 describe('insightAction', () => {
   it.each([
     ['/plan', 'Ouvrir le plan'],

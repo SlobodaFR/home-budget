@@ -3,9 +3,11 @@ import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, F
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
+import { parseProvisions, Provisions } from '../domain/provisions';
 import { RecurringPayload, RecurringPayment } from '../domain/recurring';
 import { parseSafetyNetState, SafetyNet, SafetyNetState } from '../domain/safety-net';
 import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
+import { parseYearForecast, YearForecast } from '../domain/year-forecast';
 import { CommitItem, ImportPreview, Rule, RuleSet } from '../domain/statement-import';
 
 const BASE_URL = '/api';
@@ -153,6 +155,13 @@ export const apiClient = {
 
   fetchForecast(spaceId: string, month: string): Promise<Forecast> {
     return request<Forecast>(`${spacePath(spaceId)}/forecast?month=${month}`);
+  },
+  async fetchProvisions(spaceId: string, asOf?: string): Promise<Provisions> {
+    const query = asOf ? `?asOf=${encodeURIComponent(asOf)}` : '';
+    return parseProvisions(await request<unknown>(`${spacePath(spaceId)}/provisions${query}`));
+  },
+  async fetchYearForecast(spaceId: string, year: number): Promise<YearForecast> {
+    return parseYearForecast(await request<unknown>(`${spacePath(spaceId)}/forecast/year?year=${year}`), year);
   },
   fetchRecurring(spaceId: string): Promise<RecurringPayment[]> {
     return request<RecurringPayment[]>(`${spacePath(spaceId)}/recurring`);
