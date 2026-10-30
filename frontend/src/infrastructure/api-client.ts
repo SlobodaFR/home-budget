@@ -3,6 +3,17 @@ import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, F
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
+import {
+  Deposit,
+  DepositPayload,
+  parseDeposits,
+  parseProject,
+  parseProjects,
+  parseProjectsSummary,
+  Project,
+  ProjectPayload,
+  ProjectsSummary,
+} from '../domain/project';
 import { parseProvisions, Provisions } from '../domain/provisions';
 import { RecurringPayload, RecurringPayment } from '../domain/recurring';
 import { parseSafetyNetState, SafetyNet, SafetyNetState } from '../domain/safety-net';
@@ -156,6 +167,34 @@ export const apiClient = {
   fetchForecast(spaceId: string, month: string): Promise<Forecast> {
     return request<Forecast>(`${spacePath(spaceId)}/forecast?month=${month}`);
   },
+  async fetchProjects(spaceId: string): Promise<Project[]> {
+    return parseProjects(await request<unknown>(`${spacePath(spaceId)}/projects`));
+  },
+  async createProject(spaceId: string, payload: ProjectPayload): Promise<Project | null> {
+    return parseProject(await request<unknown>(`${spacePath(spaceId)}/projects`, 'POST', payload));
+  },
+  updateProject(spaceId: string, id: string, payload: ProjectPayload): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/projects/${encodeURIComponent(id)}`, 'PUT', payload);
+  },
+  deleteProject(spaceId: string, id: string): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/projects/${encodeURIComponent(id)}`, 'DELETE');
+  },
+  async fetchProjectsSummary(spaceId: string): Promise<ProjectsSummary> {
+    return parseProjectsSummary(await request<unknown>(`${spacePath(spaceId)}/projects/summary`));
+  },
+  async fetchDeposits(spaceId: string, projectId: string): Promise<Deposit[]> {
+    return parseDeposits(await request<unknown>(`${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits`));
+  },
+  createDeposit(spaceId: string, projectId: string, payload: DepositPayload): Promise<unknown> {
+    return request<unknown>(`${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits`, 'POST', payload);
+  },
+  deleteDeposit(spaceId: string, projectId: string, depositId: string): Promise<void> {
+    return request<void>(
+      `${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits/${encodeURIComponent(depositId)}`,
+      'DELETE',
+    );
+  },
+
   async fetchProvisions(spaceId: string, asOf?: string): Promise<Provisions> {
     const query = asOf ? `?asOf=${encodeURIComponent(asOf)}` : '';
     return parseProvisions(await request<unknown>(`${spacePath(spaceId)}/provisions${query}`));

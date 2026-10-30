@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
-import { account } from '../../test/fixtures';
+import { account, project } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   deleteTransaction: vi.fn(),
   createTransaction: vi.fn(),
   fetchAccounts: vi.fn(),
+  fetchProjects: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -138,5 +139,82 @@ describe('HomePage bank accounts', () => {
     ]);
     renderInApp(<HomePage />);
     expect(await screen.findByRole('link', { name: 'Voir mes comptes' })).toHaveAttribute('href', '/comptes');
+  });
+});
+
+describe('HomePage projects card', () => {
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchAccounts.mockResolvedValue([]);
+    api.fetchSummary.mockResolvedValue(summary);
+    api.fetchInsights.mockResolvedValue([]);
+    api.fetchTransactions.mockResolvedValue([]);
+  });
+
+  const plain = (value: string | null) => (value ?? '').replace(/[\s\u00a0\u202f]/g, ' ');
+
+  it('shows the three projects closest to their due date, with status, progress and a link', async () => {
+    api.fetchProjects.mockResolvedValue([
+      project({ id: 'p4', name: 'Dans deux ans', targetDate: '2028-10-01' }),
+      project({ id: 'p1', name: 'Vacances', targetDate: '2027-07-01' }),
+      project({ id: 'p2', name: 'Voiture', targetDate: '2027-12-01', status: 'ON_TRACK' }),
+      project({ id: 'p3', name: 'Travaux', targetDate: '2028-03-01', status: 'AHEAD' }),
+      project({ id: 'p5', name: 'Fini', targetDate: '2026-12-01', status: 'DONE', remainingCents: 0 }),
+      project({ id: 'p6', name: 'Rangé', targetDate: '2026-11-01', archived: true }),
+    ]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Mes projets' });
+    const items = within(card).getAllByTestId('home-project');
+    expect(items.map((item) => item.querySelector('p')?.textContent)).toEqual(['Vacances', 'Voiture', 'Travaux']);
+    expect(within(items[0]).getByText('En retard')).toBeInTheDocument();
+    expect(within(items[1]).getByText('À jour')).toBeInTheDocument();
+    expect(within(items[2]).getByText('En avance')).toBeInTheDocument();
+    expect(plain(items[0].textContent)).toContain('13 % — 400 € sur 3 000 €');
+    expect(within(card).getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
+    expect(api.fetchProjects).toHaveBeenCalledWith('s-common');
+  });
+
+  it('invites to create a first project when there is none', async () => {
+    api.fetchProjects.mockResolvedValue([]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Mes projets' });
+    expect(card).toHaveTextContent('Un projet daté vous dit combien mettre de côté');
+    expect(within(card).getByRole('link', { name: 'Créer un projet' })).toHaveAttribute('href', '/projets');
+  });
+
+  it('says so when every project is reached or archived', async () => {
+    api.fetchProjects.mockResolvedValue([project({ status: 'DONE', remainingCents: 0 }), project({ id: 'p2', archived: true })]);
+    renderInApp(<HomePage />);
+    expect(await screen.findByText(/Aucun projet en cours/)).toBeInTheDocument();
+  });
+
+  it('keeps a plain link to the projects page near the other shortcuts', async () => {
+    api.fetchProjects.mockResolvedValue([]);
+    renderInApp(<HomePage />);
+    expect(screen.getByRole('link', { name: 'Mes projets' })).toHaveAttribute('href', '/projets');
+    await screen.findByRole('region', { name: 'Mes projets' });
+  });
+
+  it.each([
+    ['404', new ApiError(404, 'nope')],
+    ['500', new ApiError(500, 'boom')],
+    ['network', new NetworkError()],
+  ])('hides the card without noise when the endpoint fails (%s)', async (_label, failure) => {
+    api.fetchProjects.mockRejectedValue(failure);
+    renderInApp(<HomePage />);
+    await screen.findByRole('region', { name: 'Synthèse du mois' });
+    await waitFor(() => expect(api.fetchProjects).toHaveBeenCalled());
+    expect(screen.queryByRole('region', { name: 'Mes projets' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('offers the projects page from the insights', async () => {
+    api.fetchProjects.mockResolvedValue([]);
+    api.fetchInsights.mockResolvedValue([
+      { id: 'project-behind', severity: 'WARNING', title: 'Vacances est en retard', detail: 'Il manque 350 €.', lesson: 2, link: '/projets' },
+    ]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Prochaines actions' });
+    expect(within(card).getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
   });
 });

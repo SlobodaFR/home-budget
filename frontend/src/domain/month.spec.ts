@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addMonths,
   currentMonth,
   currentYear,
   formatDateInput,
@@ -99,5 +100,25 @@ describe('month names', () => {
     expect(monthNumberOf('2026-10')).toBe(10);
     expect(monthNumberOf('2026-13')).toBeNull();
     expect(monthNumberOf('nope')).toBeNull();
+  });
+});
+
+describe('addMonths', () => {
+  it('moves a date forward by whole months', () => {
+    expect(addMonths('2026-10-30', 9)).toBe('2027-07-30');
+    expect(addMonths('2026-11-01', 8)).toBe('2027-07-01');
+    expect(addMonths('2026-12-15', 1)).toBe('2027-01-15');
+    expect(addMonths('2026-10-30', 0)).toBe('2026-10-30');
+  });
+
+  it('brings the day back to the end of a shorter month', () => {
+    expect(addMonths('2026-01-31', 1)).toBe('2026-02-28');
+    expect(addMonths('2027-12-31', 2)).toBe('2028-02-29');
+    expect(addMonths('2026-08-31', 1)).toBe('2026-09-30');
+  });
+
+  it('goes back too, and refuses an invalid date', () => {
+    expect(addMonths('2026-03-31', -1)).toBe('2026-02-28');
+    expect(() => addMonths('nope', 1)).toThrow();
   });
 });

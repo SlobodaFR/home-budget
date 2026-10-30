@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { CalendarIcon, HomeIcon, PlanIcon, UsersIcon } from './Icons';
 
 const TABS: { to: string; label: string; icon: ReactNode; end?: boolean; alsoActive?: string[] }[] = [
-  { to: '/', label: 'Accueil', icon: <HomeIcon />, end: true, alsoActive: ['/import', '/comptes'] },
+  { to: '/', label: 'Accueil', icon: <HomeIcon />, end: true, alsoActive: ['/import', '/comptes', '/projets'] },
   { to: '/plan', label: 'Plan', icon: <PlanIcon /> },
   { to: '/previsionnel', label: 'Prévisionnel', icon: <CalendarIcon /> },
   { to: '/foyer', label: 'Foyer', icon: <UsersIcon />, alsoActive: ['/aides'] },

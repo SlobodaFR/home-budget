@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   centsToInputValue,
   formatCents,
+  formatCentsShort,
   formatRatio,
   formatSignedCents,
   MAX_AMOUNT_CENTS,
@@ -102,5 +103,15 @@ describe('signed amounts', () => {
     expect(signedCentsToInputValue(-15050)).toBe('-150,50');
     expect(signedCentsToInputValue(120000)).toBe('1200');
     expect(signedCentsToInputValue(0)).toBe('0');
+  });
+});
+
+describe('formatCentsShort', () => {
+  it('drops the cents of a round amount and keeps them otherwise', () => {
+    expect(normalize(formatCentsShort(300000))).toBe('3 000 €');
+    expect(normalize(formatCentsShort(40000))).toBe('400 €');
+    expect(normalize(formatCentsShort(1250))).toBe('12,50 €');
+    expect(normalize(formatCentsShort(0))).toBe('0 €');
+    expect(normalize(formatCentsShort(33333))).toBe('333,33 €');
   });
 });

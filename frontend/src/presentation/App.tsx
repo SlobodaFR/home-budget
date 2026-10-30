@@ -15,6 +15,7 @@ import { ImportPage } from './pages/ImportPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlanPage } from './pages/PlanPage';
 import { PrevisionnelPage } from './pages/PrevisionnelPage';
+import { ProjetsPage } from './pages/ProjetsPage';
 import { WelcomePage } from './pages/WelcomePage';
 
 function Protected() {
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="previsionnel" element={<PrevisionnelPage />} />
           <Route path="aides" element={<AidesPage />} />
           <Route path="comptes" element={<ComptesPage />} />
+          <Route path="projets" element={<ProjetsPage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>

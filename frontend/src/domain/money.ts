@@ -14,6 +14,13 @@ export function formatCents(cents: number): string {
   return FORMATTER.format(cents / 100);
 }
 
+const WHOLE_FORMATTER = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+/** Comme `formatCents`, mais sans les centimes quand le montant est rond : « 3 000 € », « 12,50 € ». */
+export function formatCentsShort(cents: number): string {
+  return cents % 100 === 0 ? WHOLE_FORMATTER.format(cents / 100) : FORMATTER.format(cents / 100);
+}
+
 export function formatSignedCents(cents: number): string {
   const sign = cents > 0 ? '+ ' : cents < 0 ? '- ' : '';
   return `${sign}${FORMATTER.format(Math.abs(cents) / 100)}`;

@@ -115,6 +115,15 @@ export function FoyerPage() {
         </Link>
       </Section>
 
+      <Section title="Projets d’épargne">
+        <p className="font-body-sm text-body-sm text-mute">
+          Vacances, naissance, voiture, travaux : combien mettre de côté chaque mois pour y arriver. Ceux de l’espace que vous avez sélectionné (commun ou perso).
+        </p>
+        <Link to="/projets" className={`${buttonSecondary} w-full`}>
+          Voir mes projets
+        </Link>
+      </Section>
+
       <Section title="Inviter">
         <InvitationCard full={household.members.length >= MAX_HOUSEHOLD_MEMBERS} />
       </Section>
