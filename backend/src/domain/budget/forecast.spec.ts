@@ -264,6 +264,7 @@ describe('buildForecast', () => {
       actualCents: 0,
       expectedRemainingCents: 380000,
       projectedCents: 380000,
+      contributionAssumed: false,
     });
     expect(forecast.blocs.map((b) => b.bloc)).toEqual([
       'FIXE',
@@ -394,5 +395,118 @@ describe('buildForecast', () => {
     });
     expect(forecast.blocs[0].expectedRemainingCents).toBe(0);
     expect(forecast.blocs[0].projectedCents).toBe(8200);
+  });
+});
+
+describe('buildForecast: common space funded by contributions', () => {
+  // Plan commun sans revenu propre : 175 000 + 100 000 + 45 000 + 20 000 = 340 000.
+  const COMMON_PLAN = SpacePlan.create({
+    incomeCents: 0,
+    fixeCents: 175000,
+    courantCents: 100000,
+    plaisirCents: 45000,
+    epargneCents: 20000,
+  });
+  const forecast = (over: Partial<Parameters<typeof buildForecast>[0]> = {}) =>
+    buildForecast({
+      month: '2026-11',
+      today: TODAY,
+      plan: COMMON_PLAN,
+      transactions: [],
+      recurring: [],
+      commonSpace: true,
+      ...over,
+    });
+
+  it('plans the income as the sum of the blocs and assumes the contributions', () => {
+    const result = forecast();
+    expect(result.income).toEqual({
+      plannedCents: 340000,
+      actualCents: 0,
+      expectedRemainingCents: 0,
+      projectedCents: 340000,
+      contributionAssumed: true,
+    });
+    expect(result.projectedBalanceCents).toBe(340000);
+    // Chaque bloc compte au moins son prévu : 340 000 - 340 000.
+    expect(result.cautiousBalanceCents).toBe(0);
+  });
+
+  it('keeps the real income when it exceeds the plan', () => {
+    const result = forecast({
+      transactions: [tx('INCOME', null, 'Virements', 400000, '2026-11-02')],
+    });
+    expect(result.income).toMatchObject({
+      plannedCents: 340000,
+      actualCents: 400000,
+      projectedCents: 400000,
+      contributionAssumed: true,
+    });
+  });
+
+  it('completes a partial income (actual + expected) up to the plan', () => {
+    const result = forecast({
+      transactions: [
+        tx('INCOME', null, 'Virement Alice', 100000, '2026-11-02'),
+      ],
+      recurring: [
+        rec('INCOME', null, 'Virement Bob', 50000, { dayOfMonth: 20 }),
+      ],
+    });
+    expect(result.income).toMatchObject({
+      actualCents: 100000,
+      expectedRemainingCents: 50000,
+      projectedCents: 340000,
+    });
+  });
+
+  it('does not hide a real overspending behind the assumed contributions', () => {
+    const result = forecast({
+      transactions: [tx('EXPENSE', 'COURANT', 'Courses', 400000, '2026-11-03')],
+    });
+    // 340 000 - 400 000
+    expect(result.projectedBalanceCents).toBe(-60000);
+    // 340 000 - (175 000 + 400 000 + 45 000 + 20 000)
+    expect(result.cautiousBalanceCents).toBe(-300000);
+  });
+
+  it('applies the same rule to a past month and keeps the cautious balance equal to the projected one', () => {
+    const result = forecast({ month: '2026-10' });
+    expect(result.income.contributionAssumed).toBe(true);
+    expect(result.projectedBalanceCents).toBe(340000);
+    expect(result.cautiousBalanceCents).toBe(result.projectedBalanceCents);
+  });
+
+  it('stays unchanged when the common plan declares an income', () => {
+    const result = forecast({
+      plan: SpacePlan.create({ ...COMMON_PLAN.toProps(), incomeCents: 380000 }),
+    });
+    expect(result.income).toMatchObject({
+      plannedCents: 380000,
+      projectedCents: 0,
+      contributionAssumed: false,
+    });
+  });
+
+  it('stays unchanged for a personal space', () => {
+    const result = forecast({ commonSpace: false });
+    expect(result.income).toEqual({
+      plannedCents: 0,
+      actualCents: 0,
+      expectedRemainingCents: 0,
+      projectedCents: 0,
+      contributionAssumed: false,
+    });
+    expect(result.projectedBalanceCents).toBe(0);
+    expect(result.cautiousBalanceCents).toBe(-340000);
+  });
+
+  it('assumes nothing meaningful for an empty common plan', () => {
+    const result = forecast({ plan: SpacePlan.empty() });
+    expect(result.income).toMatchObject({
+      plannedCents: 0,
+      projectedCents: 0,
+      contributionAssumed: true,
+    });
   });
 });

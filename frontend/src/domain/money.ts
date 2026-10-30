@@ -40,3 +40,20 @@ export function centsToInputValue(cents: number): string {
   const remainder = cents % 100;
   return remainder === 0 ? String(euros) : `${euros},${String(remainder).padStart(2, '0')}`;
 }
+
+/** Montant signé en euros (« -150 », « − 1 200,50 », « +30 ») → centimes, ou `null` si illisible. Le découvert se saisit avec un « - ». */
+export function parseSignedAmountToCents(input: string): number | null {
+  const trimmed = input.trim();
+  const negative = /^[-−–]/.test(trimmed);
+  const unsigned = trimmed.replace(/^[-−–+]\s*/, '');
+  const cents = parseAmountToCents(unsigned);
+  if (cents === null) {
+    return null;
+  }
+  return negative && cents !== 0 ? -cents : cents;
+}
+
+/** Valeur à remettre dans un champ de saisie pour un montant signé. */
+export function signedCentsToInputValue(cents: number): string {
+  return cents < 0 ? `-${centsToInputValue(-cents)}` : centsToInputValue(cents);
+}

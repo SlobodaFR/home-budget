@@ -2,11 +2,11 @@ import { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { CalendarIcon, HomeIcon, PlanIcon, UsersIcon } from './Icons';
 
-const TABS: { to: string; label: string; icon: ReactNode; end?: boolean; alsoActive?: string }[] = [
-  { to: '/', label: 'Accueil', icon: <HomeIcon />, end: true, alsoActive: '/import' },
+const TABS: { to: string; label: string; icon: ReactNode; end?: boolean; alsoActive?: string[] }[] = [
+  { to: '/', label: 'Accueil', icon: <HomeIcon />, end: true, alsoActive: ['/import', '/comptes'] },
   { to: '/plan', label: 'Plan', icon: <PlanIcon /> },
   { to: '/previsionnel', label: 'Prévisionnel', icon: <CalendarIcon /> },
-  { to: '/foyer', label: 'Foyer', icon: <UsersIcon />, alsoActive: '/aides' },
+  { to: '/foyer', label: 'Foyer', icon: <UsersIcon />, alsoActive: ['/aides'] },
 ];
 
 export function TabBar() {
@@ -21,7 +21,7 @@ export function TabBar() {
               end={tab.end}
               className={({ isActive }) =>
                 `flex min-h-[56px] flex-col items-center justify-center gap-0.5 font-body-sm text-[12px] font-semibold ${
-                  isActive || pathname === tab.alsoActive ? 'text-ink' : 'text-mute'
+                  isActive || tab.alsoActive?.includes(pathname) ? 'text-ink' : 'text-mute'
                 }`
               }
             >

@@ -74,6 +74,22 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
     return row?.latest ? new Date(row.latest) : null;
   }
 
+  async findAttachedBySpace(spaceId: string): Promise<Transaction[]> {
+    const space = await this.spaces.findOneByOrFail({ id: spaceId });
+    const rows = await this.transactions
+      .createQueryBuilder('t')
+      .where('t.space_id = :spaceId', { spaceId })
+      .andWhere('t.account_id IS NOT NULL')
+      .orderBy('t.date', 'ASC')
+      .addOrderBy('t.id', 'ASC')
+      .getMany();
+    return rows.map((row) => this.toDomain(row, space.ownerUserId));
+  }
+
+  async countByAccount(accountId: string): Promise<number> {
+    return this.transactions.count({ where: { accountId } });
+  }
+
   async findById(id: string): Promise<Transaction | null> {
     const row = await this.transactions.findOne({ where: { id } });
     if (!row) {
@@ -110,6 +126,7 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
       kind: transaction.kind,
       bloc: transaction.bloc,
       date: transaction.date.toISOString(),
+      accountId: transaction.accountId,
     };
 
     if (space.ownerUserId) {
@@ -168,6 +185,7 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
       label,
       amount: Money.fromCents(amountCents),
       date: new Date(row.date),
+      accountId: row.accountId,
     });
   }
 }

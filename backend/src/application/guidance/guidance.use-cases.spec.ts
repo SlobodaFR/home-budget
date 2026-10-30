@@ -3,6 +3,7 @@ import { DomainError } from '../../domain/shared/domain-error';
 import { User } from '../../domain/user/user';
 import { FakeClock } from '../../testing/fake-clock';
 import {
+  InMemoryAccountRepository,
   InMemoryFiscalProfileRepository,
   InMemoryHouseholdRepository,
   InMemoryRecurringItemRepository,
@@ -11,6 +12,8 @@ import {
   InMemoryTransactionRepository,
   InMemoryUserRepository,
 } from '../../testing/in-memory-repositories';
+import { AccountAssignmentService } from '../account/account-assignment.service';
+import { AccountViewsService } from '../account/account-views.service';
 import {
   EstimateCrecheUseCase,
   GetAidsUseCase,
@@ -66,6 +69,14 @@ async function setup(today = '2026-11-12T09:00:00Z') {
   const safetyNets = new InMemorySafetyNetRepository();
   const profiles = new InMemoryFiscalProfileRepository();
   const clock = FakeClock.at(today);
+  const accountsRepo = new InMemoryAccountRepository();
+  const assignment = new AccountAssignmentService(accountsRepo);
+  const accountViews = new AccountViewsService(
+    accountsRepo,
+    transactions,
+    recurring,
+    clock,
+  );
   const progress = new SafetyNetProgressService(plans, transactions, clock);
 
   const created = await new CreateHouseholdUseCase(households, view).execute(
@@ -84,12 +95,16 @@ async function setup(today = '2026-11-12T09:00:00Z') {
     householdId: created.id,
     commonId: created.spaces.find((s) => s.kind === 'COMMON')!.id,
     alicePersonalId: created.spaces.find((s) => s.kind === 'PERSONAL')!.id,
-    createTransaction: new CreateSpaceTransactionUseCase(access, transactions),
+    createTransaction: new CreateSpaceTransactionUseCase(
+      access,
+      transactions,
+      assignment,
+    ),
     savePlan: new SaveSpacePlanUseCase(access, plans),
     setIncome: new SetMyIncomeUseCase(households, access),
     list: new ListRecurringItemsUseCase(access, recurring),
-    create: new CreateRecurringItemUseCase(access, recurring),
-    update: new UpdateRecurringItemUseCase(access, recurring),
+    create: new CreateRecurringItemUseCase(access, recurring, assignment),
+    update: new UpdateRecurringItemUseCase(access, recurring, assignment),
     remove: new DeleteRecurringItemUseCase(access, recurring),
     forecast: new GetForecastUseCase(
       access,
@@ -105,6 +120,7 @@ async function setup(today = '2026-11-12T09:00:00Z') {
       recurring,
       safetyNets,
       progress,
+      accountViews,
       clock,
     ),
     getSafetyNet: new GetSafetyNetUseCase(access, safetyNets, progress),
@@ -309,15 +325,21 @@ describe('forecast use case', () => {
       expectedRemainingCents: 4500,
       projectedCents: 114500,
     });
-    expect(forecast.projectedBalanceCents).toBe(-114500);
-    expect(forecast.cautiousBalanceCents).toBe(-150000);
+    // Commun sans revenu au plan : les contributions couvrent le plan (150 000).
+    expect(forecast.income).toMatchObject({
+      plannedCents: 150000,
+      projectedCents: 150000,
+      contributionAssumed: true,
+    });
+    expect(forecast.projectedBalanceCents).toBe(150000 - 114500);
+    expect(forecast.cautiousBalanceCents).toBe(0);
 
     // La même requête un mois plus tard : l'assurance n'a jamais été retrouvée.
     s.clock.set('2026-12-02T09:00:00Z');
     const later = await s.forecast.execute('bob', s.commonId, '2026-11');
     expect(later.occurrences[1].status).toBe('MISSING');
-    expect(later.projectedBalanceCents).toBe(-110000);
-    expect(later.cautiousBalanceCents).toBe(-110000);
+    expect(later.projectedBalanceCents).toBe(150000 - 110000);
+    expect(later.cautiousBalanceCents).toBe(150000 - 110000);
   });
 });
 

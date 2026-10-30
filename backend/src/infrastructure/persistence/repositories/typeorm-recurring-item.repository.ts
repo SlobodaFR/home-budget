@@ -51,6 +51,10 @@ export class TypeOrmRecurringItemRepository extends RecurringItemRepository {
     return this.toDomain(row, space.ownerUserId);
   }
 
+  async countByAccount(accountId: string): Promise<number> {
+    return this.items.count({ where: { accountId } });
+  }
+
   async save(item: RecurringItem): Promise<void> {
     const space = await this.spaces.findOneByOrFail({ id: item.spaceId });
     const base = {
@@ -63,6 +67,7 @@ export class TypeOrmRecurringItemRepository extends RecurringItemRepository {
       endDate: item.endDate,
       active: item.active,
       aidRuleId: item.aidRuleId,
+      accountId: item.accountId,
     };
 
     if (space.ownerUserId) {
@@ -126,6 +131,7 @@ export class TypeOrmRecurringItemRepository extends RecurringItemRepository {
       endDate: row.endDate,
       active: Boolean(row.active),
       aidRuleId: row.aidRuleId as AidRuleId | null,
+      accountId: row.accountId,
     });
   }
 }

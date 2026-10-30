@@ -1,5 +1,6 @@
 import { FormEvent, useRef, useState } from 'react';
 import { BLOC_INFO, BLOCS } from '../../../domain/bloc';
+import { Account, selectableAccounts } from '../../../domain/account';
 import { TransactionKind } from '../../../domain/budget';
 import { AidRule } from '../../../domain/aids';
 import {
@@ -11,6 +12,7 @@ import {
   RecurringPayment,
   recurringToForm,
 } from '../../../domain/recurring';
+import { AccountSelect } from '../AccountSelect';
 import { BLOC_STYLE } from '../bloc-style';
 import { BottomSheet } from '../BottomSheet';
 import { buttonPrimary, inputClass, labelClass } from '../ui';
@@ -21,6 +23,10 @@ interface Props {
   allowAid: boolean;
   /** Catalogue des aides ; `null` s'il n'a pas pu être chargé (le sélecteur est alors masqué). */
   aidRules: AidRule[] | null;
+  /** Comptes de l'espace : le sélecteur n'apparaît que s'il y en a au moins un. */
+  accounts?: Account[];
+  /** Compte présélectionné pour un nouveau paiement (le dernier choisi dans l'espace). */
+  defaultAccountId?: string | null;
   onClose: () => void;
   onSubmit: (payload: RecurringPayload) => Promise<void>;
   now?: () => Date;
@@ -39,8 +45,10 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   ) : null;
 }
 
-export function RecurringForm({ editing, allowAid, aidRules, onClose, onSubmit, now = () => new Date() }: Props) {
-  const [values, setValues] = useState(() => (editing ? recurringToForm(editing) : emptyRecurringForm(now())));
+export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defaultAccountId = null, onClose, onSubmit, now = () => new Date() }: Props) {
+  const [values, setValues] = useState(() =>
+    editing ? recurringToForm(editing) : { ...emptyRecurringForm(now()), accountId: defaultAccountId ?? '' },
+  );
   const [errors, setErrors] = useState<RecurringFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +65,7 @@ export function RecurringForm({ editing, allowAid, aidRules, onClose, onSubmit, 
     if (submittingRef.current) {
       return;
     }
-    const result = buildRecurringPayload(values, { allowAid });
+    const result = buildRecurringPayload(values, { allowAid, accountSelectable: selectableAccounts(accounts, values.accountId || null).length > 0 });
     if (!result.ok) {
       setErrors(result.errors);
       return;
@@ -215,6 +223,14 @@ export function RecurringForm({ editing, allowAid, aidRules, onClose, onSubmit, 
             <FieldError id="rec-end-error" message={errors.endDate} />
           </div>
         </div>
+
+        <AccountSelect
+          id="rec-account"
+          accounts={accounts}
+          value={values.accountId || null}
+          onChange={(accountId) => set('accountId', accountId ?? '')}
+          hint="Le compte sur lequel ce paiement passe : on pourra projeter son solde de fin de mois."
+        />
 
         {showAid && (
           <div>

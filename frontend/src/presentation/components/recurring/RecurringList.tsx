@@ -16,6 +16,8 @@ import { buttonPrimary, cardClass } from '../ui';
 interface Props {
   items: RecurringPayment[];
   aidRules: AidRule[] | null;
+  /** Nom du compte rattaché, s'il y en a un. */
+  accountNameOf?: (accountId: string | null | undefined) => string | null;
   busy: boolean;
   onAdd: () => void;
   onEdit: (item: RecurringPayment) => void;
@@ -28,6 +30,7 @@ const iconButton = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-
 function Row({
   item,
   aidLabel,
+  accountLabel,
   busy,
   onEdit,
   onToggle,
@@ -35,6 +38,7 @@ function Row({
 }: {
   item: RecurringPayment;
   aidLabel: string | null;
+  accountLabel: string | null;
   busy: boolean;
   onEdit: Props['onEdit'];
   onToggle: Props['onToggle'];
@@ -60,6 +64,7 @@ function Row({
           </div>
           <p className="font-body-sm text-body-sm text-mute">
             {describeBloc(item)} · {describeSchedule(item)}
+            {accountLabel ? ` · ${accountLabel}` : ''}
           </p>
           <p className="font-body-sm text-body-sm text-mute">{describePeriod(item)}</p>
           {aidLabel && (
@@ -132,7 +137,7 @@ function Row({
   );
 }
 
-export function RecurringList({ items, aidRules, busy, onAdd, onEdit, onToggle, onDelete }: Props) {
+export function RecurringList({ items, aidRules, accountNameOf, busy, onAdd, onEdit, onToggle, onDelete }: Props) {
   const totals = monthlyTotals(items);
   const sorted = sortRecurring(items);
   const aidLabel = (item: RecurringPayment) =>
@@ -163,7 +168,7 @@ export function RecurringList({ items, aidRules, busy, onAdd, onEdit, onToggle, 
           </p>
           <ul className="mt-sm divide-y divide-hairline-soft">
             {sorted.map((item) => (
-              <Row key={item.id} item={item} aidLabel={aidLabel(item)} busy={busy} onEdit={onEdit} onToggle={onToggle} onDelete={onDelete} />
+              <Row key={item.id} item={item} aidLabel={aidLabel(item)} accountLabel={accountNameOf?.(item.accountId) ?? null} busy={busy} onEdit={onEdit} onToggle={onToggle} onDelete={onDelete} />
             ))}
           </ul>
         </>

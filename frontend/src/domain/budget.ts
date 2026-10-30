@@ -10,6 +10,8 @@ export interface Transaction {
   label: string;
   amountCents: number;
   date: string;
+  /** Compte bancaire rattaché (`null` ou absent : aucun). */
+  accountId?: string | null;
 }
 
 export interface TransactionPayload {
@@ -18,6 +20,8 @@ export interface TransactionPayload {
   label: string;
   amountCents: number;
   date: string;
+  /** Absent : non précisé ; `null` : détacher du compte. */
+  accountId?: string | null;
 }
 
 export interface Plan {

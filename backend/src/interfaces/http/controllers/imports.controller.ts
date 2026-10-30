@@ -39,7 +39,7 @@ export class ImportsController {
     @Body() dto: PreviewImportDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.preview.execute(user.id, spaceId, dto.text);
+    return this.preview.execute(user.id, spaceId, dto.text, dto.accountId);
   }
 
   @Post('imports/commit')
@@ -48,7 +48,7 @@ export class ImportsController {
     @Body() dto: CommitImportDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.commit.execute(user.id, spaceId, dto.items);
+    return this.commit.execute(user.id, spaceId, dto.items, dto.accountId);
   }
 
   @Get('rules')

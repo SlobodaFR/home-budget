@@ -48,6 +48,7 @@ const ACTION_LABELS: Record<string, string> = {
   '/import': 'Importer un relevé',
   '/foyer': 'Ouvrir le foyer',
   '/previsionnel': 'Voir le prévisionnel',
+  '/comptes': 'Voir mes comptes',
   '/aides': 'Voir les aides',
 };
 

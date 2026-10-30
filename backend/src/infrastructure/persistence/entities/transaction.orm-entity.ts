@@ -7,6 +7,7 @@ import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
  */
 @Entity({ name: 'transactions' })
 @Index('idx_transactions_space_date', ['spaceId', 'date'])
+@Index('idx_transactions_account', ['accountId'])
 export class TransactionOrmEntity {
   @PrimaryColumn('text')
   id!: string;
@@ -22,6 +23,9 @@ export class TransactionOrmEntity {
 
   @Column('text')
   date!: string;
+
+  @Column({ type: 'text', name: 'account_id', nullable: true })
+  accountId!: string | null;
 
   @Column({ type: 'text', nullable: true })
   label!: string | null;

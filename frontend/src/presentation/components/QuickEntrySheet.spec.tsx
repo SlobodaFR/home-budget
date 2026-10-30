@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { account } from '../../test/fixtures';
 import { QuickEntrySheet } from './QuickEntrySheet';
 
 const NOW = new Date(2026, 9, 20, 12, 0, 0);
@@ -106,5 +107,85 @@ describe('QuickEntrySheet', () => {
     expect(screen.getByLabelText(/Libellé/)).toHaveValue('Livret');
     expect(screen.getByLabelText('Date')).toHaveValue('2026-10-05');
     expect(screen.getByRole('button', { name: 'Épargne' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  describe('bank account', () => {
+    const accounts = [
+      account({ id: 'a1', name: 'Compte commun' }),
+      account({ id: 'a2', name: 'Livret A', kind: 'SAVINGS' }),
+      account({ id: 'a3', name: 'Ancien compte', archived: true }),
+    ];
+    const setupWithAccounts = (props: Partial<React.ComponentProps<typeof QuickEntrySheet>> = {}) => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<QuickEntrySheet defaultBloc="COURANT" accounts={accounts} onClose={vi.fn()} onSubmit={onSubmit} now={() => NOW} {...props} />);
+      return { onSubmit, user: userEvent.setup() };
+    };
+
+    it('shows no selector when the space has no account, or only archived ones', () => {
+      setup();
+      expect(screen.queryByLabelText(/Compte/)).not.toBeInTheDocument();
+      render(<QuickEntrySheet defaultBloc="COURANT" accounts={[accounts[2]]} onClose={vi.fn()} onSubmit={vi.fn()} />);
+      expect(screen.queryByLabelText(/Compte \(facultatif\)/)).not.toBeInTheDocument();
+    });
+
+    it('offers « Aucun » first, then the non archived accounts, with none selected by default', () => {
+      setupWithAccounts();
+      const select = screen.getByLabelText('Compte (facultatif)') as HTMLSelectElement;
+      expect(select).toHaveValue('');
+      expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Aucun', 'Compte commun', 'Livret A']);
+    });
+
+    it('preselects the remembered account', () => {
+      setupWithAccounts({ defaultAccountId: 'a2' });
+      expect(screen.getByLabelText('Compte (facultatif)')).toHaveValue('a2');
+    });
+
+    it('sends the chosen account with the operation', async () => {
+      const { onSubmit, user } = setupWithAccounts();
+      await user.type(screen.getByLabelText('Montant'), '12,50');
+      await user.selectOptions(screen.getByLabelText('Compte (facultatif)'), 'a1');
+      await user.click(screen.getByRole('button', { name: 'Ajouter la dépense' }));
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ amountCents: 1250, accountId: 'a1' }));
+    });
+
+    it('sends an explicit null when « Aucun » is kept', async () => {
+      const { onSubmit, user } = setupWithAccounts();
+      await user.type(screen.getByLabelText('Montant'), '5');
+      await user.click(screen.getByRole('button', { name: 'Ajouter la dépense' }));
+      expect(onSubmit.mock.calls[0][0].accountId).toBeNull();
+    });
+
+    const edited = { id: 't1', spaceId: 's1', kind: 'EXPENSE' as const, bloc: 'COURANT' as const, label: 'Courses', amountCents: 4200, date: '2026-10-05T08:00:00.000Z', accountId: 'a2' };
+
+    it('keeps the account of an edited operation', async () => {
+      const { onSubmit, user } = setupWithAccounts({ editing: edited });
+      expect(screen.getByLabelText('Compte (facultatif)')).toHaveValue('a2');
+      await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+      expect(onSubmit.mock.calls[0][0].accountId).toBe('a2');
+    });
+
+    it('can detach an edited operation from its account', async () => {
+      const { onSubmit, user } = setupWithAccounts({ editing: edited });
+      await user.selectOptions(screen.getByLabelText('Compte (facultatif)'), '');
+      await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+      expect(onSubmit.mock.calls[0][0].accountId).toBeNull();
+    });
+
+    it('still lists the archived account of an edited operation, labelled', () => {
+      const editing = { id: 't1', spaceId: 's1', kind: 'EXPENSE' as const, bloc: 'COURANT' as const, label: 'Courses', amountCents: 4200, date: '2026-10-05T08:00:00.000Z', accountId: 'a3' };
+      setupWithAccounts({ editing });
+      const select = screen.getByLabelText('Compte (facultatif)') as HTMLSelectElement;
+      expect(select).toHaveValue('a3');
+      expect(Array.from(select.options).map((option) => option.textContent)).toContain('Ancien compte (archivé)');
+    });
+
+    it('does not detach an edited operation from its account when the accounts could not be loaded', async () => {
+      const editing = { id: 't1', spaceId: 's1', kind: 'EXPENSE' as const, bloc: 'COURANT' as const, label: 'Courses', amountCents: 4200, date: '2026-10-05T08:00:00.000Z', accountId: 'a2' };
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<QuickEntrySheet defaultBloc="COURANT" editing={editing} onClose={vi.fn()} onSubmit={onSubmit} />);
+      expect(screen.queryByLabelText(/Compte/)).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+      expect(onSubmit.mock.calls[0][0].accountId).toBe('a2');
+    });
   });
 });

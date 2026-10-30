@@ -7,6 +7,7 @@ import { Bloc } from '../../domain/shared/bloc';
 import { Money } from '../../domain/shared/money';
 import { Space } from '../../domain/space/space';
 import { TransactionKind } from '../../domain/transaction/transaction';
+import { AccountAssignmentService } from '../account/account-assignment.service';
 import { SpaceAccessService } from '../household/space-access.service';
 import { RecurringItemDto, toRecurringItemDto } from './recurring.dto';
 
@@ -21,6 +22,7 @@ export interface SaveRecurringCommand {
   active: boolean;
   /** Validé par le domaine : une valeur inconnue est refusée en 400. */
   aidRuleId?: string | null;
+  accountId?: string | null;
 }
 
 @Injectable()
@@ -42,6 +44,7 @@ export class CreateRecurringItemUseCase {
   constructor(
     private readonly access: SpaceAccessService,
     private readonly recurring: RecurringItemRepository,
+    private readonly assignment: AccountAssignmentService,
   ) {}
 
   async execute(
@@ -50,7 +53,8 @@ export class CreateRecurringItemUseCase {
     command: SaveRecurringCommand,
   ): Promise<RecurringItemDto> {
     const space = await this.access.requireSpace(userId, spaceId);
-    const item = buildItem(randomUUID(), space, command);
+    const accountId = await this.assignment.resolve(spaceId, command.accountId);
+    const item = buildItem(randomUUID(), space, command, accountId);
     await this.recurring.save(item);
     return toRecurringItemDto(item);
   }
@@ -61,6 +65,7 @@ export class UpdateRecurringItemUseCase {
   constructor(
     private readonly access: SpaceAccessService,
     private readonly recurring: RecurringItemRepository,
+    private readonly assignment: AccountAssignmentService,
   ) {}
 
   async execute(
@@ -74,7 +79,12 @@ export class UpdateRecurringItemUseCase {
     if (!existing || existing.spaceId !== spaceId) {
       throw new NotFoundException('Paiement récurrent introuvable');
     }
-    await this.recurring.save(buildItem(id, space, command));
+    const accountId = await this.assignment.resolve(
+      spaceId,
+      command.accountId,
+      existing.accountId,
+    );
+    await this.recurring.save(buildItem(id, space, command, accountId));
   }
 }
 
@@ -99,6 +109,7 @@ function buildItem(
   id: string,
   space: Space,
   command: SaveRecurringCommand,
+  accountId: string | null,
 ): RecurringItem {
   return RecurringItem.createIn(space, {
     id,
@@ -112,6 +123,7 @@ function buildItem(
     endDate: command.endDate ?? null,
     active: command.active,
     aidRuleId: (command.aidRuleId ?? null) as AidRuleId | null,
+    accountId,
   });
 }
 

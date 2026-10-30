@@ -54,6 +54,7 @@ describe('insightAction', () => {
     ['/import', 'Importer un relevé'],
     ['/foyer', 'Ouvrir le foyer'],
     ['/previsionnel', 'Voir le prévisionnel'],
+    ['/comptes', 'Voir mes comptes'],
   ])('maps %s to a labelled button', (link, label) => {
     expect(insightAction(link)).toEqual({ to: link, label });
   });

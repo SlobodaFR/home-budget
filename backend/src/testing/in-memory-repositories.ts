@@ -1,3 +1,5 @@
+import { Account } from '../domain/account/account';
+import { AccountRepository } from '../domain/account/account.repository';
 import { Household } from '../domain/household/household';
 import {
   HouseholdRepository,
@@ -117,6 +119,15 @@ export class InMemoryTransactionRepository extends TransactionRepository {
       .map((t) => t.date.getTime());
     return times.length > 0 ? new Date(Math.max(...times)) : null;
   }
+  async findAttachedBySpace(spaceId: string): Promise<Transaction[]> {
+    return [...this.items.values()]
+      .filter((t) => t.spaceId === spaceId && t.accountId !== null)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+  async countByAccount(accountId: string): Promise<number> {
+    return [...this.items.values()].filter((t) => t.accountId === accountId)
+      .length;
+  }
   async findById(id: string): Promise<Transaction | null> {
     return this.items.get(id) ?? null;
   }
@@ -162,6 +173,10 @@ export class InMemoryRecurringItemRepository extends RecurringItemRepository {
   async findById(id: string): Promise<RecurringItem | null> {
     return this.items.get(id) ?? null;
   }
+  async countByAccount(accountId: string): Promise<number> {
+    return [...this.items.values()].filter((i) => i.accountId === accountId)
+      .length;
+  }
   async save(item: RecurringItem): Promise<void> {
     this.items.set(item.id, item);
   }
@@ -187,5 +202,21 @@ export class InMemoryFiscalProfileRepository extends FiscalProfileRepository {
   }
   async save(householdId: string, profile: FiscalProfile): Promise<void> {
     this.profiles.set(householdId, profile);
+  }
+}
+
+export class InMemoryAccountRepository extends AccountRepository {
+  items = new Map<string, Account>();
+  async findBySpace(spaceId: string): Promise<Account[]> {
+    return [...this.items.values()].filter((a) => a.spaceId === spaceId);
+  }
+  async findById(id: string): Promise<Account | null> {
+    return this.items.get(id) ?? null;
+  }
+  async save(account: Account): Promise<void> {
+    this.items.set(account.id, account);
+  }
+  async delete(id: string): Promise<void> {
+    this.items.delete(id);
   }
 }

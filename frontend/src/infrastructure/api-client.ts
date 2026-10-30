@@ -1,3 +1,4 @@
+import { Account, AccountPayload } from '../domain/account';
 import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, FiscalProfile } from '../domain/aids';
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
 import { Forecast } from '../domain/forecast';
@@ -133,11 +134,11 @@ export const apiClient = {
     return request<Summary>(`${spacePath(spaceId)}/summary?month=${month}`);
   },
 
-  previewImport(spaceId: string, text: string): Promise<ImportPreview> {
-    return request<ImportPreview>(`${spacePath(spaceId)}/imports/preview`, 'POST', { text });
+  previewImport(spaceId: string, text: string, accountId: string | null = null): Promise<ImportPreview> {
+    return request<ImportPreview>(`${spacePath(spaceId)}/imports/preview`, 'POST', accountId ? { text, accountId } : { text });
   },
-  commitImport(spaceId: string, items: CommitItem[]): Promise<{ created: number }> {
-    return request<{ created: number }>(`${spacePath(spaceId)}/imports/commit`, 'POST', { items });
+  commitImport(spaceId: string, items: CommitItem[], accountId: string | null = null): Promise<{ created: number }> {
+    return request<{ created: number }>(`${spacePath(spaceId)}/imports/commit`, 'POST', accountId ? { items, accountId } : { items });
   },
   fetchRules(spaceId: string): Promise<RuleSet> {
     return request<RuleSet>(`${spacePath(spaceId)}/rules`);
@@ -187,5 +188,18 @@ export const apiClient = {
   },
   fetchCrecheEstimate(query: CrecheQuery): Promise<CrecheEstimate> {
     return request<CrecheEstimate>(`/aid-rules/creche-estimate?${crecheQueryString(query)}`);
+  },
+
+  fetchAccounts(spaceId: string): Promise<Account[]> {
+    return request<Account[]>(`${spacePath(spaceId)}/accounts`);
+  },
+  createAccount(spaceId: string, payload: AccountPayload): Promise<Account> {
+    return request<Account>(`${spacePath(spaceId)}/accounts`, 'POST', payload);
+  },
+  updateAccount(spaceId: string, id: string, payload: AccountPayload): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/accounts/${encodeURIComponent(id)}`, 'PUT', payload);
+  },
+  deleteAccount(spaceId: string, id: string): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/accounts/${encodeURIComponent(id)}`, 'DELETE');
   },
 };

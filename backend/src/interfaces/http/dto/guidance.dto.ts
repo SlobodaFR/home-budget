@@ -60,6 +60,11 @@ export class SaveRecurringDto {
   @IsOptional()
   @IsString({ message: 'aidRuleId doit être un texte' })
   aidRuleId?: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'accountId doit être un identifiant de compte ou null' })
+  @MaxLength(100, { message: 'accountId est trop long' })
+  accountId?: string | null;
 }
 
 export class SaveSafetyNetDto {

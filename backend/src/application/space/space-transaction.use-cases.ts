@@ -14,6 +14,7 @@ import {
   TransactionKind,
 } from '../../domain/transaction/transaction';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
+import { AccountAssignmentService } from '../account/account-assignment.service';
 import { SpaceAccessService } from '../household/space-access.service';
 import { TransactionDto, toTransactionDto } from './transaction.dto';
 
@@ -23,6 +24,7 @@ export interface SaveTransactionCommand {
   label: string;
   amountCents: number;
   date?: Date;
+  accountId?: string | null;
 }
 
 @Injectable()
@@ -53,6 +55,7 @@ export class CreateSpaceTransactionUseCase {
   constructor(
     private readonly access: SpaceAccessService,
     private readonly transactions: TransactionRepository,
+    private readonly assignment: AccountAssignmentService,
   ) {}
 
   async execute(
@@ -61,7 +64,13 @@ export class CreateSpaceTransactionUseCase {
     command: SaveTransactionCommand,
   ): Promise<TransactionDto> {
     await this.access.requireSpace(userId, spaceId);
-    const transaction = buildTransaction(randomUUID(), spaceId, command);
+    const accountId = await this.assignment.resolve(spaceId, command.accountId);
+    const transaction = buildTransaction(
+      randomUUID(),
+      spaceId,
+      command,
+      accountId,
+    );
     await this.transactions.save(transaction);
     return toTransactionDto(transaction);
   }
@@ -72,6 +81,7 @@ export class UpdateSpaceTransactionUseCase {
   constructor(
     private readonly access: SpaceAccessService,
     private readonly transactions: TransactionRepository,
+    private readonly assignment: AccountAssignmentService,
   ) {}
 
   async execute(
@@ -81,15 +91,19 @@ export class UpdateSpaceTransactionUseCase {
     command: SaveTransactionCommand,
   ): Promise<void> {
     await this.access.requireSpace(userId, spaceId);
-    await this.requireInSpace(id, spaceId);
-    await this.transactions.save(buildTransaction(id, spaceId, command));
-  }
-
-  private async requireInSpace(id: string, spaceId: string): Promise<void> {
     const existing = await this.transactions.findById(id);
     if (!existing || existing.spaceId !== spaceId) {
       throw new NotFoundException('Operation introuvable');
     }
+    // Garder le compte d'origine reste permis même archivé (corriger un libellé ancien).
+    const accountId = await this.assignment.resolve(
+      spaceId,
+      command.accountId,
+      existing.accountId,
+    );
+    await this.transactions.save(
+      buildTransaction(id, spaceId, command, accountId),
+    );
   }
 }
 
@@ -137,6 +151,7 @@ function buildTransaction(
   id: string,
   spaceId: string,
   command: SaveTransactionCommand,
+  accountId: string | null,
 ): Transaction {
   return Transaction.create({
     id,
@@ -146,5 +161,6 @@ function buildTransaction(
     label: command.label,
     amount: Money.fromCents(command.amountCents),
     date: command.date ?? new Date(),
+    accountId,
   });
 }

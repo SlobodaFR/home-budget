@@ -6,6 +6,8 @@ import {
   formatSignedCents,
   MAX_AMOUNT_CENTS,
   parseAmountToCents,
+  parseSignedAmountToCents,
+  signedCentsToInputValue,
 } from './money';
 
 const normalize = (value: string) => value.replace(/[\s  ]/g, ' ');
@@ -71,5 +73,34 @@ describe('centsToInputValue', () => {
 
   it('round-trips with parseAmountToCents', () => {
     expect(parseAmountToCents(centsToInputValue(14230))).toBe(14230);
+  });
+});
+
+describe('signed amounts', () => {
+  it('reads positive, negative and explicitly positive amounts', () => {
+    expect(parseSignedAmountToCents('1 200,50')).toBe(120050);
+    expect(parseSignedAmountToCents('-150')).toBe(-15000);
+    expect(parseSignedAmountToCents('+30,5')).toBe(3050);
+  });
+
+  it('accepts the typographic minus signs and a space after the sign', () => {
+    expect(parseSignedAmountToCents('−150')).toBe(-15000);
+    expect(parseSignedAmountToCents('– 1 000,01')).toBe(-100001);
+  });
+
+  it('never returns a negative zero', () => {
+    expect(Object.is(parseSignedAmountToCents('-0'), 0)).toBe(true);
+  });
+
+  it('rejects unreadable input', () => {
+    for (const input of ['', '-', 'abc', '--5', '12,345', '5-']) {
+      expect(parseSignedAmountToCents(input)).toBeNull();
+    }
+  });
+
+  it('turns cents back into an input value with the sign', () => {
+    expect(signedCentsToInputValue(-15050)).toBe('-150,50');
+    expect(signedCentsToInputValue(120000)).toBe('1200');
+    expect(signedCentsToInputValue(0)).toBe('0');
   });
 });

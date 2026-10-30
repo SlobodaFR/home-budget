@@ -115,6 +115,43 @@ describe('buildRecurringPayload', () => {
   });
 });
 
+describe('bank account', () => {
+  it('sends nothing when no selector is shown and no account is set', () => {
+    const result = buildRecurringPayload(values(), { allowAid: false });
+    expect(result.ok && 'accountId' in result.payload).toBe(false);
+  });
+
+  it('sends the chosen account, in any space', () => {
+    const result = buildRecurringPayload(values({ accountId: 'acc-1' }), { allowAid: false, accountSelectable: true });
+    expect(result.ok && result.payload.accountId).toBe('acc-1');
+  });
+
+  it('sends null when « Aucun » is chosen in a shown selector', () => {
+    const result = buildRecurringPayload(values(), { allowAid: false, accountSelectable: true });
+    expect(result.ok && result.payload.accountId).toBeNull();
+  });
+
+  it('keeps an existing account even when the selector could not be shown', () => {
+    const result = buildRecurringPayload(values({ accountId: 'acc-1' }), { allowAid: false });
+    expect(result.ok && result.payload.accountId).toBe('acc-1');
+  });
+
+  it('keeps the account of an income', () => {
+    const result = buildRecurringPayload(values({ kind: 'INCOME', accountId: 'acc-1' }), { allowAid: true, accountSelectable: true });
+    expect(result.ok && result.payload).toMatchObject({ kind: 'INCOME', accountId: 'acc-1', aidRuleId: null });
+  });
+
+  it('keeps the account when pausing a payment', () => {
+    expect(recurringToPayload(item({ accountId: 'acc-1' }), { active: false })).toMatchObject({ accountId: 'acc-1', active: false });
+    expect('accountId' in recurringToPayload(item({ accountId: null }))).toBe(false);
+  });
+
+  it('fills the form with the account', () => {
+    expect(recurringToForm(item({ accountId: 'acc-1' })).accountId).toBe('acc-1');
+    expect(recurringToForm(item()).accountId).toBe('');
+  });
+});
+
 describe('form conversions', () => {
   it('fills the form from an existing payment', () => {
     expect(recurringToForm(item({ endDate: '2026-12-31', aidRuleId: 'X' }))).toEqual({
@@ -127,6 +164,7 @@ describe('form conversions', () => {
       endDate: '2026-12-31',
       active: true,
       aidRuleId: 'X',
+      accountId: '',
     });
   });
 

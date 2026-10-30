@@ -56,6 +56,16 @@ export interface CommonInsightsContext {
   contributionIncomplete: boolean;
 }
 
+/** Résumé des comptes de l'espace utile aux conseils (vide si l'espace n'a aucun compte). */
+export interface AccountsInsightContext {
+  /** Nombre de comptes de l'espace (archivés compris). */
+  accountCount: number;
+  /** Comptes non archivés dont la projection de fin de mois est sous zéro. */
+  negativeProjected: { name: string; projectedMonthEndCents: number }[];
+  /** Opérations du mois consulté sans compte. */
+  unassignedTransactionCount: number;
+}
+
 export interface InsightsInput {
   month: string;
   today: Date;
@@ -66,6 +76,7 @@ export interface InsightsInput {
   lastActivity: Date | null;
   /** null pour un espace personnel. */
   common: CommonInsightsContext | null;
+  accounts: AccountsInsightContext;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -79,6 +90,7 @@ const SEVERITY_RANK: Record<InsightSeverity, number> = {
 const PRIORITY = [
   'plan-overcommitted',
   'month-deficit',
+  'account-negative-projected',
   'bloc-overrun',
   'recurring-missing',
   'plan-missing',
@@ -87,6 +99,7 @@ const PRIORITY = [
   'savings-behind',
   'no-recent-activity',
   'upcoming-payments',
+  'accounts-unassigned',
   'monthly-review',
   'safety-net-unset',
   'safety-net-progress',
@@ -118,6 +131,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...monthInsights(input),
     ...savingsInsights(input),
     ...trackingInsights(input),
+    ...accountInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -228,6 +242,57 @@ function monthInsights(input: InsightsInput): Insight[] {
     }
   }
   return result;
+}
+
+/**
+ * Comptes : un compte qui passerait sous zéro avant la fin du mois (la projection
+ * ne vaut que pour le mois courant) et les opérations du mois sans compte.
+ * Rien pour un espace sans compte.
+ */
+function accountInsights({ month, today, accounts }: InsightsInput): Insight[] {
+  if (accounts.accountCount === 0) {
+    return [];
+  }
+  const result: Insight[] = [];
+  const negative = accounts.negativeProjected;
+  if (negative.length > 0 && monthPhase(month, today) === 'CURRENT') {
+    const lowest = [...negative].sort(
+      (a, b) => a.projectedMonthEndCents - b.projectedMonthEndCents,
+    )[0];
+    result.push({
+      id: 'account-negative-projected',
+      severity: 'WARNING',
+      title:
+        negative.length === 1
+          ? `${negative[0].name} passerait sous zéro`
+          : `${negative.length} comptes passeraient sous zéro`,
+      detail:
+        negative.length === 1
+          ? `Solde prévu en fin de mois : ${formatEuros(negative[0].projectedMonthEndCents)}. Approvisionnez ce compte ou décalez une dépense.`
+          : `${joinNames(negative.map((a) => a.name))} : le plus bas serait à ${formatEuros(lowest.projectedMonthEndCents)} en fin de mois. Approvisionnez ces comptes ou décalez une dépense.`,
+      lesson: LESSON_TRACKING,
+      link: '/comptes',
+    });
+  }
+  if (accounts.unassignedTransactionCount > 0) {
+    const n = accounts.unassignedTransactionCount;
+    result.push({
+      id: 'accounts-unassigned',
+      severity: 'INFO',
+      title: `${n} ${plural(n, 'opération sans compte', 'opérations sans compte')}`,
+      detail:
+        'Rattachez-les à un compte (ou importez votre relevé en choisissant le compte) pour suivre vos soldes.',
+      lesson: LESSON_TRACKING,
+      link: '/comptes',
+    });
+  }
+  return result;
+}
+
+function joinNames(names: string[]): string {
+  return names.length === 1
+    ? names[0]
+    : `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
 }
 
 function savingsInsights(input: InsightsInput): Insight[] {

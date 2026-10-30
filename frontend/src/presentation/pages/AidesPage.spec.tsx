@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
   saveFiscalProfile: vi.fn(),
   fetchCrecheEstimate: vi.fn(),
   createTransaction: vi.fn(),
+  fetchAccounts: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -64,6 +65,7 @@ const renderPage = () => renderInApp(<AidesPage />, { path: '/aides' });
 describe('AidesPage', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchAccounts.mockResolvedValue([]);
     api.fetchAids.mockResolvedValue(aids);
     api.fetchFiscalProfile.mockResolvedValue({ childrenUnderSix: 1, dependentChildren: 3, firstYearHomeServices: false });
     api.saveFiscalProfile.mockResolvedValue(undefined);

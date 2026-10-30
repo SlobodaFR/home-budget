@@ -9,7 +9,8 @@ import { useSpace } from '../../application/use-space';
 import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { UploadIcon } from '../components/Icons';
+import { BankIcon, UploadIcon } from '../components/Icons';
+import { AccountsSummary } from '../components/AccountsSummary';
 import { InsightsCard } from '../components/InsightsCard';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MonthPicker } from '../components/MonthPicker';
@@ -54,13 +55,22 @@ export function HomePage() {
   return (
     <>
       <MonthPicker month={month} onChange={setMonth} />
-      <Link
-        to="/import"
-        className="-mt-sm inline-flex min-h-[44px] items-center justify-center gap-sm self-center rounded-full px-md font-body-sm text-body-sm font-semibold underline"
-      >
-        <UploadIcon width={18} height={18} />
-        Importer un relevé
-      </Link>
+      <div className="-mt-sm flex flex-wrap items-center justify-center gap-x-md">
+        <Link
+          to="/import"
+          className="inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full px-md font-body-sm text-body-sm font-semibold underline"
+        >
+          <UploadIcon width={18} height={18} />
+          Importer un relevé
+        </Link>
+        <Link
+          to="/comptes"
+          className="inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full px-md font-body-sm text-body-sm font-semibold underline"
+        >
+          <BankIcon width={18} height={18} />
+          Mes comptes
+        </Link>
+      </div>
 
       <InsightsCard state={insights} />
 
@@ -73,6 +83,8 @@ export function HomePage() {
       ) : (
         <LoadingScreen />
       )}
+
+      <AccountsSummary />
 
       <section aria-label="Opérations du mois">
         <h3 className="mb-sm font-label-caps text-label-caps uppercase text-mute">Opérations</h3>

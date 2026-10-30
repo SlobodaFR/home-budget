@@ -19,6 +19,8 @@ export interface Occurrence {
   /** Vrai si le jour du gabarit est inconnu (fin de mois par défaut). */
   estimated: boolean;
   status: OccurrenceStatus;
+  /** Compte bancaire du gabarit (null si non rattaché). */
+  accountId: string | null;
   /** Opération qui couvre l'occurrence (null si aucune) : sert aux aides, pas à l'API. */
   matchedTransactionId: string | null;
   matchedAmountCents: number | null;
@@ -72,6 +74,7 @@ export function expandOccurrences(
       amountCents: item.amount.toCents(),
       date,
       estimated,
+      accountId: item.accountId,
       status: 'DUE',
       matchedTransactionId: null,
       matchedAmountCents: null,
@@ -189,7 +192,10 @@ export interface Forecast {
   month: string;
   /** Minuit UTC d'aujourd'hui. */
   asOf: Date;
-  income: ForecastLine;
+  income: ForecastLine & {
+    /** Vrai si les revenus du commun sont supposés couvrir le plan (contributions du foyer). */
+    contributionAssumed: boolean;
+  };
   blocs: (ForecastLine & { bloc: Bloc })[];
   projectedBalanceCents: number;
   cautiousBalanceCents: number;
@@ -203,11 +209,17 @@ export interface ForecastInput {
   /** Opérations du mois. */
   transactions: Transaction[];
   recurring: RecurringItem[];
+  /**
+   * Espace commun : son plan n'a pas de revenu propre, il est financé par les
+   * contributions du foyer. Faux (défaut) pour un espace personnel.
+   */
+  commonSpace?: boolean;
 }
 
 /**
  * Projette la fin du mois : opérations réelles + occurrences récurrentes pas
- * encore retrouvées. Un mois entièrement passé est égal au réel. Le solde
+ * encore retrouvées. Un mois entièrement passé est égal au réel (sauf pour le
+ * commun, où la contribution supposée complète les revenus jusqu'au plan). Le solde
  * prudent compte au moins le prévu de chaque bloc (max(projeté, prévu)).
  */
 export function buildForecast(input: ForecastInput): Forecast {
@@ -254,11 +266,21 @@ export function buildForecast(input: ForecastInput): Forecast {
     }
   }
 
-  const income: ForecastLine = {
-    plannedCents: plan.incomeCents,
+  // Espace commun sans revenu au plan : les contributions couvrent le plan par construction.
+  const contributionAssumed =
+    input.commonSpace === true && plan.incomeCents === 0;
+  const plannedIncome = contributionAssumed
+    ? plan.totalBlocsCents
+    : plan.incomeCents;
+  const knownIncome = actualIncome + remainingIncome;
+  const income = {
+    plannedCents: plannedIncome,
     actualCents: actualIncome,
     expectedRemainingCents: remainingIncome,
-    projectedCents: actualIncome + remainingIncome,
+    projectedCents: contributionAssumed
+      ? Math.max(knownIncome, plannedIncome)
+      : knownIncome,
+    contributionAssumed,
   };
   const blocs = BLOCS.map((bloc) => ({
     bloc,

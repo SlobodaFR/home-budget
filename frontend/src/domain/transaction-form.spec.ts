@@ -52,4 +52,26 @@ describe('buildTransactionPayload', () => {
     const result = buildTransactionPayload(values(), NOW, { date: '2026-10-03T14:22:00.000Z' });
     expect(result.ok && result.payload.date).toBe('2026-10-03T14:22:00.000Z');
   });
+
+  describe('bank account', () => {
+    it('sends nothing about the account when there is no selector', () => {
+      const result = buildTransactionPayload(values(), NOW);
+      expect(result.ok && 'accountId' in result.payload).toBe(false);
+    });
+
+    it('sends the chosen account', () => {
+      const result = buildTransactionPayload(values({ accountId: 'acc-1' }), NOW);
+      expect(result.ok && result.payload.accountId).toBe('acc-1');
+    });
+
+    it('sends null to detach the operation from its account', () => {
+      const result = buildTransactionPayload(values({ accountId: null }), NOW);
+      expect(result.ok && result.payload.accountId).toBeNull();
+    });
+
+    it('also applies to an income', () => {
+      const result = buildTransactionPayload(values({ kind: 'INCOME', accountId: 'acc-1' }), NOW);
+      expect(result.ok && result.payload).toMatchObject({ kind: 'INCOME', accountId: 'acc-1' });
+    });
+  });
 });

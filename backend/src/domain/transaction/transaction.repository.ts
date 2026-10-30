@@ -12,6 +12,10 @@ export abstract class TransactionRepository {
   abstract findBySpaceFrom(spaceId: string, from: Date): Promise<Transaction[]>;
   /** Date de la dernière opération de l'espace, null s'il n'y en a aucune. */
   abstract findLatestDate(spaceId: string): Promise<Date | null>;
+  /** Toutes les opérations de l'espace rattachées à un compte (tous mois confondus). */
+  abstract findAttachedBySpace(spaceId: string): Promise<Transaction[]>;
+  /** Nombre d'opérations rattachées au compte. */
+  abstract countByAccount(accountId: string): Promise<number>;
   abstract findById(id: string): Promise<Transaction | null>;
   abstract save(transaction: Transaction): Promise<void>;
   /** Enregistre tout ou rien. */

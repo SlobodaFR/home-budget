@@ -1,4 +1,5 @@
 import { FormEvent, useRef, useState } from 'react';
+import { Account } from '../../domain/account';
 import { Bloc, BLOC_INFO, BLOCS } from '../../domain/bloc';
 import { Transaction, TransactionKind, TransactionPayload } from '../../domain/budget';
 import { centsToInputValue } from '../../domain/money';
@@ -9,6 +10,7 @@ import {
   MAX_LABEL_LENGTH,
   TransactionFormErrors,
 } from '../../domain/transaction-form';
+import { AccountSelect } from './AccountSelect';
 import { BLOC_STYLE } from './bloc-style';
 import { BottomSheet } from './BottomSheet';
 import { buttonPrimary, inputClass, labelClass } from './ui';
@@ -16,6 +18,10 @@ import { buttonPrimary, inputClass, labelClass } from './ui';
 interface Props {
   editing?: Transaction | null;
   defaultBloc: Bloc;
+  /** Comptes de l'espace : le sélecteur n'apparaît que s'il y en a au moins un. */
+  accounts?: Account[];
+  /** Compte présélectionné pour une nouvelle opération (le dernier choisi dans l'espace). */
+  defaultAccountId?: string | null;
   onClose: () => void;
   onSubmit: (payload: TransactionPayload) => Promise<void>;
   now?: () => Date;
@@ -26,23 +32,39 @@ const KINDS: { kind: TransactionKind; label: string }[] = [
   { kind: 'INCOME', label: 'Revenu' },
 ];
 
-export function QuickEntrySheet({ editing = null, defaultBloc, onClose, onSubmit, now = () => new Date() }: Props) {
+export function QuickEntrySheet({
+  editing = null,
+  defaultBloc,
+  accounts = [],
+  defaultAccountId = null,
+  onClose,
+  onSubmit,
+  now = () => new Date(),
+}: Props) {
   const [kind, setKind] = useState<TransactionKind>(editing?.kind ?? 'EXPENSE');
   const [amount, setAmount] = useState(editing ? centsToInputValue(editing.amountCents) : '');
   const [bloc, setBloc] = useState<Bloc>(editing?.bloc ?? defaultBloc);
   const [label, setLabel] = useState(editing?.label ?? '');
   const [date, setDate] = useState(editing ? isoToDateInput(editing.date) : todayInputValue(now()));
+  const [accountId, setAccountId] = useState<string | null>(editing ? (editing.accountId ?? null) : defaultAccountId);
   const [errors, setErrors] = useState<TransactionFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const hasAccounts = accounts.some((account) => !account.archived);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (submittingRef.current) {
       return;
     }
-    const result = buildTransactionPayload({ kind, amount, bloc, label, date }, now(), editing ?? undefined);
+    // Une opération déjà rattachée garde son compte même si le sélecteur n'a pas pu se charger.
+    const sendAccount = hasAccounts || editing !== null;
+    const result = buildTransactionPayload(
+      { kind, amount, bloc, label, date, accountId: sendAccount ? accountId : undefined },
+      now(),
+      editing ?? undefined,
+    );
     if (!result.ok) {
       setErrors(result.errors);
       return;
@@ -145,6 +167,8 @@ export function QuickEntrySheet({ editing = null, defaultBloc, onClose, onSubmit
             className={inputClass}
           />
         </div>
+
+        <AccountSelect id="quick-account" accounts={accounts} value={accountId} onChange={setAccountId} />
 
         <div>
           <label htmlFor="quick-date" className={labelClass}>

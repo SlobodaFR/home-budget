@@ -169,3 +169,19 @@ export const PencilIcon = (props: IconProps) => (
     <path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 013 3L8 19l-4 1z" />
   </Icon>
 );
+
+export const BankIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 10l9-6 9 6" />
+    <path d="M5 10v8M10 10v8M14 10v8M19 10v8" />
+    <path d="M3 20h18" />
+  </Icon>
+);
+
+export const ArchiveIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="4" width="18" height="4" rx="1" />
+    <path d="M5 8v11h14V8" />
+    <path d="M10 12h4" />
+  </Icon>
+);

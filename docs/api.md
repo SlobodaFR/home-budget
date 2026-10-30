@@ -112,7 +112,9 @@ Liste des opérations du mois (la plus récente d'abord) :
 toujours **positif** ; le sens vient de `kind`.
 
 ### `POST /api/spaces/:spaceId/transactions`
-Corps : `{ "kind", "bloc"?, "label", "amountCents", "date"? }` (`date` par défaut : maintenant). `201` + l'opération.
+Corps : `{ "kind", "bloc"?, "label", "amountCents", "date"?, "accountId"? }` (`date` par défaut : maintenant ;
+`accountId` : compte bancaire de l'espace, cf. « Comptes bancaires », `null` ou absent = non rattachée). `201` + l'opération,
+qui expose désormais `accountId` (`null` si non rattachée). `400` si le compte n'existe pas dans cet espace ou est archivé.
 
 ### `PUT /api/spaces/:spaceId/transactions/:id` · `DELETE …/:id`
 Même corps que `POST` pour `PUT` ; `204`.
@@ -194,7 +196,7 @@ Gabarits de paiements ou revenus mensuels d'un espace (loyer, salaire, abonnemen
 ```json
 [{
   "id": "…", "spaceId": "…", "kind": "EXPENSE", "bloc": "FIXE", "label": "Loyer", "amountCents": 110000,
-  "dayOfMonth": 5, "startDate": "2026-01-01", "endDate": null, "active": true, "aidRuleId": null
+  "dayOfMonth": 5, "startDate": "2026-01-01", "endDate": null, "active": true, "aidRuleId": null, "accountId": null
 }]
 ```
 `kind` : `INCOME` (`bloc` = `null`) ou `EXPENSE` (`bloc` obligatoire). `amountCents` toujours positif.
@@ -202,8 +204,8 @@ Gabarits de paiements ou revenus mensuels d'un espace (loyer, salaire, abonnemen
 jour supérieur à la longueur du mois retombe sur le dernier jour). Dates au format `AAAA-MM-JJ`.
 
 ### `POST /api/spaces/:spaceId/recurring` · `PUT /api/spaces/:spaceId/recurring/:id` · `DELETE …/:id`
-Corps (`POST` et `PUT`) : `{ "kind", "bloc"?, "label", "amountCents", "dayOfMonth", "startDate", "endDate", "active", "aidRuleId"? }`
-(`endDate`, `dayOfMonth` et `aidRuleId` peuvent être `null` ou absents). `POST` → `201` + l'objet ; `PUT` et `DELETE` → `204`.
+Corps (`POST` et `PUT`) : `{ "kind", "bloc"?, "label", "amountCents", "dayOfMonth", "startDate", "endDate", "active", "aidRuleId"?, "accountId"? }`
+(`endDate`, `dayOfMonth`, `aidRuleId` et `accountId` peuvent être `null` ou absents ; `accountId` : même règle que pour les opérations). `POST` → `201` + l'objet ; `PUT` et `DELETE` → `204`.
 `400` si invalide (montant ≤ 0, dépense sans bloc, revenu avec bloc, `endDate` avant `startDate`, jour hors 1-31,
 `aidRuleId` inconnu, `aidRuleId` sur un revenu, ou `aidRuleId` sur un espace personnel : les aides ne s'appliquent qu'à
 l'espace commun, car leurs plafonds sont ceux du foyer fiscal).
@@ -220,7 +222,7 @@ voisin (l'un contient l'autre, sans casse ni accents) ; chaque opération n'en c
 {
   "month": "2026-11",
   "asOf": "2026-11-12T00:00:00.000Z",
-  "income": { "plannedCents": 380000, "actualCents": 380000, "expectedRemainingCents": 0, "projectedCents": 380000 },
+  "income": { "plannedCents": 380000, "actualCents": 380000, "expectedRemainingCents": 0, "projectedCents": 380000, "contributionAssumed": false },
   "blocs": [
     { "bloc": "FIXE", "plannedCents": 175000, "actualCents": 110000, "expectedRemainingCents": 9600, "projectedCents": 119600 }
   ],
@@ -233,6 +235,11 @@ voisin (l'un contient l'autre, sans casse ni accents) ; chaque opération n'en c
 }
 ```
 - `blocs` contient toujours les 4 blocs ; `projectedCents = actualCents + expectedRemainingCents`.
+- **Espace commun** : son plan n'a pas de revenu propre (il est financé par les contributions du foyer). Si
+  `plan.incomeCents` vaut 0, `income.plannedCents` = somme des blocs du plan (les contributions couvrent le plan par
+  construction) et `income.projectedCents = max(actualCents + expectedRemainingCents, plannedCents)` : on suppose que
+  chacun verse sa contribution. `income.contributionAssumed` vaut alors `true` (sinon `false`). Cela évite un solde
+  commun négatif artificiel. Espace personnel : inchangé, `contributionAssumed` toujours `false`.
 - `projectedBalanceCents = revenus projetés − somme des blocs projetés` (uniquement ce que l'on sait : réel + récurrents).
 - `cautiousBalanceCents` : idem, mais chaque bloc compte au moins son **prévu** (`max(projeté, prévu)`) : on suppose
   qu'on dépensera au moins le plan. Égal au projeté pour un mois passé.
@@ -278,10 +285,10 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 ```
 - `severity` : `WARNING | ACTION | INFO | GOOD`.
 - `lesson` : numéro de la leçon du cours qui explique la règle, ou `null`.
-- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/`) ou `null`.
+- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
 
 ## Aides officielles (tranche 3)
@@ -375,6 +382,47 @@ Tarif horaire = (ressources annuelles N-2 ÷ 12, encadrées par un plancher et u
 l'instant. `hoursPerMonth` : heures facturées par mois (nombre ≥ 0, jusqu'à 400). Les ressources sont celles de
 l'année N-2 (revenu imposable avant abattement, à reprendre sur l'avis d'impôt). Plancher 814,62 €/mois et plafond
 8 500 €/mois : à vérifier chaque année (une crèche peut appliquer un plafond plus haut). `400` si paramètre invalide.
+
+## Comptes bancaires (tranche 4)
+
+Un **compte** dit *où l'argent circule* (Compte commun, Courant de Thomas, Livret…) ; l'**espace** dit *qui décide du
+budget*. Un compte appartient à un espace : ceux de l'espace commun sont visibles par tout le foyer, ceux d'un espace
+personnel par son seul propriétaire (mêmes règles d'accès, `404` sinon). Le nom et le solde d'ouverture sont chiffrés
+pour un espace personnel. Les virements entre comptes ne sont pas gérés dans cette tranche.
+
+### `GET /api/spaces/:spaceId/accounts`
+```json
+[{
+  "id": "…", "spaceId": "…", "name": "Compte commun", "kind": "CHECKING",
+  "openingBalanceCents": 120000, "openingDate": "2026-10-01", "archived": false,
+  "balanceCents": 98450, "projectedMonthEndCents": 41200, "transactionCount": 37
+}]
+```
+- `kind` : `CHECKING` (compte courant) | `SAVINGS` (livret/épargne) | `CASH` (espèces).
+- `openingBalanceCents` : entier signé (découvert possible) ; `openingDate` `AAAA-MM-JJ`.
+- `balanceCents` = solde d'ouverture + revenus − dépenses des opérations rattachées au compte dont la date (jour,
+  UTC) est ≥ `openingDate`.
+- `projectedMonthEndCents` = `balanceCents` + (revenus − dépenses) des occurrences récurrentes rattachées au compte
+  encore `DUE` ou `MISSING` du **mois courant** (même moteur que le prévisionnel). Les comptes archivés sont listés
+  en dernier ; leur projection vaut `balanceCents`.
+- `transactionCount` : nombre d'opérations rattachées (tous mois).
+
+### `POST /api/spaces/:spaceId/accounts` · `PUT /api/spaces/:spaceId/accounts/:id` · `DELETE …/:id`
+Corps (`POST` et `PUT`) : `{ "name", "kind", "openingBalanceCents", "openingDate" }`, `PUT` accepte en plus
+`"archived": true|false`. `POST` → `201` + l'objet (avec ses soldes) ; `PUT` et `DELETE` → `204`.
+`name` : 1 à 60 caractères, unique dans l'espace (insensible à la casse) ; `400` sinon. `DELETE` : `400` si des
+opérations ou paiements récurrents y sont rattachés (message : archivez-le plutôt). Un compte archivé n'accepte plus
+de nouvelle opération, mais garde son historique.
+
+### Import de relevé
+`POST …/imports/preview` et `POST …/imports/commit` acceptent `"accountId"` (optionnel). Au commit, toutes les
+opérations créées sont rattachées à ce compte. `400` si le compte n'appartient pas à l'espace ou est archivé. La
+détection de doublons reste calculée sur tout l'espace.
+
+### Conseils liés aux comptes
+Nouveaux ids d'insights : `account-negative-projected` (`WARNING` : un compte passerait sous zéro avant la fin du mois
+d'après `projectedMonthEndCents` ; lien `/comptes`) et `accounts-unassigned` (`INFO` : le mois a des opérations non
+rattachées alors que l'espace a au moins un compte ; lien `/comptes`). Aucun des deux pour un espace sans compte.
 
 ## Chiffrement de l'espace personnel (informatif)
 

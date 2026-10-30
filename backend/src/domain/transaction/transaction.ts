@@ -14,6 +14,8 @@ export interface TransactionProps {
   /** Toujours positif : le sens vient de `kind`. */
   amount: Money;
   date: Date;
+  /** Compte bancaire de l'espace ; absent ou null = non rattachée. */
+  accountId?: string | null;
 }
 
 export const MAX_LABEL_LENGTH = 80;
@@ -72,5 +74,9 @@ export class Transaction {
 
   get date(): Date {
     return this.props.date;
+  }
+
+  get accountId(): string | null {
+    return this.props.accountId ?? null;
   }
 }

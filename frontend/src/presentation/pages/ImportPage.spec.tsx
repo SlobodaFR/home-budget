@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HouseholdContext, HouseholdContextValue } from '../../application/use-household';
+import { AccountsProvider } from '../../application/use-accounts';
 import { OfflineQueueProvider } from '../../application/use-offline-queue';
 import { SelectedMonthProvider, useSelectedMonth } from '../../application/use-selected-month';
 import { SpaceProvider } from '../../application/use-space';
@@ -10,7 +11,7 @@ import { Household } from '../../domain/household';
 import { ImportPreview } from '../../domain/statement-import';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
 import { ToastProvider } from '../components/Toast';
-import { previewRow } from '../../test/fixtures';
+import { account, previewRow } from '../../test/fixtures';
 
 const api = vi.hoisted(() => ({
   previewImport: vi.fn(),
@@ -18,6 +19,7 @@ const api = vi.hoisted(() => ({
   fetchRules: vi.fn(),
   saveRules: vi.fn(),
   createTransaction: vi.fn(),
+  fetchAccounts: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -75,14 +77,16 @@ function renderPage() {
       <HouseholdContext.Provider value={value}>
         <SpaceProvider>
           <OfflineQueueProvider>
-            <SelectedMonthProvider initialMonth="2026-06">
-              <ToastProvider>
-                <Routes>
-                  <Route path="/import" element={<ImportPage />} />
-                  <Route path="/" element={<MonthProbe />} />
-                </Routes>
-              </ToastProvider>
-            </SelectedMonthProvider>
+            <AccountsProvider>
+              <SelectedMonthProvider initialMonth="2026-06">
+                <ToastProvider>
+                  <Routes>
+                    <Route path="/import" element={<ImportPage />} />
+                    <Route path="/" element={<MonthProbe />} />
+                  </Routes>
+                </ToastProvider>
+              </SelectedMonthProvider>
+            </AccountsProvider>
           </OfflineQueueProvider>
         </SpaceProvider>
       </HouseholdContext.Provider>
@@ -108,6 +112,7 @@ describe('ImportPage', () => {
     api.commitImport.mockResolvedValue({ created: 4 });
     api.fetchRules.mockResolvedValue({ rules: [{ keyword: 'loyer', target: 'FIXE' }], isDefault: true });
     api.saveRules.mockResolvedValue(undefined);
+    api.fetchAccounts.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -120,7 +125,7 @@ describe('ImportPage', () => {
     expect(screen.getByText(/lu sur cet appareil/)).toBeInTheDocument();
 
     await pasteAndAnalyze(user);
-    expect(api.previewImport).toHaveBeenCalledWith('s-common', STATEMENT);
+    expect(api.previewImport).toHaveBeenCalledWith('s-common', STATEMENT, null);
 
     await user.click(radio('CB BOULANGERIE PAUL', 'Courant'));
     await user.click(radio('CB CINEMA PATHE', 'Plaisir'));
@@ -139,7 +144,7 @@ describe('ImportPage', () => {
       { kind: 'INCOME', label: 'VIR SALAIRE', amountCents: 250000, date: '2026-10-28T00:00:00.000Z' },
       { kind: 'EXPENSE', bloc: 'COURANT', label: 'CB BOULANGERIE PAUL', amountCents: 450, date: '2026-09-30T00:00:00.000Z' },
       { kind: 'EXPENSE', bloc: 'PLAISIR', label: 'CB CINEMA PATHE', amountCents: 1500, date: '2026-10-12T00:00:00.000Z' },
-    ]);
+    ], null);
     expect(screen.getByText('4 opérations importées')).toBeInTheDocument();
   });
 
@@ -221,7 +226,7 @@ describe('ImportPage', () => {
     expect(screen.getByLabelText(/collez le contenu/i)).toHaveValue('date;libellé;montant\n02/10/2026;CAFÉ;-4,50');
     await user.click(screen.getByRole('button', { name: 'Analyser' }));
     await screen.findByText(/Étape 2 sur 2/);
-    expect(api.previewImport).toHaveBeenCalledWith('s-common', 'date;libellé;montant\n02/10/2026;CAFÉ;-4,50');
+    expect(api.previewImport).toHaveBeenCalledWith('s-common', 'date;libellé;montant\n02/10/2026;CAFÉ;-4,50', null);
   });
 
   it('refuses a file larger than 1 Mo without reading it', async () => {
@@ -311,6 +316,62 @@ describe('ImportPage', () => {
       const user = renderPage();
       await user.click(screen.getByRole('button', { name: /Mes règles de classement/ }));
       expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de charger les règles.');
+    });
+  });
+
+  describe('bank account', () => {
+    const accounts = [account({ id: 'a1', name: 'Compte commun' }), account({ id: 'a2', name: 'Livret A' }), account({ id: 'a3', name: 'Ancien', archived: true })];
+    const pickAccount = async (user: ReturnType<typeof renderPage>, id: string) => {
+      const select = await screen.findByLabelText('Compte du relevé (facultatif)');
+      await waitFor(() => expect(within(select).getAllByRole('option').length).toBeGreaterThan(1));
+      await user.selectOptions(select, id);
+    };
+
+    beforeEach(() => api.fetchAccounts.mockResolvedValue(accounts));
+
+    it('shows no selector when the space has no account', async () => {
+      api.fetchAccounts.mockResolvedValue([]);
+      renderPage();
+      await screen.findByText(/Étape 1 sur 2/);
+      expect(screen.queryByLabelText('Compte du relevé (facultatif)')).not.toBeInTheDocument();
+    });
+
+    it('lists only non archived accounts, with « Aucun » by default', async () => {
+      renderPage();
+      const select = (await screen.findByLabelText('Compte du relevé (facultatif)')) as HTMLSelectElement;
+      await waitFor(() => expect(select.options.length).toBe(3));
+      expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Aucun', 'Compte commun', 'Livret A']);
+      expect(select).toHaveValue('');
+    });
+
+    it('sends the chosen account to the preview and to the commit, then remembers it', async () => {
+      const user = renderPage();
+      await pickAccount(user, 'a2');
+      await pasteAndAnalyze(user);
+      expect(api.previewImport).toHaveBeenCalledWith('s-common', STATEMENT, 'a2');
+      expect(screen.getByText(/rattachées au compte/)).toHaveTextContent('Livret A');
+      await user.click(radio('CB BOULANGERIE PAUL', 'Courant'));
+      await user.click(radio('CB CINEMA PATHE', 'Ignorer'));
+      await user.click(screen.getByRole('button', { name: 'Importer 3 opérations' }));
+      await waitFor(() => expect(api.commitImport).toHaveBeenCalledWith('s-common', expect.any(Array), 'a2'));
+      expect(window.localStorage.getItem('foyer-budget:last-account:s-common')).toBe('a2');
+    });
+
+    it('preselects the last account chosen in the space', async () => {
+      window.localStorage.setItem('foyer-budget:last-account:s-common', 'a1');
+      renderPage();
+      const select = await screen.findByLabelText('Compte du relevé (facultatif)');
+      await waitFor(() => expect(select).toHaveValue('a1'));
+    });
+
+    it('ignores a remembered account that is now archived', async () => {
+      window.localStorage.setItem('foyer-budget:last-account:s-common', 'a3');
+      const user = renderPage();
+      const select = await screen.findByLabelText('Compte du relevé (facultatif)');
+      await waitFor(() => expect(within(select).getAllByRole('option').length).toBe(3));
+      expect(select).toHaveValue('');
+      await pasteAndAnalyze(user);
+      expect(api.previewImport).toHaveBeenCalledWith('s-common', STATEMENT, null);
     });
   });
 });

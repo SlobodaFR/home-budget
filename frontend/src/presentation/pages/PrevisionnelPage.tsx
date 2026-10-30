@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
+import { useAccounts } from '../../application/use-accounts';
 import { useAidRules } from '../../application/use-aid-rules';
 import { useForecast } from '../../application/use-forecast';
 import { useRecurring } from '../../application/use-recurring';
@@ -32,6 +33,7 @@ export function PrevisionnelPage() {
   const recurring = useRecurring(space.id, refreshForecast);
   const isCommon = kind === 'COMMON';
   const aidRules = useAidRules(isCommon);
+  const { accounts, hasSelectableAccount, defaultAccountId, rememberAccount, nameOf } = useAccounts();
 
   const offline = isOfflineError(forecast.error) || isOfflineError(recurring.error);
   const retry = () => {
@@ -57,6 +59,9 @@ export function PrevisionnelPage() {
         toast.show('Paiement modifié');
       } else {
         await recurring.create(payload);
+        if (hasSelectableAccount) {
+          rememberAccount(payload.accountId ?? null);
+        }
         toast.show('Paiement ajouté');
       }
     } catch (error) {
@@ -109,6 +114,7 @@ export function PrevisionnelPage() {
         <RecurringList
           items={recurring.items}
           aidRules={aidRules.rules}
+          accountNameOf={nameOf}
           busy={recurring.saving}
           onAdd={() => setSheet({ editing: null })}
           onEdit={(item) => setSheet({ editing: item })}
@@ -139,6 +145,8 @@ export function PrevisionnelPage() {
           editing={sheet.editing}
           allowAid={isCommon}
           aidRules={aidRules.rules}
+          accounts={accounts}
+          defaultAccountId={defaultAccountId()}
           onClose={closeSheet}
           onSubmit={handleSubmit}
         />

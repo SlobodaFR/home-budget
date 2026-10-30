@@ -25,7 +25,7 @@ export class GetForecastUseCase {
     spaceId: string,
     month: string,
   ): Promise<ForecastDto> {
-    await this.access.requireSpace(userId, spaceId);
+    const space = await this.access.requireSpace(userId, spaceId);
     const { from, to } = parseMonth(month);
     const [plan, transactions, recurring] = await Promise.all([
       this.plans.find(spaceId),
@@ -39,6 +39,7 @@ export class GetForecastUseCase {
         plan: plan ?? SpacePlan.empty(),
         transactions,
         recurring,
+        commonSpace: !space.isPersonal(),
       }),
     );
   }
