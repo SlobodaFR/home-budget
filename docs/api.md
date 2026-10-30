@@ -285,10 +285,10 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 ```
 - `severity` : `WARNING | ACTION | INFO | GOOD`.
 - `lesson` : numéro de la leçon du cours qui explique la règle, ou `null`.
-- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/`) ou `null`.
+- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/tendances`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `spending-riser`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
 
 ## Aides officielles (tranche 3)
@@ -638,6 +638,37 @@ mensualités + assurances des dettes actives ÷ revenus mensuels (somme des reve
 membre pour le perso ; `null` si inconnu). Au-dessus de 35 %, l'insight `debt-ratio-high` (`WARNING`, lien `/dettes`)
 est émis (seuil de 35 % : repère du cours, pas une règle de droit) ; `debt-never-paid-off` (`ACTION`) si
 `neverPaidOff`.
+
+## Tendances (tranche 9)
+
+Lecture seule : où va l'argent, et est-ce que ça évolue ? Calculées à la demande à partir des opérations.
+
+### `GET /api/spaces/:spaceId/trends?months=6&to=AAAA-MM`
+`months` : 3 à 24 (défaut 6) ; `to` : dernier mois inclus (défaut : mois courant).
+```json
+{
+  "from": "2026-05", "to": "2026-10",
+  "months": [{
+    "month": "2026-10", "incomeCents": 380000, "expenseCents": 351000, "balanceCents": 29000,
+    "savingsRatePercent": 7,
+    "blocs": { "FIXE": 171000, "COURANT": 142000, "PLAISIR": 38000, "EPARGNE": 0 }
+  }],
+  "averages": { "incomeCents": 372000, "expenseCents": 340000, "savingsRatePercent": 9 },
+  "topLabels": [{ "label": "Courses", "totalCents": 820000, "monthlyAverageCents": 136666, "trendPercent": 12 }],
+  "risers": [{ "label": "Restaurant", "recentAverageCents": 9000, "previousAverageCents": 5000, "deltaCents": 4000 }]
+}
+```
+- Les dépenses sont groupées par libellé normalisé (sans casse ni accents, chiffres et espaces compressés) ; le
+  libellé affiché est le plus fréquent du groupe. `topLabels` : 8 au plus, triés par total décroissant ;
+  `monthlyAverageCents` = total ÷ nombre de mois de la fenêtre ; `trendPercent` = variation (entier signé) entre la
+  moitié récente et la moitié ancienne de la fenêtre (`null` si l'ancienne est vide).
+- `risers` : 5 au plus ; libellés dont la moyenne mensuelle de la moitié récente dépasse celle de la moitié ancienne
+  de ≥ 20 € **et** de ≥ 20 % ; triés par `deltaCents` décroissant. Vide si moins de 4 mois de fenêtre.
+- Mois sans opération : 0 partout (présents dans `months`). Jamais d'accès aux libellés d'un espace non visible.
+
+### Conseil
+Nouvel id `spending-riser` (`INFO`, lien `/tendances`) : le premier `risers` ≥ 50 € de hausse mensuelle, détail : libellé,
+avant/après. Émis au plus une fois par mois consulté (mois courant uniquement).
 
 ## Chiffrement de l'espace personnel (informatif)
 

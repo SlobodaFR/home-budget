@@ -69,6 +69,8 @@ import { MonthReviewOrmEntity } from '../../../infrastructure/persistence/entiti
 import { TypeOrmMonthReviewRepository } from '../../../infrastructure/persistence/repositories/typeorm-month-review.repository';
 import { ExportController } from '../controllers/export.controller';
 import { ReviewsController } from '../controllers/reviews.controller';
+import { GetTrendsUseCase } from '../../../application/trend/get-trends.use-case';
+import { TrendsController } from '../controllers/trends.controller';
 import { DebtViewsService } from '../../../application/debt/debt-views.service';
 import {
   CreateDebtUseCase,
@@ -174,6 +176,7 @@ import { AuthModule } from './auth.module';
     ReviewsController,
     ExportController,
     DebtsController,
+    TrendsController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -235,6 +238,7 @@ import { AuthModule } from './auth.module';
     GetYearForecastUseCase,
     ProjectViewsService,
     DebtViewsService,
+    GetTrendsUseCase,
     ListDebtsUseCase,
     GetDebtsSummaryUseCase,
     CreateDebtUseCase,

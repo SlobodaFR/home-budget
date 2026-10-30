@@ -13,6 +13,7 @@ import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
 import { DEBT_RATIO_THRESHOLD_PERCENT, DebtSummary } from '../debt/debt-view';
+import { Riser } from '../trend/trends';
 import { ReviewStatus } from '../review/month-review';
 import { Provisions } from './provisions';
 import { ProjectView, summarizeProjects } from '../project/project-progress';
@@ -113,6 +114,11 @@ export interface InsightsInput {
    */
   previousReview: { status: ReviewStatus; decision: string } | null;
   debts: DebtsInsightContext;
+  /**
+   * Plus forte hausse de dépense d'au moins 50 € par mois (cf. `findSpendingRiser`),
+   * null s'il n'y en a pas ou si les données couvrent moins de 4 mois.
+   */
+  spendingRiser: Riser | null;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -142,6 +148,7 @@ const PRIORITY = [
   'upcoming-big-payment',
   'accounts-unassigned',
   'provision-suggestion',
+  'spending-riser',
   'monthly-review',
   'safety-net-unset',
   'safety-net-progress',
@@ -179,6 +186,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...provisionInsights(input),
     ...projectInsights(input),
     ...debtInsights(input),
+    ...trendInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -566,6 +574,31 @@ function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
     });
   }
   return result;
+}
+
+/**
+ * Tendance : le poste de dépense qui a le plus augmenté (moyenne mensuelle de
+ * la moitié récente de la fenêtre contre l'ancienne). Mois courant seulement,
+ * au plus un conseil. Les dépenses du bloc EPARGNE ne comptent pas.
+ */
+function trendInsights({
+  month,
+  today,
+  spendingRiser,
+}: InsightsInput): Insight[] {
+  if (spendingRiser === null || monthPhase(month, today) !== 'CURRENT') {
+    return [];
+  }
+  return [
+    {
+      id: 'spending-riser',
+      severity: 'INFO',
+      title: `Dépense en hausse : ${spendingRiser.label}`,
+      detail: `${spendingRiser.label} passe de ${formatEuros(spendingRiser.previousAverageCents)} à ${formatEuros(spendingRiser.recentAverageCents)} par mois en moyenne (+${formatEuros(spendingRiser.deltaCents)}). Est-ce voulu ? Regardez le détail avant que ça devienne une habitude.`,
+      lesson: LESSON_TRACKING,
+      link: '/tendances',
+    },
+  ];
 }
 
 function joinNames(names: string[]): string {

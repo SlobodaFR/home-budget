@@ -6,6 +6,7 @@ import { buildSafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { buildForecast } from './forecast';
 import { Project, ProjectProps } from '../project/project';
 import { ProjectDeposit } from '../project/project-deposit';
+import { Riser } from '../trend/trends';
 import { ReviewStatus } from '../review/month-review';
 import { ProjectView, buildProjectViews } from '../project/project-progress';
 import { buildProvisions } from './provisions';
@@ -57,6 +58,7 @@ interface Scenario {
   projects?: ProjectView[];
   previousReview?: { status: ReviewStatus; decision: string } | null;
   debts?: DebtsInsightContext;
+  spendingRiser?: Riser | null;
 }
 
 function run(scenario: Scenario = {}): Insight[] {
@@ -91,6 +93,7 @@ function run(scenario: Scenario = {}): Insight[] {
     projects: scenario.projects ?? [],
     previousReview: scenario.previousReview ?? null,
     debts: scenario.debts ?? NO_DEBTS,
+    spendingRiser: scenario.spendingRiser ?? null,
   });
 }
 
@@ -1347,6 +1350,45 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('spending riser', () => {
+    const riser: Riser = {
+      label: 'Restaurant',
+      recentAverageCents: 9000,
+      previousAverageCents: 4000,
+      deltaCents: 5000,
+    };
+
+    it('mentions the label with the before and after averages (current month only)', () => {
+      const insight = byId(
+        run({ transactions: recent, spendingRiser: riser }),
+        'spending-riser',
+      );
+      expect(insight).toEqual({
+        id: 'spending-riser',
+        severity: 'INFO',
+        title: 'Dépense en hausse : Restaurant',
+        detail: `Restaurant passe de 40${nbsp}€ à 90${nbsp}€ par mois en moyenne (+50${nbsp}€). Est-ce voulu ? Regardez le détail avant que ça devienne une habitude.`,
+        lesson: 4,
+        link: '/tendances',
+      });
+      for (const month of ['2026-10', '2026-12']) {
+        expect(
+          ids(run({ month, transactions: recent, spendingRiser: riser })),
+        ).not.toContain('spending-riser');
+      }
+    });
+
+    it('is emitted at most once and never without a riser', () => {
+      const insights = run({ transactions: recent, spendingRiser: riser });
+      expect(
+        ids(insights).filter((id) => id === 'spending-riser'),
+      ).toHaveLength(1);
+      expect(ids(run({ transactions: recent, spendingRiser: null }))).toEqual([
+        'all-good',
+      ]);
+    });
+  });
+
   describe('ordering and limits', () => {
     const crowded: Scenario = {
       today: '2026-11-12T08:00:00Z',
@@ -1397,7 +1439,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
       );
       const insights = [
         ...run(crowded),
@@ -1417,6 +1459,7 @@ describe('buildInsights', () => {
           '/projets',
           '/revue',
           '/dettes',
+          '/tendances',
           '/',
         ]).toContain(insight.link);
         expect([null, 1, 2, 3, 4, 5, 6, 7, 8]).toContain(insight.lesson);

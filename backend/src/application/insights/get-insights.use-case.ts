@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { buildForecast } from '../../domain/budget/forecast';
+import { buildForecast, monthPhase } from '../../domain/budget/forecast';
 import {
   CommonInsightsContext,
   Insight,
   REVIEW_LAST_DAY,
   buildInsights,
 } from '../../domain/budget/insights';
+import {
+  findSpendingRiser,
+  shiftMonth,
+  SPENDING_RISER_WINDOW_MONTHS,
+} from '../../domain/trend/trends';
 import { buildProvisions } from '../../domain/budget/provisions';
 import { parseMonth } from '../../domain/budget/month';
 import { summarizeMonth } from '../../domain/budget/month-summary';
@@ -95,6 +100,21 @@ export class GetInsightsUseCase {
       this.debtViews.monthlyIncomeCents(userId, space),
     ]);
 
+    // Tendance : une seule lecture bornée sur la fenêtre, seulement pour le mois courant.
+    const spendingRiser =
+      monthPhase(month, today) === 'CURRENT'
+        ? findSpendingRiser(
+            month,
+            await this.transactions.findBySpaceAndPeriod(
+              spaceId,
+              new Date(
+                `${shiftMonth(month, -(SPENDING_RISER_WINDOW_MONTHS - 1))}-01T00:00:00Z`,
+              ),
+              to,
+            ),
+          )
+        : null;
+
     // Revue du mois précédent : utile seulement la première semaine du mois.
     const previousReview =
       today.getUTCDate() <= REVIEW_LAST_DAY
@@ -112,6 +132,7 @@ export class GetInsightsUseCase {
         common,
         provisions: buildProvisions(recurring, today),
         projects,
+        spendingRiser,
         debts: {
           summary: summarizeDebts(debts, monthlyIncome),
           monthlyIncomeCents: monthlyIncome,
