@@ -12,6 +12,12 @@ import { Transaction } from '../domain/transaction/transaction';
 import { TransactionRepository } from '../domain/transaction/transaction.repository';
 import { ClassificationRule } from '../domain/import/classification';
 import { SpaceRulesRepository } from '../domain/import/space-rules.repository';
+import { RecurringItem } from '../domain/recurring/recurring-item';
+import { RecurringItemRepository } from '../domain/recurring/recurring-item.repository';
+import { SafetyNet } from '../domain/safety-net/safety-net';
+import { SafetyNetRepository } from '../domain/safety-net/safety-net.repository';
+import { FiscalProfile } from '../domain/aid/fiscal-profile';
+import { FiscalProfileRepository } from '../domain/aid/fiscal-profile.repository';
 import { User } from '../domain/user/user';
 import { UserRepository } from '../domain/user/user.repository';
 
@@ -100,6 +106,17 @@ export class InMemoryTransactionRepository extends TransactionRepository {
       .filter((t) => t.spaceId === spaceId && t.date >= from && t.date < to)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   }
+  async findBySpaceFrom(spaceId: string, from: Date): Promise<Transaction[]> {
+    return [...this.items.values()]
+      .filter((t) => t.spaceId === spaceId && t.date >= from)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
+  async findLatestDate(spaceId: string): Promise<Date | null> {
+    const times = [...this.items.values()]
+      .filter((t) => t.spaceId === spaceId)
+      .map((t) => t.date.getTime());
+    return times.length > 0 ? new Date(Math.max(...times)) : null;
+  }
   async findById(id: string): Promise<Transaction | null> {
     return this.items.get(id) ?? null;
   }
@@ -134,5 +151,41 @@ export class InMemorySpaceRulesRepository extends SpaceRulesRepository {
   }
   async save(spaceId: string, rules: ClassificationRule[]): Promise<void> {
     this.rules.set(spaceId, rules);
+  }
+}
+
+export class InMemoryRecurringItemRepository extends RecurringItemRepository {
+  items = new Map<string, RecurringItem>();
+  async findBySpace(spaceId: string): Promise<RecurringItem[]> {
+    return [...this.items.values()].filter((i) => i.spaceId === spaceId);
+  }
+  async findById(id: string): Promise<RecurringItem | null> {
+    return this.items.get(id) ?? null;
+  }
+  async save(item: RecurringItem): Promise<void> {
+    this.items.set(item.id, item);
+  }
+  async delete(id: string): Promise<void> {
+    this.items.delete(id);
+  }
+}
+
+export class InMemorySafetyNetRepository extends SafetyNetRepository {
+  nets = new Map<string, SafetyNet>();
+  async find(householdId: string): Promise<SafetyNet | null> {
+    return this.nets.get(householdId) ?? null;
+  }
+  async save(householdId: string, safetyNet: SafetyNet): Promise<void> {
+    this.nets.set(householdId, safetyNet);
+  }
+}
+
+export class InMemoryFiscalProfileRepository extends FiscalProfileRepository {
+  profiles = new Map<string, FiscalProfile>();
+  async find(householdId: string): Promise<FiscalProfile | null> {
+    return this.profiles.get(householdId) ?? null;
+  }
+  async save(householdId: string, profile: FiscalProfile): Promise<void> {
+    this.profiles.set(householdId, profile);
   }
 }

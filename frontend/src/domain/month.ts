@@ -70,3 +70,22 @@ export function formatLongDate(iso: string): string {
 export function formatDayMonth(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
+
+export function currentYear(now: Date = new Date()): number {
+  return now.getFullYear();
+}
+
+const SHORT_DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const LONG_DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+/** « 2026-01-05 » (ou un ISO complet) → « 5 janv. 2026 ». Renvoie la valeur telle quelle si elle est illisible. */
+export function formatDateInput(value: string): string {
+  const day = value.slice(0, 10);
+  return isValidDateInput(day) ? SHORT_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`)) : value;
+}
+
+/** « 2026-10-30 » → « 30 octobre 2026 ». */
+export function formatLongDateInput(value: string): string {
+  const day = value.slice(0, 10);
+  return isValidDateInput(day) ? LONG_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`)) : value;
+}

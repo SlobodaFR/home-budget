@@ -1,4 +1,9 @@
+import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, FiscalProfile } from '../domain/aids';
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
+import { Forecast } from '../domain/forecast';
+import { Insight, parseInsights } from '../domain/insights';
+import { RecurringPayload, RecurringPayment } from '../domain/recurring';
+import { parseSafetyNetState, SafetyNet, SafetyNetState } from '../domain/safety-net';
 import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
 import { CommitItem, ImportPreview, Rule, RuleSet } from '../domain/statement-import';
 
@@ -139,5 +144,48 @@ export const apiClient = {
   },
   saveRules(spaceId: string, rules: Rule[]): Promise<void> {
     return request<void>(`${spacePath(spaceId)}/rules`, 'PUT', { rules });
+  },
+
+  async fetchInsights(spaceId: string, month: string): Promise<Insight[]> {
+    return parseInsights(await request<unknown>(`${spacePath(spaceId)}/insights?month=${month}`));
+  },
+
+  fetchForecast(spaceId: string, month: string): Promise<Forecast> {
+    return request<Forecast>(`${spacePath(spaceId)}/forecast?month=${month}`);
+  },
+  fetchRecurring(spaceId: string): Promise<RecurringPayment[]> {
+    return request<RecurringPayment[]>(`${spacePath(spaceId)}/recurring`);
+  },
+  createRecurring(spaceId: string, payload: RecurringPayload): Promise<RecurringPayment> {
+    return request<RecurringPayment>(`${spacePath(spaceId)}/recurring`, 'POST', payload);
+  },
+  updateRecurring(spaceId: string, id: string, payload: RecurringPayload): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/recurring/${encodeURIComponent(id)}`, 'PUT', payload);
+  },
+  deleteRecurring(spaceId: string, id: string): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/recurring/${encodeURIComponent(id)}`, 'DELETE');
+  },
+
+  async fetchSafetyNet(): Promise<SafetyNetState> {
+    return parseSafetyNetState(await request<unknown>('/household/safety-net'));
+  },
+  saveSafetyNet(safetyNet: SafetyNet): Promise<void> {
+    return request<void>('/household/safety-net', 'PUT', safetyNet);
+  },
+
+  fetchAidRules(): Promise<AidRule[]> {
+    return request<AidRule[]>('/aid-rules');
+  },
+  async fetchFiscalProfile(): Promise<FiscalProfile | null> {
+    return (await request<{ fiscalProfile: FiscalProfile | null }>('/household/fiscal-profile')).fiscalProfile;
+  },
+  saveFiscalProfile(profile: FiscalProfile): Promise<void> {
+    return request<void>('/household/fiscal-profile', 'PUT', profile);
+  },
+  fetchAids(spaceId: string, year: number): Promise<AidsSummary> {
+    return request<AidsSummary>(`${spacePath(spaceId)}/aids?year=${year}`);
+  },
+  fetchCrecheEstimate(query: CrecheQuery): Promise<CrecheEstimate> {
+    return request<CrecheEstimate>(`/aid-rules/creche-estimate?${crecheQueryString(query)}`);
   },
 };
