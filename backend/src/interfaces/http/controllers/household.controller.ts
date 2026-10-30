@@ -37,11 +37,11 @@ export class HouseholdController {
   }
 
   @Post()
-  async create(
+  create(
     @Body() dto: CreateHouseholdDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return { household: await this.createHousehold.execute(user.id, dto) };
+    return this.createHousehold.execute(user.id, dto);
   }
 
   @Post('invitations')
@@ -51,11 +51,8 @@ export class HouseholdController {
 
   @Post('join')
   @HttpCode(200)
-  async join(
-    @Body() dto: JoinHouseholdDto,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return { household: await this.joinHousehold.execute(user.id, dto.code) };
+  join(@Body() dto: JoinHouseholdDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.joinHousehold.execute(user.id, dto.code);
   }
 
   @Put('me/income')

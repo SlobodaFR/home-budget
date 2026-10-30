@@ -28,6 +28,9 @@ authentifié `401`.
 Pose le cookie `access_token` (HS256, secret local) et redirige vers `/`. Refuse de démarrer si
 `AUTH_MODE=dev` et `NODE_ENV=production`.
 
+### `POST /api/auth/logout`
+Efface les cookies de session locaux (`204`). Pas de déconnexion globale.
+
 ### `GET /api/auth/me`
 `{ "user": { "id", "email", "name" } }` ou `401`.
 
@@ -56,7 +59,8 @@ Pose le cookie `access_token` (HS256, secret local) et redirige vers `/`. Refuse
 
 ### `POST /api/household`
 Corps : `{ "name": "Famille", "netMonthlyIncomeCents": 350000 }` (revenu optionnel). Crée le foyer, l'espace
-commun et l'espace personnel. `409` si l'utilisateur a déjà un foyer. Renvoie le même objet que `GET`.
+commun et l'espace personnel. `409` si l'utilisateur a déjà un foyer. Renvoie **le foyer lui-même** (l'objet
+`household`, sans l'enveloppe `{ household }` de `GET`).
 
 ### `POST /api/household/invitations`
 Renvoie `{ "code": "…", "expiresAt": "…" }` (valable 7 jours, usage unique).
@@ -64,13 +68,13 @@ Renvoie `{ "code": "…", "expiresAt": "…" }` (valable 7 jours, usage unique).
 ### `POST /api/household/join`
 Corps : `{ "code": "…" }`. Ajoute l'utilisateur au foyer et crée son espace personnel. `404` si le code est
 inconnu, expiré ou déjà utilisé ; `409` si l'utilisateur a déjà un foyer ou si le foyer est plein.
-Renvoie le même objet que `GET /api/household`.
+Renvoie le foyer lui-même, comme `POST /api/household`.
 
 ### `PUT /api/household/me/income`
 Corps : `{ "netMonthlyIncomeCents": 200000 }` (ou `null`). `204`.
 
 ### `PUT /api/household/contribution-mode`
-Corps : `{ "mode": "EQUAL" | "PROPORTIONAL" | "EQUAL_REMAINDER" }`. `204`.
+N'importe quel membre peut modifier la règle (décision de couple). Corps : `{ "mode": "EQUAL" | "PROPORTIONAL" | "EQUAL_REMAINDER" }`. `204`.
 
 ### `GET /api/household/contribution`
 Calcule la part de chacun dans le **budget de l'espace commun** (somme des 4 blocs du plan commun) selon la

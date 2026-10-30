@@ -60,7 +60,7 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
       .post('/api/household')
       .send({ name: 'Famille', netMonthlyIncomeCents: 350000 })
       .expect(201);
-    const aliceSpaces = created.body.household.spaces as {
+    const aliceSpaces = created.body.spaces as {
       id: string;
       kind: string;
     }[];
@@ -74,7 +74,7 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
       .post('/api/household/join')
       .send({ code })
       .expect(200);
-    const bobSpaces = joined.body.household.spaces as {
+    const bobSpaces = joined.body.spaces as {
       id: string;
       kind: string;
     }[];

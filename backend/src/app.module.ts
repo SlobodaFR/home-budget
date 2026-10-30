@@ -12,7 +12,7 @@ import { HouseholdModule } from './interfaces/http/modules/household.module';
     DatabaseModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, 'public'),
-      exclude: ['/api*'],
+      exclude: ['/api/(.*)'],
     }),
     AuthModule,
     HouseholdModule,
