@@ -5,6 +5,26 @@ membre, chacun organise en 4 blocs (Fixe, Courant, Plaisir, Epargne) avec un pla
 regle de contribution au commun. Cadre pedagogique : le cours « Finances familiales » (4 blocs, epargne de
 securite, suivi mensuel).
 
+## Fonctionnalites
+
+| Tranche | Fonctionnalite |
+| --- | --- |
+| 1 | Foyer, espace commun / espace personnel prive, 4 blocs, plan, operations, regle de contribution, PWA |
+| 2 | Import de releves bancaires (CSV) avec regles de classement et detection des doublons |
+| 3 | Paiements recurrents, previsionnel du mois, epargne de securite, conseils deterministes, aides officielles (credits d'impot garde d'enfants et services a la personne, estimateur du tarif de creche) |
+| 4 | Comptes bancaires (soldes, projection de fin de mois), commun finance par les contributions |
+| 5 | Paiements non mensuels, provisions lissees, vue des 12 mois |
+| 6 | Projets d'epargne (naissance, vacances, voiture...) avec versements |
+| 7 | Revue mensuelle guidee, export JSON et CSV des donnees |
+| 8 | Credits et dettes, simulateur de remboursement anticipe |
+| 9 | Tendances de depenses |
+| 10 | Suivi des contributions de chacun au commun |
+| 11 | Evenements de vie (naissance) : demarches sourcees, echeances, progression |
+
+Le contrat de l'API est dans [`docs/api.md`](docs/api.md) ; la feuille de route et les limites connues dans
+[`docs/ROADMAP.md`](docs/ROADMAP.md). Les regles officielles (plafonds, delais, baremes) sont du code versionne
+avec leur source et leur date de verification : a revoir chaque annee.
+
 ## Stack
 
 - **Backend**: NestJS + TypeORM + SQLite (better-sqlite3), clean architecture (domain / application / infrastructure / interfaces)
