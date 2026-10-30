@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { describeError } from '../../application/error-message';
 import { useHousehold } from '../../application/use-household';
 import { parseAmountToCents } from '../../domain/money';
@@ -7,6 +7,7 @@ import { ApiError, apiClient } from '../../infrastructure/api-client';
 import { ErrorNotice } from '../components/ErrorNotice';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { buttonPrimary, buttonSecondary, inputClass, labelClass } from '../components/ui';
+import { HELP_ROUTE, HELP_TITLE } from '../../domain/routes';
 
 type Mode = 'choice' | 'create' | 'join';
 
@@ -172,6 +173,12 @@ export function WelcomePage() {
           </button>
         </form>
       )}
+
+      <p className="text-center">
+        <Link to={HELP_ROUTE} className="inline-flex min-h-[44px] items-center px-md font-body-md text-body-md font-semibold underline">
+          {HELP_TITLE}
+        </Link>
+      </p>
     </main>
   );
 }

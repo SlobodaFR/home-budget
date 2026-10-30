@@ -1,12 +1,15 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AccountsProvider } from '../application/use-accounts';
-import { HouseholdProvider } from '../application/use-household';
+import { HouseholdProvider, useHousehold } from '../application/use-household';
 import { OfflineQueueProvider } from '../application/use-offline-queue';
 import { SelectedMonthProvider } from '../application/use-selected-month';
 import { SpaceProvider } from '../application/use-space';
 import { RequireAuth } from './auth/RequireAuth';
 import { AppShell } from './layout/AppShell';
+import { HelpStandaloneLayout } from './layout/HelpStandaloneLayout';
 import { RequireHousehold } from './layout/RequireHousehold';
+import { LoadingScreen } from './components/LoadingScreen';
+import { AidePage } from './pages/AidePage';
 import { AidesPage } from './pages/AidesPage';
 import { ComptesPage } from './pages/ComptesPage';
 import { DettesPage } from './pages/DettesPage';
@@ -48,12 +51,27 @@ function HouseholdArea() {
   );
 }
 
+/**
+ * L'aide est ouverte à tout utilisateur connecté. Avec un foyer, elle s'affiche dans l'application (barre d'onglets,
+ * « Foyer » reste actif) ; sans foyer, ou si le foyer n'a pas pu être chargé, dans une mise en page simple.
+ */
+function HelpArea() {
+  const { household, loading } = useHousehold();
+  if (loading) {
+    return <LoadingScreen />;
+  }
+  return household ? <HouseholdArea /> : <HelpStandaloneLayout />;
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Protected />}>
         <Route path="/bienvenue" element={<WelcomePage />} />
+        <Route path="/aide" element={<HelpArea />}>
+          <Route index element={<AidePage />} />
+        </Route>
         <Route element={<HouseholdArea />}>
           <Route index element={<HomePage />} />
           <Route path="import" element={<ImportPage />} />

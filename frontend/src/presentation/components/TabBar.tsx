@@ -6,7 +6,7 @@ const TABS: { to: string; label: string; icon: ReactNode; end?: boolean; alsoAct
   { to: '/', label: 'Accueil', icon: <HomeIcon />, end: true, alsoActive: ['/import', '/comptes', '/projets', '/revue', '/dettes', '/tendances', '/evenements'] },
   { to: '/plan', label: 'Plan', icon: <PlanIcon /> },
   { to: '/previsionnel', label: 'Prévisionnel', icon: <CalendarIcon /> },
-  { to: '/foyer', label: 'Foyer', icon: <UsersIcon />, alsoActive: ['/aides'] },
+  { to: '/foyer', label: 'Foyer', icon: <UsersIcon />, alsoActive: ['/aides', '/aide'] },
 ];
 
 export function TabBar() {

@@ -296,3 +296,18 @@ export const ExternalLinkIcon = (props: IconProps) => (
     <path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" />
   </Icon>
 );
+
+export const HelpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9.5a2.5 2.5 0 113.5 2.3c-.7.4-1 .9-1 1.7" />
+    <path d="M12 17h.01" />
+  </Icon>
+);
+
+export const SearchIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-3.5-3.5" />
+  </Icon>
+);

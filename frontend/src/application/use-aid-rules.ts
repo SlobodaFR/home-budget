@@ -7,5 +7,5 @@ export function useAidRules(enabled: boolean) {
     () => (enabled ? apiClient.fetchAidRules() : Promise.resolve(null)),
     [enabled],
   );
-  return { rules: resource.data ?? null, loading: enabled && resource.loading, error: resource.error };
+  return { rules: resource.data ?? null, loading: enabled && resource.loading, error: resource.error, reload: resource.reload };
 }
