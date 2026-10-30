@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HouseholdContext, HouseholdContextValue } from '../../application/use-household';
+import { SpaceProvider } from '../../application/use-space';
 import { Contribution, Household } from '../../domain/household';
 
 const api = vi.hoisted(() => ({
@@ -70,7 +71,9 @@ function renderPage(overrides: Partial<Household> = {}) {
   render(
     <MemoryRouter>
       <HouseholdContext.Provider value={value}>
-        <FoyerPage />
+        <SpaceProvider>
+          <FoyerPage />
+        </SpaceProvider>
       </HouseholdContext.Provider>
     </MemoryRouter>,
   );

@@ -1,5 +1,6 @@
 import { Account } from '../domain/account';
 import { Project } from '../domain/project';
+import { MonthlyReview, ReviewHistoryItem, ReviewSnapshot } from '../domain/review';
 import { PreviewRow } from '../domain/statement-import';
 
 export function previewRow(
@@ -55,4 +56,42 @@ export function project(overrides: Partial<Project> = {}): Project {
     accountId: null,
     ...overrides,
   };
+}
+
+export function reviewSnapshot(overrides: Partial<ReviewSnapshot> = {}): ReviewSnapshot {
+  return {
+    incomeCents: 380000,
+    expenseCents: 351000,
+    balanceCents: 29000,
+    savingsRatePercent: 8,
+    blocs: [
+      { bloc: 'FIXE', plannedCents: 175000, actualCents: 171000, deltaCents: -4000 },
+      { bloc: 'COURANT', plannedCents: 100000, actualCents: 140000, deltaCents: 40000 },
+      { bloc: 'PLAISIR', plannedCents: 40000, actualCents: 40000, deltaCents: 0 },
+      { bloc: 'EPARGNE', plannedCents: 50000, actualCents: 30000, deltaCents: -20000 },
+    ],
+    topExpenses: [
+      { label: 'Courses', amountCents: 142300, count: 9 },
+      { label: 'Loyer', amountCents: 120000, count: 1 },
+      { label: 'Essence', amountCents: 21000, count: 3 },
+    ],
+    missingRecurring: [],
+    unassignedTransactionCount: 0,
+    ...overrides,
+  };
+}
+
+export function review(overrides: Partial<MonthlyReview> = {}): MonthlyReview {
+  return {
+    month: '2026-10',
+    status: 'TODO',
+    answers: { wentWell: '', surprise: '', decision: '' },
+    completedAt: null,
+    snapshot: reviewSnapshot(),
+    ...overrides,
+  };
+}
+
+export function reviewHistoryItem(overrides: Partial<ReviewHistoryItem> = {}): ReviewHistoryItem {
+  return { month: '2026-09', status: 'DONE', decision: 'Fixer 400 € pour les courses', completedAt: '2026-10-03T08:00:00.000Z', ...overrides };
 }

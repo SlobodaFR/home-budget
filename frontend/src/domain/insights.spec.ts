@@ -107,3 +107,18 @@ describe('lessonReference', () => {
     });
   });
 });
+
+describe('insightAction for the monthly review insights', () => {
+  it('offers « Faire ma revue » for the pending review', () => {
+    expect(insightAction('/revue', 'monthly-review')).toEqual({ to: '/revue', label: 'Faire ma revue' });
+    expect(insightAction('/revue')).toEqual({ to: '/revue', label: 'Faire ma revue' });
+  });
+
+  it('offers « Voir ma revue » once it is done', () => {
+    expect(insightAction('/revue', 'review-done')).toEqual({ to: '/revue', label: 'Voir ma revue' });
+  });
+
+  it('keeps the generic label when the server sends another link for review-done', () => {
+    expect(insightAction('/plan', 'review-done')).toEqual({ to: '/plan', label: 'Ouvrir le plan' });
+  });
+});

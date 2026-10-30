@@ -1,6 +1,7 @@
 import { Account, AccountPayload } from '../domain/account';
 import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, FiscalProfile } from '../domain/aids';
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
+import { backupFilename, csvFilename, ExportRange, filenameFromContentDisposition } from '../domain/export';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
 import {
@@ -16,6 +17,13 @@ import {
 } from '../domain/project';
 import { parseProvisions, Provisions } from '../domain/provisions';
 import { RecurringPayload, RecurringPayment } from '../domain/recurring';
+import {
+  MonthlyReview,
+  parseReview,
+  parseReviewHistory,
+  ReviewHistoryItem,
+  ReviewPayload,
+} from '../domain/review';
 import { parseSafetyNetState, SafetyNet, SafetyNetState } from '../domain/safety-net';
 import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
 import { parseYearForecast, YearForecast } from '../domain/year-forecast';
@@ -55,7 +63,8 @@ export function onUnauthorized(listener: UnauthorizedListener | null): void {
   unauthorizedListener = listener;
 }
 
-async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+/** Envoie la requête et renvoie la réponse si elle est réussie ; sinon lève `NetworkError` ou `ApiError`. */
+async function send(path: string, method = 'GET', body?: unknown): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
@@ -76,11 +85,32 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
     const message = Array.isArray(errorBody?.message) ? errorBody.message.join(', ') : errorBody?.message;
     throw new ApiError(response.status, typeof message === 'string' ? message : `Erreur ${response.status}`);
   }
+  return response;
+}
 
+async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  const response = await send(path, method, body);
   if (response.status === 204) {
     return undefined as T;
   }
   return (await response.json()) as T;
+}
+
+/** Un fichier reçu du serveur, prêt à être enregistré par le navigateur. */
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+async function download(path: string, fallbackFilename: string): Promise<DownloadedFile> {
+  const response = await send(path);
+  let blob: Blob;
+  try {
+    blob = await response.blob();
+  } catch {
+    throw new NetworkError();
+  }
+  return { blob, filename: filenameFromContentDisposition(response.headers.get('Content-Disposition'), fallbackFilename) };
 }
 
 const spacePath = (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}`;
@@ -162,6 +192,29 @@ export const apiClient = {
 
   async fetchInsights(spaceId: string, month: string): Promise<Insight[]> {
     return parseInsights(await request<unknown>(`${spacePath(spaceId)}/insights?month=${month}`));
+  },
+
+  async fetchReview(spaceId: string, month: string): Promise<MonthlyReview> {
+    const review = parseReview(await request<unknown>(`${spacePath(spaceId)}/reviews/${encodeURIComponent(month)}`), month);
+    if (!review) {
+      throw new ApiError(502, 'Réponse illisible');
+    }
+    return review;
+  },
+  saveReview(spaceId: string, month: string, payload: ReviewPayload): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/reviews/${encodeURIComponent(month)}`, 'PUT', payload);
+  },
+  async fetchReviews(spaceId: string, limit = 12): Promise<ReviewHistoryItem[]> {
+    return parseReviewHistory(await request<unknown>(`${spacePath(spaceId)}/reviews?limit=${limit}`));
+  },
+
+  /** Sauvegarde JSON de toutes les données auxquelles l'utilisateur a accès (jamais l'espace personnel d'un autre). */
+  downloadExport(now: Date = new Date()): Promise<DownloadedFile> {
+    return download('/export', backupFilename(now));
+  },
+  downloadTransactionsCsv(spaceId: string, range: ExportRange): Promise<DownloadedFile> {
+    const query = `from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+    return download(`${spacePath(spaceId)}/transactions/export?${query}`, csvFilename(range));
   },
 
   fetchForecast(spaceId: string, month: string): Promise<Forecast> {

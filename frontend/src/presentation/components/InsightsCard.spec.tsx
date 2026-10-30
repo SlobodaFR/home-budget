@@ -95,6 +95,22 @@ describe('InsightsCard', () => {
     expect(within(items[2]).getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
   });
 
+  it('sends the monthly review insights to /revue with the right button label', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({ id: 'monthly-review', severity: 'ACTION', title: 'Faites votre revue d’octobre', detail: 'Dix minutes suffisent.', lesson: 5, link: '/revue' }),
+        insight({ id: 'review-done', severity: 'GOOD', title: 'Revue d’octobre terminée', detail: 'Décision : fixer 400 € pour les courses.', lesson: null, link: '/revue' }),
+      ],
+    });
+    const items = screen.getAllByRole('listitem');
+    expect(within(items[0]).getByText(/À faire/)).toBeInTheDocument();
+    expect(within(items[0]).getByRole('link', { name: 'Faire ma revue' })).toHaveAttribute('href', '/revue');
+    expect(within(items[1]).getByText(/Bien joué/)).toBeInTheDocument();
+    expect(within(items[1]).getByRole('link', { name: 'Voir ma revue' })).toHaveAttribute('href', '/revue');
+    expect(within(items[1]).getByText(/fixer 400 € pour les courses/)).toBeInTheDocument();
+  });
+
   it('omits the button and the lesson when the insight has neither', () => {
     renderCard({ status: 'ready', insights: [insight({ lesson: null, link: null })] });
     expect(screen.queryByRole('link')).not.toBeInTheDocument();

@@ -218,3 +218,37 @@ describe('HomePage projects card', () => {
     expect(within(card).getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
   });
 });
+
+describe('HomePage monthly review', () => {
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchAccounts.mockResolvedValue([]);
+    api.fetchSummary.mockResolvedValue(summary);
+    api.fetchTransactions.mockResolvedValue([]);
+    api.fetchInsights.mockResolvedValue([]);
+  });
+
+  it('always links to the review page from the quick links', async () => {
+    renderInApp(<HomePage />);
+    await screen.findByRole('region', { name: 'Synthèse du mois' });
+    expect(screen.getByRole('link', { name: 'Ma revue du mois' })).toHaveAttribute('href', '/revue');
+  });
+
+  it('offers to make the review from the monthly-review insight', async () => {
+    api.fetchInsights.mockResolvedValue([
+      { id: 'monthly-review', severity: 'ACTION', title: 'Faites votre revue d’octobre', detail: 'Dix minutes suffisent.', lesson: 5, link: '/revue' },
+    ]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Prochaines actions' });
+    expect(within(card).getByRole('link', { name: 'Faire ma revue' })).toHaveAttribute('href', '/revue');
+  });
+
+  it('offers to see the review once done', async () => {
+    api.fetchInsights.mockResolvedValue([
+      { id: 'review-done', severity: 'GOOD', title: 'Revue d’octobre terminée', detail: 'Décision : une liste.', lesson: null, link: '/revue' },
+    ]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Prochaines actions' });
+    expect(within(card).getByRole('link', { name: 'Voir ma revue' })).toHaveAttribute('href', '/revue');
+  });
+});

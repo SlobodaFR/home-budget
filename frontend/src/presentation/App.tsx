@@ -16,6 +16,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PlanPage } from './pages/PlanPage';
 import { PrevisionnelPage } from './pages/PrevisionnelPage';
 import { ProjetsPage } from './pages/ProjetsPage';
+import { RevuePage } from './pages/RevuePage';
 import { WelcomePage } from './pages/WelcomePage';
 
 function Protected() {
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="aides" element={<AidesPage />} />
           <Route path="comptes" element={<ComptesPage />} />
           <Route path="projets" element={<ProjetsPage />} />
+          <Route path="revue" element={<RevuePage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>
