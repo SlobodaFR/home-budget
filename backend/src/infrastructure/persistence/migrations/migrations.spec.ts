@@ -57,6 +57,7 @@ describe('FoyerSchema migration', () => {
     await ds.undoLastMigration();
     await ds.undoLastMigration();
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );
@@ -87,6 +88,7 @@ describe('FoyerSchema migration', () => {
       expect.arrayContaining(['label', 'amount_cents', 'secret_payload']),
     );
 
+    await ds.undoLastMigration(); // tranche 6
     await ds.undoLastMigration(); // tranche 5
     await ds.undoLastMigration(); // tranche 4
     await ds.undoLastMigration(); // tranche 3
@@ -131,6 +133,7 @@ describe('FoyerSchema migration', () => {
     await ds.query(
       `INSERT INTO "transactions" ("id","space_id","kind","date","account_id") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','a1')`,
     );
+    await ds.undoLastMigration(); // tranche 6
     await ds.undoLastMigration(); // tranche 5
     await ds.undoLastMigration(); // tranche 4
     expect(await columnsOf(ds, 'accounts')).toEqual([]);
@@ -150,6 +153,7 @@ describe('FoyerSchema migration', () => {
   it('adds frequency (default MONTHLY) and month_of_year without touching existing rows, and undoes them', async () => {
     const ds = await dataSource().initialize();
     await ds.runMigrations();
+    await ds.undoLastMigration(); // tranche 6
     await ds.undoLastMigration(); // revient à la tranche 4
     await ds.query(
       `INSERT INTO "recurring_items" ("id","space_id","kind","bloc","day_of_month","start_date","active","label","amount_cents") VALUES ('r1','s1','EXPENSE','FIXE',5,'2026-01-01',1,'Loyer',110000)`,
@@ -172,7 +176,8 @@ describe('FoyerSchema migration', () => {
     const drift = await ds.driver.createSchemaBuilder().log();
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);
 
-    await ds.undoLastMigration();
+    await ds.undoLastMigration(); // tranche 6
+    await ds.undoLastMigration(); // tranche 5
     const columns: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('recurring_items')`,
     );
@@ -183,6 +188,65 @@ describe('FoyerSchema migration', () => {
     expect(await ds.query(`SELECT label FROM recurring_items`)).toEqual([
       { label: 'Loyer' },
     ]);
+    await ds.destroy();
+  });
+
+  it('creates the tranche 6 project tables with their indexes, and undoes them', async () => {
+    const ds = await dataSource().initialize();
+    await ds.runMigrations();
+    const columnsOf = async (table: string) => {
+      const rows: { name: string }[] = await ds.query(
+        `SELECT name FROM pragma_table_info('${table}')`,
+      );
+      return rows.map((row) => row.name);
+    };
+    expect(await columnsOf('projects')).toEqual(
+      expect.arrayContaining([
+        'id',
+        'space_id',
+        'kind',
+        'target_date',
+        'start_date',
+        'archived',
+        'account_id',
+        'name',
+        'target_cents',
+        'start_cents',
+        'secret_payload',
+      ]),
+    );
+    expect(await columnsOf('project_deposits')).toEqual(
+      expect.arrayContaining([
+        'id',
+        'project_id',
+        'space_id',
+        'date',
+        'amount_cents',
+        'note',
+        'secret_payload',
+      ]),
+    );
+    const indexes: { name: string }[] = await ds.query(
+      `SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_project%'`,
+    );
+    expect(indexes.map((i) => i.name).sort()).toEqual([
+      'idx_project_deposits_project',
+      'idx_project_deposits_space',
+      'idx_projects_space',
+    ]);
+    // Les tables des tranches précédentes sont intactes.
+    await ds.query(
+      `INSERT INTO "recurring_items" ("id","space_id","kind","start_date","active","label","amount_cents") VALUES ('r1','s1','EXPENSE','2026-01-01',1,'Loyer',100)`,
+    );
+
+    await ds.undoLastMigration();
+    expect(await columnsOf('projects')).toEqual([]);
+    expect(await columnsOf('project_deposits')).toEqual([]);
+    expect(await ds.query(`SELECT id FROM recurring_items`)).toEqual([
+      { id: 'r1' },
+    ]);
+    await ds.runMigrations();
+    expect(await columnsOf('projects')).toContain('target_cents');
     await ds.destroy();
   });
 

@@ -15,6 +15,7 @@ import { SpacePlan } from '../../domain/space/space-plan';
 import { SpacePlanRepository } from '../../domain/space/space-plan.repository';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
 import { SpaceAccessService } from '../household/space-access.service';
+import { ProjectViewsService } from '../project/project-views.service';
 import { AccountViewsService } from '../account/account-views.service';
 import { SafetyNetProgressService } from '../safety-net/safety-net-progress.service';
 
@@ -29,6 +30,7 @@ export class GetInsightsUseCase {
     private readonly safetyNets: SafetyNetRepository,
     private readonly safetyNetProgress: SafetyNetProgressService,
     private readonly accountViews: AccountViewsService,
+    private readonly projectViews: ProjectViewsService,
     private readonly clock: Clock,
   ) {}
 
@@ -75,7 +77,10 @@ export class GetInsightsUseCase {
       }
     }
 
-    const views = await this.accountViews.forSpace(spaceId);
+    const [views, projects] = await Promise.all([
+      this.accountViews.forSpace(spaceId),
+      this.projectViews.forSpace(spaceId),
+    ]);
 
     return {
       insights: buildInsights({
@@ -87,6 +92,7 @@ export class GetInsightsUseCase {
         lastActivity,
         common,
         provisions: buildProvisions(recurring, today),
+        projects,
         accounts: {
           accountCount: views.length,
           negativeProjected: views

@@ -55,6 +55,22 @@ import {
   GetProvisionsUseCase,
   GetYearForecastUseCase,
 } from '../../../application/provision/provision.use-cases';
+import { ProjectViewsService } from '../../../application/project/project-views.service';
+import {
+  AddDepositUseCase,
+  CreateProjectUseCase,
+  DeleteDepositUseCase,
+  DeleteProjectUseCase,
+  GetProjectsSummaryUseCase,
+  ListDepositsUseCase,
+  ListProjectsUseCase,
+  UpdateProjectUseCase,
+} from '../../../application/project/project.use-cases';
+import { ProjectRepository } from '../../../domain/project/project.repository';
+import { ProjectDepositOrmEntity } from '../../../infrastructure/persistence/entities/project-deposit.orm-entity';
+import { ProjectOrmEntity } from '../../../infrastructure/persistence/entities/project.orm-entity';
+import { TypeOrmProjectRepository } from '../../../infrastructure/persistence/repositories/typeorm-project.repository';
+import { ProjectsController } from '../controllers/projects.controller';
 import { GetForecastUseCase } from '../../../application/forecast/get-forecast.use-case';
 import { GetInsightsUseCase } from '../../../application/insights/get-insights.use-case';
 import {
@@ -112,6 +128,8 @@ import { AuthModule } from './auth.module';
       SafetyNetOrmEntity,
       HouseholdFiscalProfileOrmEntity,
       AccountOrmEntity,
+      ProjectOrmEntity,
+      ProjectDepositOrmEntity,
     ]),
   ],
   controllers: [
@@ -123,6 +141,7 @@ import { AuthModule } from './auth.module';
     HouseholdGuidanceController,
     AidRulesController,
     AccountsController,
+    ProjectsController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -132,6 +151,7 @@ import { AuthModule } from './auth.module';
     { provide: TransactionRepository, useClass: TypeOrmTransactionRepository },
     { provide: Clock, useClass: SystemClock },
     { provide: AccountRepository, useClass: TypeOrmAccountRepository },
+    { provide: ProjectRepository, useClass: TypeOrmProjectRepository },
     {
       provide: RecurringItemRepository,
       useClass: TypeOrmRecurringItemRepository,
@@ -179,6 +199,15 @@ import { AuthModule } from './auth.module';
     AccountViewsService,
     GetProvisionsUseCase,
     GetYearForecastUseCase,
+    ProjectViewsService,
+    ListProjectsUseCase,
+    GetProjectsSummaryUseCase,
+    CreateProjectUseCase,
+    UpdateProjectUseCase,
+    DeleteProjectUseCase,
+    ListDepositsUseCase,
+    AddDepositUseCase,
+    DeleteDepositUseCase,
     AccountAssignmentService,
     ListAccountsUseCase,
     CreateAccountUseCase,

@@ -5,6 +5,7 @@ import { FakeClock } from '../../testing/fake-clock';
 import {
   InMemoryAccountRepository,
   InMemoryHouseholdRepository,
+  InMemoryProjectRepository,
   InMemoryRecurringItemRepository,
   InMemorySpaceRulesRepository,
   InMemoryTransactionRepository,
@@ -58,6 +59,7 @@ async function setup() {
   const transactions = new InMemoryTransactionRepository();
   const recurring = new InMemoryRecurringItemRepository();
   const accounts = new InMemoryAccountRepository();
+  const projects = new InMemoryProjectRepository();
   const rules = new InMemorySpaceRulesRepository();
   const clock = FakeClock.at('2026-11-12T09:00:00Z');
   const assignment = new AccountAssignmentService(accounts);
@@ -85,7 +87,13 @@ async function setup() {
     list: new ListAccountsUseCase(access, views),
     create: new CreateAccountUseCase(access, accounts),
     update: new UpdateAccountUseCase(access, accounts),
-    remove: new DeleteAccountUseCase(access, accounts, transactions, recurring),
+    remove: new DeleteAccountUseCase(
+      access,
+      accounts,
+      transactions,
+      recurring,
+      projects,
+    ),
     createTx: new CreateSpaceTransactionUseCase(
       access,
       transactions,

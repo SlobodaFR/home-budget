@@ -6,6 +6,7 @@ import {
   InMemoryAccountRepository,
   InMemoryFiscalProfileRepository,
   InMemoryHouseholdRepository,
+  InMemoryProjectRepository,
   InMemoryRecurringItemRepository,
   InMemorySafetyNetRepository,
   InMemorySpacePlanRepository,
@@ -13,6 +14,7 @@ import {
   InMemoryUserRepository,
 } from '../../testing/in-memory-repositories';
 import { AccountAssignmentService } from '../account/account-assignment.service';
+import { ProjectViewsService } from '../project/project-views.service';
 import { AccountViewsService } from '../account/account-views.service';
 import {
   EstimateCrecheUseCase,
@@ -75,6 +77,10 @@ async function setup(today = '2026-11-12T09:00:00Z') {
   const clock = FakeClock.at(today);
   const accountsRepo = new InMemoryAccountRepository();
   const assignment = new AccountAssignmentService(accountsRepo);
+  const projectViews = new ProjectViewsService(
+    new InMemoryProjectRepository(),
+    clock,
+  );
   const accountViews = new AccountViewsService(
     accountsRepo,
     transactions,
@@ -125,6 +131,7 @@ async function setup(today = '2026-11-12T09:00:00Z') {
       safetyNets,
       progress,
       accountViews,
+      projectViews,
       clock,
     ),
     getSafetyNet: new GetSafetyNetUseCase(access, safetyNets, progress),

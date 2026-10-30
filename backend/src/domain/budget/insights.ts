@@ -13,6 +13,7 @@ import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
 import { Provisions } from './provisions';
+import { ProjectView, summarizeProjects } from '../project/project-progress';
 import { MonthSummary } from './month-summary';
 
 export type InsightSeverity = 'WARNING' | 'ACTION' | 'INFO' | 'GOOD';
@@ -35,6 +36,8 @@ export const STALE_ACTIVITY_DAYS = 10;
 /** Un paiement non mensuel est « gros » à partir de 500 € ou de 20 % du revenu mensuel connu. */
 export const BIG_PAYMENT_MIN_CENTS = 50000;
 export const BIG_PAYMENT_INCOME_SHARE_PERCENT = 20;
+/** Un projet atteint reste mis en avant pendant ce nombre de jours (`project-reached`). */
+export const PROJECT_REACHED_DAYS = 30;
 /** Fenêtre de `upcoming-big-payment`, en jours. */
 export const BIG_PAYMENT_DAYS = 60;
 /** Fenêtre des « paiements à venir ». */
@@ -85,6 +88,8 @@ export interface InsightsInput {
   accounts: AccountsInsightContext;
   /** Paiements non mensuels de l'espace, à partir d'aujourd'hui. */
   provisions: Provisions;
+  /** Projets d'épargne de l'espace (archivés compris : le filtre est ici). */
+  projects: ProjectView[];
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -100,10 +105,12 @@ const PRIORITY = [
   'month-deficit',
   'account-negative-projected',
   'bloc-overrun',
+  'project-behind',
   'recurring-missing',
   'plan-missing',
   'plan-unassigned',
   'contribution-incomplete',
+  'projects-exceed-savings',
   'savings-behind',
   'no-recent-activity',
   'upcoming-payments',
@@ -113,6 +120,7 @@ const PRIORITY = [
   'monthly-review',
   'safety-net-unset',
   'safety-net-progress',
+  'project-reached',
   'savings-on-track',
   'all-good',
 ];
@@ -143,6 +151,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...trackingInsights(input),
     ...accountInsights(input),
     ...provisionInsights(input),
+    ...projectInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -373,6 +382,104 @@ function provisionInsights({
       detail: `Vos paiements non mensuels demandent ${formatEuros(total)} par mois à mettre de côté, mais le bloc Épargne de votre plan n'en prévoit que ${formatEuros(plan.epargneCents)}. Relevez-le d'au moins ${formatEuros(total - plan.epargneCents)}.`,
       lesson: LESSON_BLOCS,
       link: '/plan',
+    });
+  }
+  return result;
+}
+
+/**
+ * Projets d'épargne (mois courant seulement, comme les autres conseils liés à
+ * aujourd'hui) :
+ * - `project-behind` : un projet non archivé BEHIND (retard = épargne attendue −
+ *   épargné) ou LATE (échéance dépassée, retard = reste à épargner) ;
+ * - `projects-exceed-savings` : le besoin mensuel des projets dépasse le bloc
+ *   EPARGNE du plan ;
+ * - `project-reached` : un projet non archivé dont l'objectif a été atteint
+ *   dans les 30 derniers jours. Date retenue = celle du dernier versement qui a
+ *   fait passer le cumul de sous l'objectif à l'objectif ou plus, sans retrait
+ *   qui l'ait fait repasser dessous depuis (cf. `reachedOn`) ; un versement daté
+ *   du futur compte comme récent.
+ */
+function projectInsights({
+  month,
+  today,
+  plan,
+  projects,
+}: InsightsInput): Insight[] {
+  if (monthPhase(month, today) !== 'CURRENT') {
+    return [];
+  }
+  const live = projects.filter((v) => !v.project.archived);
+  const result: Insight[] = [];
+  const todayStart = startOfUtcDay(today).getTime();
+
+  const behind = live.filter(
+    (v) => v.status === 'BEHIND' || v.status === 'LATE',
+  );
+  if (behind.length > 0) {
+    const lateness = (v: ProjectView) =>
+      v.status === 'LATE'
+        ? v.remainingCents
+        : v.expectedSavedCents - v.savedCents;
+    const monthly = behind.reduce((sum, v) => sum + v.monthlyNeededCents, 0);
+    result.push({
+      id: 'project-behind',
+      severity: 'WARNING',
+      title:
+        behind.length === 1
+          ? `Projet en retard : ${behind[0].project.name}`
+          : `${behind.length} projets en retard`,
+      detail:
+        behind.length === 1
+          ? `${behind[0].project.name} : ${formatEuros(lateness(behind[0]))} de retard${behind[0].status === 'LATE' ? " (l'échéance est dépassée)" : ''}. Versement mensuel conseillé : ${formatEuros(behind[0].monthlyNeededCents)}.`
+          : `${joinNames([
+              ...behind
+                .slice(0, MAX_LISTED)
+                .map((v) => `${v.project.name} (${formatEuros(lateness(v))})`),
+              ...(behind.length > MAX_LISTED
+                ? [
+                    `${behind.length - MAX_LISTED} ${plural(behind.length - MAX_LISTED, 'autre', 'autres')}`,
+                  ]
+                : []),
+            ])} sont en retard. Versements mensuels conseillés : ${formatEuros(monthly)} au total.`,
+      lesson: LESSON_BLOCS,
+      link: '/projets',
+    });
+  }
+
+  const summary = summarizeProjects(projects, plan.epargneCents);
+  if (summary.gapCents > 0) {
+    result.push({
+      id: 'projects-exceed-savings',
+      severity: 'ACTION',
+      title: "Vos projets dépassent l'épargne prévue",
+      detail: `Vos projets demandent ${formatEuros(summary.totalMonthlyNeededCents)} par mois, mais le bloc Épargne de votre plan en prévoit ${formatEuros(summary.plannedEpargneCents)} : il manque ${formatEuros(summary.gapCents)} par mois. Relevez le bloc Épargne ou allongez une échéance.`,
+      lesson: LESSON_BLOCS,
+      link: '/plan',
+    });
+  }
+
+  const reached = live.filter(
+    (v) =>
+      v.status === 'DONE' &&
+      v.reachedOn !== null &&
+      todayStart - Date.parse(`${v.reachedOn}T00:00:00Z`) <=
+        PROJECT_REACHED_DAYS * DAY_MS,
+  );
+  if (reached.length > 0) {
+    result.push({
+      id: 'project-reached',
+      severity: 'GOOD',
+      title:
+        reached.length === 1
+          ? `Objectif atteint : ${reached[0].project.name}`
+          : `${reached.length} objectifs atteints`,
+      detail:
+        reached.length === 1
+          ? `${reached[0].project.name} : ${formatEuros(reached[0].project.targetCents)} épargnés. Bravo !`
+          : `${joinNames(reached.map((v) => v.project.name))} : objectifs atteints. Bravo !`,
+      lesson: LESSON_BLOCS,
+      link: '/projets',
     });
   }
   return result;
