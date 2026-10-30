@@ -9,9 +9,59 @@ cd "$DEPLOY_DIR/deploy"
 export IMAGE
 export IMAGE_TAG
 
+# Nombre de versions de l'image à garder après un déploiement :
+# la version courante + les 2 précédentes (rollback possible).
+KEEP_VERSIONS="${KEEP_VERSIONS:-3}"
+
+# Supprime les anciennes versions de $IMAGE au-delà des $1 plus récentes.
+# Ne touche jamais : à une image utilisée par un conteneur (même arrêté),
+# au tag qui va être déployé, ni aux images des autres applications du VPS.
+# Les volumes nommés (dont budget-data, la base SQLite) ne sont JAMAIS supprimés.
+cleanup_old_images() {
+  keep="$1"
+  in_use=$(docker ps -a --format '{{.Image}}')
+  # `docker image ls` liste les images de la plus récente à la plus ancienne.
+  docker image ls "$IMAGE" --format '{{.Tag}}' \
+    | grep -v '^<none>$' \
+    | tail -n +"$((keep + 1))" \
+    | while read -r tag; do
+        [ "$tag" = "$IMAGE_TAG" ] && continue
+        if printf '%s\n' "$in_use" | grep -qxF "$IMAGE:$tag"; then
+          continue
+        fi
+        echo "Suppression de l'ancienne image $IMAGE:$tag"
+        docker image rm "$IMAGE:$tag" || true
+      done
+}
+
+cleanup_docker() {
+  keep="$1"
+  docker container prune -f
+  cleanup_old_images "$keep"
+  docker image prune -f
+  docker builder prune -f || true
+  # Volumes anonymes orphelins uniquement (nom = 64 caractères hexadécimaux).
+  # Les volumes nommés comme budget-data sont volontairement ignorés.
+  docker volume ls -q -f dangling=true \
+    | grep -E '^[0-9a-f]{64}$' \
+    | xargs -r docker volume rm || true
+}
+
+echo "Espace disque avant nettoyage :"
+df -h / | tail -n 1
+
+# Avant le pull : on libère de la place pour que le téléchargement passe
+# (la nouvelle image s'ajoutera aux $((KEEP_VERSIONS - 1)) conservées).
+cleanup_docker "$((KEEP_VERSIONS - 1))"
+
 docker compose pull
 docker compose up -d --remove-orphans
-docker image prune -f
+
+# Après le déploiement : on ne garde que la courante + les précédentes.
+cleanup_docker "$KEEP_VERSIONS"
+
+echo "Espace disque après déploiement :"
+df -h / | tail -n 1
 
 if ! command -v caddy >/dev/null 2>&1; then
   sudo apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl
