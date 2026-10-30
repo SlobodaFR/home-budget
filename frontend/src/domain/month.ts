@@ -66,3 +66,7 @@ export function formatDay(iso: string): string {
 export function formatLongDate(iso: string): string {
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(new Date(iso));
 }
+
+export function formatDayMonth(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}

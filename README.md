@@ -120,6 +120,13 @@ replication.
 
 Contrat HTTP : [docs/api.md](docs/api.md).
 
+## Import de releve
+
+Ecran `/import` (frontend) : on choisit le CSV du mois de sa banque (lu sur l'appareil, decode en UTF-8 ou
+Windows-1252), le serveur propose un bloc par ligne a partir de regles de mots-cles propres a chaque espace
+(jeu de depart, modifiable, chiffre pour un espace personnel), repere les lignes deja importees, puis
+l'utilisateur corrige et valide : l'enregistrement est tout ou rien. Details et formats lus : docs/api.md.
+
 ## Donnees personnelles chiffrees
 
 Libelles et montants des operations de l'espace personnel, ainsi que son plan, sont chiffres au repos

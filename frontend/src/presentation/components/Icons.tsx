@@ -116,3 +116,22 @@ export const WifiOffIcon = (props: IconProps) => (
     <path d="M12 20h.01" />
   </Icon>
 );
+
+export const ArrowUpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </Icon>
+);
+
+export const ArrowDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 5v14M6 13l6 6 6-6" />
+  </Icon>
+);
+
+export const UploadIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 16V4M7 9l5-5 5 5" />
+    <path d="M4 16v4h16v-4" />
+  </Icon>
+);

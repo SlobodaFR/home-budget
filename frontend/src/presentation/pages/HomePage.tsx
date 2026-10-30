@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
 import { useMonthData } from '../../application/use-month-data';
 import { useOfflineQueue } from '../../application/use-offline-queue';
+import { useSelectedMonth } from '../../application/use-selected-month';
 import { useSpace } from '../../application/use-space';
 import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
-import { currentMonth } from '../../domain/month';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
+import { UploadIcon } from '../components/Icons';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MonthPicker } from '../components/MonthPicker';
 import { SummaryCard } from '../components/SummaryCard';
@@ -16,7 +18,7 @@ import { useQuickEntry } from '../layout/QuickEntryContext';
 
 export function HomePage() {
   const { space } = useSpace();
-  const [month, setMonth] = useState(() => currentMonth());
+  const { month, setMonth } = useSelectedMonth();
   const { summary, transactions, removeTransaction } = useMonthData(space.id, month);
   const { pending } = useOfflineQueue();
   const quickEntry = useQuickEntry();
@@ -49,6 +51,13 @@ export function HomePage() {
   return (
     <>
       <MonthPicker month={month} onChange={setMonth} />
+      <Link
+        to="/import"
+        className="-mt-sm inline-flex min-h-[44px] items-center justify-center gap-sm self-center rounded-full px-md font-body-sm text-body-sm font-semibold underline"
+      >
+        <UploadIcon width={18} height={18} />
+        Importer un relevé
+      </Link>
 
       {summary.data ? (
         <SummaryCard summary={summary.data} />

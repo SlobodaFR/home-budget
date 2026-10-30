@@ -1,5 +1,6 @@
 import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
 import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
+import { CommitItem, ImportPreview, Rule, RuleSet } from '../domain/statement-import';
 
 const BASE_URL = '/api';
 
@@ -125,5 +126,18 @@ export const apiClient = {
   },
   fetchSummary(spaceId: string, month: string): Promise<Summary> {
     return request<Summary>(`${spacePath(spaceId)}/summary?month=${month}`);
+  },
+
+  previewImport(spaceId: string, text: string): Promise<ImportPreview> {
+    return request<ImportPreview>(`${spacePath(spaceId)}/imports/preview`, 'POST', { text });
+  },
+  commitImport(spaceId: string, items: CommitItem[]): Promise<{ created: number }> {
+    return request<{ created: number }>(`${spacePath(spaceId)}/imports/commit`, 'POST', { items });
+  },
+  fetchRules(spaceId: string): Promise<RuleSet> {
+    return request<RuleSet>(`${spacePath(spaceId)}/rules`);
+  },
+  saveRules(spaceId: string, rules: Rule[]): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/rules`, 'PUT', { rules });
   },
 };

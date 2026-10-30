@@ -24,7 +24,8 @@ function ShellContent() {
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const closeSheet = useCallback(() => setSheet(null), []);
-  const showsSpace = location.pathname === '/' || location.pathname === '/plan';
+  const showsSpace = ['/', '/plan', '/import'].includes(location.pathname);
+  const reservesFabSpace = location.pathname !== '/import';
 
   const quickEntry = useMemo<QuickEntryValue>(
     () => ({
@@ -69,7 +70,7 @@ function ShellContent() {
               {showsSpace ? <SpaceSwitcher /> : <h1 className="py-sm text-center font-heading-lg text-heading-lg">Foyer</h1>}
             </div>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto pb-[120px] pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-md">
+          <main className={`min-h-0 flex-1 overflow-y-auto ${reservesFabSpace ? 'pb-[120px]' : 'pb-0'} pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-md`}>
             <div className="flex flex-col gap-gutter">
               <SyncBanner />
               <Outlet />
