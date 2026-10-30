@@ -55,14 +55,16 @@ describe('apiClient reviews', () => {
   });
 });
 
-// jsdom's Blob has no text() on every Node version used in CI: read through FileReader instead.
+// The Blob may come from jsdom (no text()) or from Node (text()) depending on the Node version: support both.
 const readBlobAsText = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(blob);
-  });
+  typeof blob.text === 'function'
+    ? blob.text()
+    : new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(blob);
+      });
 
 describe('apiClient exports', () => {
   afterEach(() => {
