@@ -24,7 +24,7 @@ function ShellContent() {
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const closeSheet = useCallback(() => setSheet(null), []);
-  const showsSpace = ['/', '/plan', '/import'].includes(location.pathname);
+  const showsSpace = ['/', '/plan', '/import', '/previsionnel'].includes(location.pathname);
   const reservesFabSpace = location.pathname !== '/import';
 
   const quickEntry = useMemo<QuickEntryValue>(

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,8 @@ const api = vi.hoisted(() => ({
   updateMyIncome: vi.fn(),
   updateContributionMode: vi.fn(),
   createInvitation: vi.fn(),
+  fetchSafetyNet: vi.fn(),
+  saveSafetyNet: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -81,6 +83,8 @@ describe('FoyerPage', () => {
     api.fetchContribution.mockResolvedValue(complete);
     api.updateMyIncome.mockResolvedValue(undefined);
     api.updateContributionMode.mockResolvedValue(undefined);
+    api.fetchSafetyNet.mockResolvedValue({ safetyNet: null, progress: null });
+    api.saveSafetyNet.mockResolvedValue(undefined);
   });
 
   it('lists the members with their income', () => {
@@ -150,5 +154,74 @@ describe('FoyerPage', () => {
     await user.click(screen.getByRole('button', { name: 'Inviter quelqu’un' }));
     expect(await screen.findByTestId('invitation-code')).toHaveTextContent('ABCD-1234');
     expect(screen.getByRole('button', { name: 'Copier' })).toBeInTheDocument();
+  });
+
+  describe('safety net', () => {
+    it('saves the amount in cents, the date and the target in months', async () => {
+      const { user } = renderPage();
+      const amount = await screen.findByLabelText('Montant épargné');
+      await user.type(amount, '5 500,50');
+      fireEvent.change(screen.getByLabelText('À la date du'), { target: { value: '2026-11-01' } });
+      const months = screen.getByLabelText('Objectif en mois de dépenses');
+      await user.clear(months);
+      await user.type(months, '6');
+      await user.click(screen.getByRole('button', { name: 'Enregistrer l’épargne' }));
+      await waitFor(() =>
+        expect(api.saveSafetyNet).toHaveBeenCalledWith({ savedCents: 550050, asOf: '2026-11-01', targetMonths: 6 }),
+      );
+      await waitFor(() => expect(api.fetchSafetyNet).toHaveBeenCalledTimes(2));
+    });
+
+    it('refuses an out-of-range target without calling the API', async () => {
+      const { user } = renderPage();
+      await user.type(await screen.findByLabelText('Montant épargné'), '1000');
+      const months = screen.getByLabelText('Objectif en mois de dépenses');
+      await user.clear(months);
+      await user.type(months, '30');
+      await user.click(screen.getByRole('button', { name: 'Enregistrer l’épargne' }));
+      expect(await screen.findByText(/entre 1 et 24/)).toBeInTheDocument();
+      expect(api.saveSafetyNet).not.toHaveBeenCalled();
+    });
+
+    it('shows the server-computed progress and keeps the form on the raw declared amount', async () => {
+      api.fetchSafetyNet.mockResolvedValue({
+        safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 },
+        progress: { currentCents: 600000, monthlyBasisCents: 300000, coveredMonths: 2 },
+      });
+      renderPage();
+      const progress = await screen.findByTestId('safety-net-progress');
+      expect(progress).toHaveTextContent(/6\s?000,00\s€/);
+      expect(progress).toHaveTextContent(/dont 500,00\s€ versés depuis le 1 novembre 2026/);
+      expect(progress).toHaveTextContent(/2 mois de dépenses couverts sur 6 visés/);
+      expect(progress).toHaveTextContent(/3\s?000,00\s€ par mois/);
+      expect(screen.getByRole('progressbar', { name: 'Épargne de sécurité' })).toHaveAttribute('aria-valuenow', '2');
+      expect(screen.getByLabelText('Montant épargné')).toHaveValue('5500');
+    });
+
+    it('shows only the amount when the backend sends no progress', async () => {
+      api.fetchSafetyNet.mockResolvedValue({ safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 }, progress: null });
+      renderPage();
+      const progress = await screen.findByTestId('safety-net-progress');
+      expect(progress).toHaveTextContent(/5\s?500,00\s€/);
+      expect(progress).toHaveTextContent(/Objectif : couvrir 6 mois de dépenses/);
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(api.fetchSafetyNet).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows no coverage when the monthly basis is unknown', async () => {
+      api.fetchSafetyNet.mockResolvedValue({
+        safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 },
+        progress: { currentCents: 550000, monthlyBasisCents: 0, coveredMonths: null },
+      });
+      renderPage();
+      const progress = await screen.findByTestId('safety-net-progress');
+      expect(progress).toHaveTextContent(/Renseignez le plan commun/);
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    });
+
+    it('links to the official aids page', () => {
+      renderPage();
+      expect(screen.getByRole('link', { name: 'Voir mes aides' })).toHaveAttribute('href', '/aides');
+    });
   });
 });

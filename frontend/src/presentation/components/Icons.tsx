@@ -135,3 +135,37 @@ export const UploadIcon = (props: IconProps) => (
     <path d="M4 16v4h16v-4" />
   </Icon>
 );
+
+export const AlertIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4l9 16H3L12 4z" />
+    <path d="M12 10v4M12 17h.01" />
+  </Icon>
+);
+
+export const InfoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 8h.01" />
+  </Icon>
+);
+
+export const FlagIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 21V4" />
+    <path d="M6 5h11l-2 4 2 4H6" />
+  </Icon>
+);
+
+export const CalendarIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="5" width="16" height="15" rx="2" />
+    <path d="M4 10h16M9 3v4M15 3v4" />
+  </Icon>
+);
+
+export const PencilIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 013 3L8 19l-4 1z" />
+  </Icon>
+);

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
+import { useInsights } from '../../application/use-insights';
 import { useMonthData } from '../../application/use-month-data';
 import { useOfflineQueue } from '../../application/use-offline-queue';
 import { useSelectedMonth } from '../../application/use-selected-month';
@@ -9,6 +10,7 @@ import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
 import { UploadIcon } from '../components/Icons';
+import { InsightsCard } from '../components/InsightsCard';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MonthPicker } from '../components/MonthPicker';
 import { SummaryCard } from '../components/SummaryCard';
@@ -20,7 +22,8 @@ export function HomePage() {
   const { space } = useSpace();
   const { month, setMonth } = useSelectedMonth();
   const { summary, transactions, removeTransaction } = useMonthData(space.id, month);
-  const { pending } = useOfflineQueue();
+  const { pending, dataVersion } = useOfflineQueue();
+  const insights = useInsights(space.id, month, dataVersion);
   const quickEntry = useQuickEntry();
   const toast = useToast();
 
@@ -58,6 +61,8 @@ export function HomePage() {
         <UploadIcon width={18} height={18} />
         Importer un relevé
       </Link>
+
+      <InsightsCard state={insights} />
 
       {summary.data ? (
         <SummaryCard summary={summary.data} />

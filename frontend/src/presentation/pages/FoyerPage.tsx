@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { describeError } from '../../application/error-message';
 import { useContribution } from '../../application/use-contribution';
 import { useHousehold, useRequiredHousehold } from '../../application/use-household';
@@ -12,6 +13,7 @@ import { IncomeForm } from '../components/IncomeForm';
 import { InvitationCard } from '../components/InvitationCard';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MembersList } from '../components/MembersList';
+import { SafetyNetSection } from '../components/SafetyNetSection';
 import { useToast } from '../components/Toast';
 import { buttonSecondary, cardClass } from '../components/ui';
 
@@ -91,6 +93,17 @@ export function FoyerPage() {
         ) : (
           loading && <LoadingScreen />
         )}
+      </Section>
+
+      <SafetyNetSection />
+
+      <Section title="Aides officielles">
+        <p className="font-body-sm text-body-sm text-mute">
+          Crédits d’impôt sur la garde d’enfants ou le ménage à domicile, et estimation du tarif de crèche.
+        </p>
+        <Link to="/aides" className={`${buttonSecondary} w-full`}>
+          Voir mes aides
+        </Link>
       </Section>
 
       <Section title="Inviter">

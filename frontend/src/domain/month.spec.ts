@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   currentMonth,
+  currentYear,
+  formatDateInput,
+  formatLongDateInput,
   formatDay,
   formatMonthLabel,
   isoToDateInput,
@@ -55,5 +58,22 @@ describe('month helpers', () => {
   it('extracts and formats the day of an API date', () => {
     expect(isoToDateInput('2026-10-03T00:00:00.000Z')).toBe('2026-10-03');
     expect(formatDay('2026-10-03T00:00:00.000Z')).toBe('3 oct.');
+  });
+});
+
+describe('date formatting helpers', () => {
+  it('formats a date input in short form', () => {
+    expect(formatDateInput('2026-01-05')).toMatch(/^5 janv\.? 2026$/);
+    expect(formatDateInput('2026-01-05T10:00:00.000Z')).toMatch(/^5 janv\.? 2026$/);
+    expect(formatDateInput('nope')).toBe('nope');
+  });
+
+  it('formats a date input in long form', () => {
+    expect(formatLongDateInput('2026-10-30')).toBe('30 octobre 2026');
+    expect(formatLongDateInput('')).toBe('');
+  });
+
+  it('gives the current year', () => {
+    expect(currentYear(new Date(2026, 5, 1))).toBe(2026);
   });
 });

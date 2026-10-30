@@ -6,11 +6,13 @@ import { SpaceProvider } from '../application/use-space';
 import { RequireAuth } from './auth/RequireAuth';
 import { AppShell } from './layout/AppShell';
 import { RequireHousehold } from './layout/RequireHousehold';
+import { AidesPage } from './pages/AidesPage';
 import { FoyerPage } from './pages/FoyerPage';
 import { HomePage } from './pages/HomePage';
 import { ImportPage } from './pages/ImportPage';
 import { LoginPage } from './pages/LoginPage';
 import { PlanPage } from './pages/PlanPage';
+import { PrevisionnelPage } from './pages/PrevisionnelPage';
 import { WelcomePage } from './pages/WelcomePage';
 
 function Protected() {
@@ -47,6 +49,8 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="plan" element={<PlanPage />} />
+          <Route path="previsionnel" element={<PrevisionnelPage />} />
+          <Route path="aides" element={<AidesPage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>
