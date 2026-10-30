@@ -285,10 +285,10 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 ```
 - `severity` : `WARNING | ACTION | INFO | GOOD`.
 - `lesson` : numéro de la leçon du cours qui explique la règle, ou `null`.
-- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/`) ou `null`.
+- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
 
 ## Aides officielles (tranche 3)
@@ -481,6 +481,56 @@ Nouveaux ids : `upcoming-big-payment` (`INFO`, une dépense non mensuelle ≥ 20
 les 60 jours ; détail : montant, date, provision mensuelle conseillée ; lien `/previsionnel`) et
 `provision-suggestion` (`INFO`, des dépenses non mensuelles existent et le bloc `EPARGNE` prévu du plan est inférieur
 à `totalMonthlyProvisionCents` ; lien `/plan`).
+
+## Projets d'épargne (tranche 6)
+
+Un **projet** est un objectif daté (naissance, vacances, voiture, travaux, fonds de sécurité) alimenté par des
+versements. Il rend concret le bloc `EPARGNE` du plan. Les projets de l'espace commun sont visibles par tout le
+foyer ; ceux d'un espace personnel par son propriétaire (chiffrement du nom, de l'objectif et des versements).
+
+### `GET /api/spaces/:spaceId/projects`
+```json
+[{
+  "id": "…", "spaceId": "…", "name": "Vacances été 2027", "kind": "HOLIDAY",
+  "targetCents": 300000, "targetDate": "2027-07-01", "startCents": 0, "startDate": "2026-11-01",
+  "savedCents": 40000, "remainingCents": 260000, "progressPercent": 13,
+  "monthsLeft": 8, "monthlyNeededCents": 32500,
+  "status": "BEHIND", "expectedSavedCents": 75000,
+  "archived": false, "accountId": null
+}]
+```
+- `kind` : `GENERIC | BABY | HOLIDAY | PURCHASE | HOME | EDUCATION | OTHER`.
+- `startCents` : déjà épargné au départ à `startDate` (entier ≥ 0). `savedCents` = `startCents` + versements.
+- `remainingCents` = max(0, objectif − épargné) ; `progressPercent` = entier 0-100 (arrondi inférieur, 100 si atteint).
+- `monthsLeft` : mois entiers entre aujourd'hui et `targetDate` (0 si passée ou dans le mois) ; `monthlyNeededCents` =
+  `remainingCents` ÷ max(1, `monthsLeft`) arrondi à l'entier supérieur (0 si atteint).
+- `expectedSavedCents` : épargne attendue aujourd'hui sur une progression linéaire de `startDate` à `targetDate`
+  (départ `startCents`, arrivée `targetCents`, bornée entre les deux).
+- `status` : `DONE` (objectif atteint) | `LATE` (échéance passée, non atteint) | `AHEAD` (épargné ≥ attendu + 5 % de
+  l'objectif) | `BEHIND` (épargné < attendu − 5 % de l'objectif) | `ON_TRACK`.
+- Triés : non archivés d'abord, puis par `targetDate` croissante.
+
+### `POST /api/spaces/:spaceId/projects` · `PUT …/:id` · `DELETE …/:id`
+Corps : `{ "name", "kind", "targetCents", "targetDate", "startCents", "startDate", "accountId"? }` ; `PUT` accepte en
+plus `"archived"`. `201` + l'objet ; `204` pour `PUT`/`DELETE`. `name` 1-80 car. ; `targetCents` entier > 0 ;
+`targetDate` postérieure à `startDate` ; `accountId` doit être un compte de l'espace (ex. livret) ou `null`.
+`DELETE` supprime aussi ses versements.
+
+### Versements
+`GET /api/spaces/:spaceId/projects/:id/deposits` → `[{ "id", "date": "AAAA-MM-JJ", "amountCents", "note": "" }]`
+(du plus récent au plus ancien) ; `POST …/deposits` `{ "date", "amountCents", "note"? }` → `201` + l'objet ;
+`DELETE …/deposits/:depositId` → `204`. `amountCents` entier non nul (négatif = retrait), la somme ne peut pas rendre
+`savedCents` négatif (`400`). `note` ≤ 120 car.
+
+### `GET /api/spaces/:spaceId/projects/summary`
+`{ "totalMonthlyNeededCents": 61500, "plannedEpargneCents": 50000, "gapCents": 11500, "activeCount": 2 }`
+`totalMonthlyNeededCents` : somme des `monthlyNeededCents` des projets non archivés et non atteints ;
+`plannedEpargneCents` : bloc `EPARGNE` du plan de l'espace ; `gapCents` = max(0, besoin − prévu).
+
+### Conseils
+Nouveaux ids : `project-behind` (`WARNING`, un projet `BEHIND` ou `LATE` ; détail : nom, retard en euros, versement
+mensuel conseillé ; lien `/projets`), `projects-exceed-savings` (`ACTION`, `gapCents` > 0 ; lien `/plan`),
+`project-reached` (`GOOD`, un projet atteint dans les 30 derniers jours non archivé ; lien `/projets`).
 
 ## Chiffrement de l'espace personnel (informatif)
 

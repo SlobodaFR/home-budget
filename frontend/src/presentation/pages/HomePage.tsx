@@ -9,11 +9,12 @@ import { useSpace } from '../../application/use-space';
 import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { BankIcon, UploadIcon } from '../components/Icons';
+import { BankIcon, TargetIcon, UploadIcon } from '../components/Icons';
 import { AccountsSummary } from '../components/AccountsSummary';
 import { InsightsCard } from '../components/InsightsCard';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MonthPicker } from '../components/MonthPicker';
+import { ProjectsHomeCard } from '../components/projects/ProjectsHomeCard';
 import { SummaryCard } from '../components/SummaryCard';
 import { useToast } from '../components/Toast';
 import { TransactionList } from '../components/TransactionList';
@@ -70,6 +71,13 @@ export function HomePage() {
           <BankIcon width={18} height={18} />
           Mes comptes
         </Link>
+        <Link
+          to="/projets"
+          className="inline-flex min-h-[44px] items-center justify-center gap-sm rounded-full px-md font-body-sm text-body-sm font-semibold underline"
+        >
+          <TargetIcon width={18} height={18} />
+          Mes projets
+        </Link>
       </div>
 
       <InsightsCard state={insights} />
@@ -85,6 +93,8 @@ export function HomePage() {
       )}
 
       <AccountsSummary />
+
+      <ProjectsHomeCard spaceId={space.id} />
 
       <section aria-label="Opérations du mois">
         <h3 className="mb-sm font-label-caps text-label-caps uppercase text-mute">Opérations</h3>

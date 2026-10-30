@@ -112,3 +112,16 @@ export function monthNumberOf(month: string): number | null {
   const match = MONTH_PATTERN.exec(month);
   return match ? Number(match[2]) : null;
 }
+
+/** `AAAA-MM-JJ` + n mois ; le jour est ramené à la fin du mois d'arrivée s'il n'y existe pas (31 janv. + 1 mois = 28 févr.). */
+export function addMonths(dateInput: string, months: number): string {
+  const match = DATE_PATTERN.exec(dateInput);
+  if (!match) {
+    throw new Error(`Date invalide : ${dateInput}`);
+  }
+  const index = Number(match[1]) * 12 + (Number(match[2]) - 1) + months;
+  const year = Math.floor(index / 12);
+  const month = (index % 12) + 1;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${year}-${pad(month)}-${pad(Math.min(Number(match[3]), lastDay))}`;
+}

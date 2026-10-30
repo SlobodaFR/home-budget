@@ -4,6 +4,7 @@ import { Account, AccountKind } from '../../domain/account/account';
 import { AccountRepository } from '../../domain/account/account.repository';
 import { buildAccountViews } from '../../domain/account/account-balance';
 import { DomainError } from '../../domain/shared/domain-error';
+import { ProjectRepository } from '../../domain/project/project.repository';
 import { RecurringItemRepository } from '../../domain/recurring/recurring-item.repository';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
 import { SpaceAccessService } from '../household/space-access.service';
@@ -97,18 +98,20 @@ export class DeleteAccountUseCase {
     private readonly accounts: AccountRepository,
     private readonly transactions: TransactionRepository,
     private readonly recurring: RecurringItemRepository,
+    private readonly projects: ProjectRepository,
   ) {}
 
   async execute(userId: string, spaceId: string, id: string): Promise<void> {
     await this.access.requireSpace(userId, spaceId);
     await requireInSpace(this.accounts, id, spaceId);
-    const [operations, templates] = await Promise.all([
+    const [operations, templates, projects] = await Promise.all([
       this.transactions.countByAccount(id),
       this.recurring.countByAccount(id),
+      this.projects.countByAccount(id),
     ]);
-    if (operations > 0 || templates > 0) {
+    if (operations > 0 || templates > 0 || projects > 0) {
       throw new DomainError(
-        'Ce compte est utilisé par des opérations ou des paiements récurrents : archivez-le plutôt que de le supprimer',
+        'Ce compte est utilisé par des opérations, des paiements récurrents ou des projets : archivez-le plutôt que de le supprimer',
       );
     }
     await this.accounts.delete(id);

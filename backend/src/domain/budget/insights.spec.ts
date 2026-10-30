@@ -4,6 +4,9 @@ import { Transaction } from '../transaction/transaction';
 import { RecurringItem } from '../recurring/recurring-item';
 import { buildSafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { buildForecast } from './forecast';
+import { Project, ProjectProps } from '../project/project';
+import { ProjectDeposit } from '../project/project-deposit';
+import { ProjectView, buildProjectViews } from '../project/project-progress';
 import { buildProvisions } from './provisions';
 import {
   AccountsInsightContext,
@@ -38,6 +41,7 @@ interface Scenario {
   lastActivity?: Date | null;
   common?: CommonInsightsContext | null;
   accounts?: AccountsInsightContext;
+  projects?: ProjectView[];
 }
 
 function run(scenario: Scenario = {}): Insight[] {
@@ -69,6 +73,7 @@ function run(scenario: Scenario = {}): Insight[] {
     common: scenario.common ?? null,
     accounts: scenario.accounts ?? NO_ACCOUNTS,
     provisions: buildProvisions(recurring, today),
+    projects: scenario.projects ?? [],
   });
 }
 
@@ -896,6 +901,214 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('savings projects', () => {
+    const TODAY = '2026-11-20T10:00:00Z';
+    const project = (over: Partial<ProjectProps> = {}) =>
+      Project.create({
+        id: 'p1',
+        spaceId: 'common',
+        name: 'Vacances',
+        kind: 'HOLIDAY',
+        targetCents: 300000,
+        targetDate: '2027-07-01',
+        startCents: 0,
+        startDate: '2026-11-01',
+        archived: false,
+        accountId: null,
+        ...over,
+      });
+    let n = 0;
+    const deposit = (date: string, cents: number, projectId = 'p1') =>
+      ProjectDeposit.create({
+        id: `d${(n += 1)}`,
+        projectId,
+        spaceId: 'common',
+        date,
+        amountCents: cents,
+        note: '',
+      });
+    const views = (
+      projects: Project[],
+      deposits: ProjectDeposit[] = [],
+    ): ProjectView[] => buildProjectViews(projects, deposits, new Date(TODAY));
+    const withProjects = (
+      projects: Project[],
+      deposits: ProjectDeposit[] = [],
+      over: Scenario = {},
+    ) =>
+      run({
+        today: TODAY,
+        plan: SpacePlan.create({
+          incomeCents: 320000,
+          fixeCents: 125000,
+          courantCents: 100000,
+          plaisirCents: 45000,
+          epargneCents: 50000,
+        }),
+        transactions: recent,
+        projects: views(projects, deposits),
+        ...over,
+      });
+
+    it('warns about a project behind its linear pace, with the delay and the monthly amount', () => {
+      // Le 20 novembre : 19 jours sur 242 -> attendu 23 554 ; rien épargné ; 7 mois restants.
+      const insight = byId(withProjects([project()]), 'project-behind');
+      expect(insight).toEqual({
+        id: 'project-behind',
+        severity: 'WARNING',
+        title: 'Projet en retard : Vacances',
+        // ceil(300 000 / 7) = 42 858
+        detail: `Vacances : 235,54${nbsp}€ de retard. Versement mensuel conseillé : 428,58${nbsp}€.`,
+        lesson: 1,
+        link: '/projets',
+      });
+    });
+
+    it('also warns about a project whose deadline has passed', () => {
+      const late = project({
+        targetCents: 100000,
+        startDate: '2026-01-01',
+        targetDate: '2026-11-10',
+      });
+      const insight = byId(
+        withProjects([late], [deposit('2026-05-01', 30000)]),
+        'project-behind',
+      );
+      expect(insight.detail).toBe(
+        `Vacances : 700${nbsp}€ de retard (l'échéance est dépassée). Versement mensuel conseillé : 700${nbsp}€.`,
+      );
+    });
+
+    it('groups several late projects', () => {
+      const insight = byId(
+        withProjects([
+          project(),
+          project({ id: 'p2', name: 'Voiture', targetCents: 600000 }),
+        ]),
+        'project-behind',
+      );
+      expect(insight.title).toBe('2 projets en retard');
+      expect(insight.detail).toContain('Vacances (235,54');
+      expect(insight.detail).toContain('Voiture (');
+      expect(insight.detail).toContain('Versements mensuels conseillés');
+    });
+
+    it('stays silent for projects on track, ahead, done or archived, and for other months', () => {
+      const onTrack = project({ targetCents: 100000 });
+      // 19 / 242 × 100 000 = 7 851 attendus ; 10 000 épargnés : dans la tolérance.
+      expect(
+        ids(withProjects([onTrack], [deposit('2026-11-02', 10000)])),
+      ).not.toContain('project-behind');
+      expect(
+        ids(withProjects([project()], [deposit('2026-11-02', 300000)])),
+      ).not.toContain('project-behind');
+      expect(ids(withProjects([project({ archived: true })]))).not.toContain(
+        'project-behind',
+      );
+      expect(
+        ids(withProjects([project()], [], { month: '2026-10' })),
+      ).not.toContain('project-behind');
+      expect(
+        ids(withProjects([project()], [], { month: '2026-12' })),
+      ).not.toContain('project-behind');
+    });
+
+    it('flags projects that need more per month than the planned savings', () => {
+      // 42 858 par mois demandés, 20 000 prévus : il manque 228,58 €.
+      const insight = byId(
+        withProjects([project()], [], {
+          plan: SpacePlan.create({
+            incomeCents: 320000,
+            fixeCents: 155000,
+            courantCents: 100000,
+            plaisirCents: 45000,
+            epargneCents: 20000,
+          }),
+        }),
+        'projects-exceed-savings',
+      );
+      expect(insight).toEqual({
+        id: 'projects-exceed-savings',
+        severity: 'ACTION',
+        title: "Vos projets dépassent l'épargne prévue",
+        detail: `Vos projets demandent 428,58${nbsp}€ par mois, mais le bloc Épargne de votre plan en prévoit 200${nbsp}€ : il manque 228,58${nbsp}€ par mois. Relevez le bloc Épargne ou allongez une échéance.`,
+        lesson: 1,
+        link: '/plan',
+      });
+      // Besoin couvert (égalité comprise) : rien.
+      const covered = withProjects([project()], [], {
+        plan: SpacePlan.create({
+          incomeCents: 320000,
+          fixeCents: 125000,
+          courantCents: 100000,
+          plaisirCents: 45000,
+          epargneCents: 50000,
+        }),
+      });
+      expect(ids(covered)).not.toContain('projects-exceed-savings');
+      expect(ids(withProjects([project({ archived: true })]))).not.toContain(
+        'projects-exceed-savings',
+      );
+      expect(ids(withProjects([]))).not.toContain('projects-exceed-savings');
+    });
+
+    it('celebrates a project reached in the last 30 days, boundary included', () => {
+      const small = project({ targetCents: 100000 });
+      const reachedOn = (date: string) =>
+        ids(withProjects([small], [deposit(date, 100000)])).includes(
+          'project-reached',
+        );
+      expect(reachedOn('2026-11-19')).toBe(true);
+      expect(reachedOn('2026-10-21')).toBe(true); // exactement 30 jours
+      expect(reachedOn('2026-10-20')).toBe(false); // 31 jours
+      expect(reachedOn('2026-12-05')).toBe(true); // versement daté du futur
+      const insight = byId(
+        withProjects([small], [deposit('2026-11-05', 100000)]),
+        'project-reached',
+      );
+      expect(insight).toEqual({
+        id: 'project-reached',
+        severity: 'GOOD',
+        title: 'Objectif atteint : Vacances',
+        detail: `Vacances : 1${nbsp}000${nbsp}€ épargnés. Bravo !`,
+        lesson: 1,
+        link: '/projets',
+      });
+    });
+
+    it('dates the success by the last deposit that reached the target, and forgets it after a withdrawal', () => {
+      const small = project({ targetCents: 100000 });
+      // Atteint le 1er octobre (trop ancien) puis perdu et retrouvé le 15 novembre : récent.
+      const recovered = [
+        deposit('2026-10-01', 100000),
+        deposit('2026-11-01', -10000),
+        deposit('2026-11-15', 10000),
+      ];
+      expect(ids(withProjects([small], recovered))).toContain(
+        'project-reached',
+      );
+      // Atteint récemment mais repassé sous l'objectif : pas de célébration.
+      const lost = [deposit('2026-11-10', 100000), deposit('2026-11-12', -1)];
+      expect(ids(withProjects([small], lost))).not.toContain('project-reached');
+      // Archivé ou ancien : rien.
+      expect(
+        ids(
+          withProjects(
+            [project({ targetCents: 100000, archived: true })],
+            [deposit('2026-11-10', 100000)],
+          ),
+        ),
+      ).not.toContain('project-reached');
+      expect(
+        ids(
+          withProjects([small], [deposit('2026-11-10', 100000)], {
+            month: '2026-10',
+          }),
+        ),
+      ).not.toContain('project-reached');
+    });
+  });
+
   describe('ordering and limits', () => {
     const crowded: Scenario = {
       today: '2026-11-12T08:00:00Z',
@@ -946,7 +1159,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
       );
       const insights = [
         ...run(crowded),

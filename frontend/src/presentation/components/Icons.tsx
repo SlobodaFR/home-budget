@@ -185,3 +185,49 @@ export const ArchiveIcon = (props: IconProps) => (
     <path d="M10 12h4" />
   </Icon>
 );
+
+export const TargetIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" />
+  </Icon>
+);
+
+export const SunIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" />
+  </Icon>
+);
+
+export const CarIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 16V12l2-5h12l2 5v4H4z" />
+    <path d="M4 12h16" />
+    <circle cx="8" cy="17" r="1.6" />
+    <circle cx="16" cy="17" r="1.6" />
+  </Icon>
+);
+
+export const BabyIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9 10v.5M15 10v.5" />
+    <path d="M9 15c1.5 1.5 4.5 1.5 6 0" />
+    <path d="M12 3c-1 1.2-.5 2.5 1 2.5" />
+  </Icon>
+);
+
+export const GraduationIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M2 9l10-5 10 5-10 5L2 9z" />
+    <path d="M6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5" />
+  </Icon>
+);
+
+export const ChevronDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 9l6 6 6-6" />
+  </Icon>
+);

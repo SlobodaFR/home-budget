@@ -77,6 +77,24 @@ describe('InsightsCard', () => {
     expect(screen.getByRole('link', { name: 'Ajuster mon plan' })).toHaveAttribute('href', '/plan');
   });
 
+  it('sends the savings project insights to the projects page and to the plan, each with the right severity', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({ id: 'project-behind', severity: 'WARNING', title: 'Vacances est en retard', detail: 'Il manque 350 € : 325 € par mois.', lesson: 2, link: '/projets' }),
+        insight({ id: 'projects-exceed-savings', severity: 'ACTION', title: 'Vos projets dépassent votre épargne prévue', detail: 'Il manque 115 € par mois.', lesson: 2, link: '/plan' }),
+        insight({ id: 'project-reached', severity: 'GOOD', title: 'Voiture est atteint', detail: 'Bravo !', lesson: null, link: '/projets' }),
+      ],
+    });
+    const items = screen.getAllByRole('listitem');
+    expect(within(items[0]).getByText(/Attention/)).toBeInTheDocument();
+    expect(within(items[0]).getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
+    expect(within(items[1]).getByText(/À faire/)).toBeInTheDocument();
+    expect(within(items[1]).getByRole('link', { name: 'Ajuster mon plan' })).toHaveAttribute('href', '/plan');
+    expect(within(items[2]).getByText(/Bien joué/)).toBeInTheDocument();
+    expect(within(items[2]).getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
+  });
+
   it('omits the button and the lesson when the insight has neither', () => {
     renderCard({ status: 'ready', insights: [insight({ lesson: null, link: null })] });
     expect(screen.queryByRole('link')).not.toBeInTheDocument();

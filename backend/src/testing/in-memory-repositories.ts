@@ -1,5 +1,8 @@
 import { Account } from '../domain/account/account';
 import { AccountRepository } from '../domain/account/account.repository';
+import { Project } from '../domain/project/project';
+import { ProjectDeposit } from '../domain/project/project-deposit';
+import { ProjectRepository } from '../domain/project/project.repository';
 import { Household } from '../domain/household/household';
 import {
   HouseholdRepository,
@@ -218,5 +221,44 @@ export class InMemoryAccountRepository extends AccountRepository {
   }
   async delete(id: string): Promise<void> {
     this.items.delete(id);
+  }
+}
+
+export class InMemoryProjectRepository extends ProjectRepository {
+  projects = new Map<string, Project>();
+  deposits = new Map<string, ProjectDeposit>();
+  async findBySpace(spaceId: string): Promise<Project[]> {
+    return [...this.projects.values()].filter((p) => p.spaceId === spaceId);
+  }
+  async findById(id: string): Promise<Project | null> {
+    return this.projects.get(id) ?? null;
+  }
+  async save(project: Project): Promise<void> {
+    this.projects.set(project.id, project);
+  }
+  async delete(id: string): Promise<void> {
+    this.projects.delete(id);
+    for (const [key, d] of this.deposits) {
+      if (d.projectId === id) this.deposits.delete(key);
+    }
+  }
+  async countByAccount(accountId: string): Promise<number> {
+    return [...this.projects.values()].filter((p) => p.accountId === accountId)
+      .length;
+  }
+  async findDepositsByProject(projectId: string): Promise<ProjectDeposit[]> {
+    return [...this.deposits.values()].filter((d) => d.projectId === projectId);
+  }
+  async findDepositsBySpace(spaceId: string): Promise<ProjectDeposit[]> {
+    return [...this.deposits.values()].filter((d) => d.spaceId === spaceId);
+  }
+  async findDepositById(id: string): Promise<ProjectDeposit | null> {
+    return this.deposits.get(id) ?? null;
+  }
+  async saveDeposit(deposit: ProjectDeposit): Promise<void> {
+    this.deposits.set(deposit.id, deposit);
+  }
+  async deleteDeposit(id: string): Promise<void> {
+    this.deposits.delete(id);
   }
 }

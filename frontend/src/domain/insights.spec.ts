@@ -48,6 +48,18 @@ describe('parseInsights', () => {
   });
 });
 
+describe('insightAction for the savings projects insights', () => {
+  it('offers « Voir mes projets » for the project insights', () => {
+    expect(insightAction('/projets', 'project-behind')).toEqual({ to: '/projets', label: 'Voir mes projets' });
+    expect(insightAction('/projets', 'project-reached')).toEqual({ to: '/projets', label: 'Voir mes projets' });
+    expect(insightAction('/projets')).toEqual({ to: '/projets', label: 'Voir mes projets' });
+  });
+
+  it('offers « Ajuster mon plan » when the projects exceed the planned savings', () => {
+    expect(insightAction('/plan', 'projects-exceed-savings')).toEqual({ to: '/plan', label: 'Ajuster mon plan' });
+  });
+});
+
 describe('insightAction for the non monthly payments insights', () => {
   it('opens the provisions tab for an upcoming big payment', () => {
     expect(insightAction('/previsionnel', 'upcoming-big-payment')).toEqual({ to: '/previsionnel?vue=provisions', label: 'Voir mes provisions' });
