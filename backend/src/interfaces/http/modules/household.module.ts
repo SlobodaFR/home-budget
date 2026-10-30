@@ -55,6 +55,20 @@ import {
   GetProvisionsUseCase,
   GetYearForecastUseCase,
 } from '../../../application/provision/provision.use-cases';
+import {
+  ExportDataUseCase,
+  ExportTransactionsCsvUseCase,
+} from '../../../application/export/export.use-cases';
+import {
+  GetReviewUseCase,
+  ListReviewsUseCase,
+  SaveReviewUseCase,
+} from '../../../application/review/review.use-cases';
+import { MonthReviewRepository } from '../../../domain/review/month-review.repository';
+import { MonthReviewOrmEntity } from '../../../infrastructure/persistence/entities/month-review.orm-entity';
+import { TypeOrmMonthReviewRepository } from '../../../infrastructure/persistence/repositories/typeorm-month-review.repository';
+import { ExportController } from '../controllers/export.controller';
+import { ReviewsController } from '../controllers/reviews.controller';
 import { ProjectViewsService } from '../../../application/project/project-views.service';
 import {
   AddDepositUseCase,
@@ -130,6 +144,7 @@ import { AuthModule } from './auth.module';
       AccountOrmEntity,
       ProjectOrmEntity,
       ProjectDepositOrmEntity,
+      MonthReviewOrmEntity,
     ]),
   ],
   controllers: [
@@ -142,6 +157,8 @@ import { AuthModule } from './auth.module';
     AidRulesController,
     AccountsController,
     ProjectsController,
+    ReviewsController,
+    ExportController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -152,6 +169,7 @@ import { AuthModule } from './auth.module';
     { provide: Clock, useClass: SystemClock },
     { provide: AccountRepository, useClass: TypeOrmAccountRepository },
     { provide: ProjectRepository, useClass: TypeOrmProjectRepository },
+    { provide: MonthReviewRepository, useClass: TypeOrmMonthReviewRepository },
     {
       provide: RecurringItemRepository,
       useClass: TypeOrmRecurringItemRepository,
@@ -200,6 +218,11 @@ import { AuthModule } from './auth.module';
     GetProvisionsUseCase,
     GetYearForecastUseCase,
     ProjectViewsService,
+    GetReviewUseCase,
+    SaveReviewUseCase,
+    ListReviewsUseCase,
+    ExportDataUseCase,
+    ExportTransactionsCsvUseCase,
     ListProjectsUseCase,
     GetProjectsSummaryUseCase,
     CreateProjectUseCase,

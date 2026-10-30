@@ -12,6 +12,7 @@ import { SafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
+import { ReviewStatus } from '../review/month-review';
 import { Provisions } from './provisions';
 import { ProjectView, summarizeProjects } from '../project/project-progress';
 import { MonthSummary } from './month-summary';
@@ -90,6 +91,11 @@ export interface InsightsInput {
   provisions: Provisions;
   /** Projets d'épargne de l'espace (archivés compris : le filtre est ici). */
   projects: ProjectView[];
+  /**
+   * Revue du mois PRÉCÉDENT le mois d'aujourd'hui, null si elle n'existe pas
+   * (= à faire). Seul son statut et sa décision comptent ici.
+   */
+  previousReview: { status: ReviewStatus; decision: string } | null;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -121,6 +127,7 @@ const PRIORITY = [
   'safety-net-unset',
   'safety-net-progress',
   'project-reached',
+  'review-done',
   'savings-on-track',
   'all-good',
 ];
@@ -527,7 +534,8 @@ function savingsInsights(input: InsightsInput): Insight[] {
 }
 
 function trackingInsights(input: InsightsInput): Insight[] {
-  const { month, today, summary, forecast, lastActivity } = input;
+  const { month, today, summary, forecast, lastActivity, previousReview } =
+    input;
   const result: Insight[] = [];
   const todayStart = startOfUtcDay(today);
 
@@ -592,50 +600,71 @@ function trackingInsights(input: InsightsInput): Insight[] {
     }
   }
 
-  const review = monthlyReview(month, today, summary);
+  const review = monthlyReview(month, today, summary, previousReview);
   if (review) {
     result.push(review);
   }
   return result;
 }
 
+/** Longueur maximale de la décision citée dans `review-done`. */
+const MAX_QUOTED_DECISION = 120;
+
 /**
- * Bilan mensuel : pendant la première semaine d'un mois, on invite à faire le
- * bilan du mois précédent (depuis le mois en cours) ou on le résume (depuis le
- * mois précédent lui-même).
+ * Bilan mensuel : pendant la première semaine d'un mois, on invite à faire la
+ * revue du mois précédent (depuis le mois en cours) ou on en résume les chiffres
+ * (depuis le mois précédent lui-même), lien `/revue`. Une fois la revue du mois
+ * précédent DONE, `monthly-review` laisse place à `review-done` (GOOD) qui cite
+ * la décision prise : mêmes jours (1 à 7) et mêmes mois consultés.
  */
 function monthlyReview(
   month: string,
   today: Date,
   summary: MonthSummary,
+  previousReview: InsightsInput['previousReview'],
 ): Insight | null {
   if (today.getUTCDate() > REVIEW_LAST_DAY) {
     return null;
   }
   const current = currentMonth(today);
   const previous = previousMonth(current);
+  if (month !== current && month !== previous) {
+    return null;
+  }
+  if (previousReview?.status === 'DONE') {
+    const decision = previousReview.decision;
+    const quoted =
+      decision.length > MAX_QUOTED_DECISION
+        ? `${decision.slice(0, MAX_QUOTED_DECISION - 1).trimEnd()}…`
+        : decision;
+    return {
+      id: 'review-done',
+      severity: 'GOOD',
+      title: `Revue de ${formatMonthLabel(previous)} faite`,
+      detail: `Décision prise : « ${quoted} ». Gardez le cap ce mois-ci.`,
+      lesson: LESSON_TRACKING,
+      link: '/revue',
+    };
+  }
   if (month === current) {
     return {
       id: 'monthly-review',
       severity: 'INFO',
       title: `Faites le bilan de ${formatMonthLabel(previous)}`,
-      detail: `Le mois commence : comparez le prévu et le réel de ${formatMonthLabel(previous)}, puis ajustez votre plan si besoin.`,
+      detail: `Le mois commence : comparez le prévu et le réel de ${formatMonthLabel(previous)}, répondez aux trois questions et décidez une chose pour ce mois-ci.`,
       lesson: LESSON_TRACKING,
-      link: '/',
+      link: '/revue',
     };
   }
-  if (month === previous) {
-    const out = summary.blocs.reduce((sum, b) => sum + b.actualCents, 0);
-    return {
-      id: 'monthly-review',
-      severity: 'INFO',
-      title: `Bilan de ${formatMonthLabel(month)}`,
-      detail: `Revenus ${formatEuros(summary.income.actualCents)}, dépenses ${formatEuros(out)} : solde de ${formatEuros(summary.actualBalanceCents)}. Comparez avec votre plan et ajustez-le si besoin.`,
-      lesson: LESSON_TRACKING,
-      link: '/',
-    };
-  }
-  return null;
+  const out = summary.blocs.reduce((sum, b) => sum + b.actualCents, 0);
+  return {
+    id: 'monthly-review',
+    severity: 'INFO',
+    title: `Bilan de ${formatMonthLabel(month)}`,
+    detail: `Revenus ${formatEuros(summary.income.actualCents)}, dépenses ${formatEuros(out)} : solde de ${formatEuros(summary.actualBalanceCents)}. Faites votre revue pour décider une chose pour ce mois-ci.`,
+    lesson: LESSON_TRACKING,
+    link: '/revue',
+  };
 }
 
 function commonInsights(

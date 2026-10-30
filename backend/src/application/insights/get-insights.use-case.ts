@@ -3,6 +3,7 @@ import { buildForecast } from '../../domain/budget/forecast';
 import {
   CommonInsightsContext,
   Insight,
+  REVIEW_LAST_DAY,
   buildInsights,
 } from '../../domain/budget/insights';
 import { buildProvisions } from '../../domain/budget/provisions';
@@ -15,6 +16,9 @@ import { SpacePlan } from '../../domain/space/space-plan';
 import { SpacePlanRepository } from '../../domain/space/space-plan.repository';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
 import { SpaceAccessService } from '../household/space-access.service';
+import { MonthReviewRepository } from '../../domain/review/month-review.repository';
+import { currentMonth } from '../../domain/budget/month';
+import { previousMonth } from '../../domain/shared/format';
 import { ProjectViewsService } from '../project/project-views.service';
 import { AccountViewsService } from '../account/account-views.service';
 import { SafetyNetProgressService } from '../safety-net/safety-net-progress.service';
@@ -31,6 +35,7 @@ export class GetInsightsUseCase {
     private readonly safetyNetProgress: SafetyNetProgressService,
     private readonly accountViews: AccountViewsService,
     private readonly projectViews: ProjectViewsService,
+    private readonly reviews: MonthReviewRepository,
     private readonly clock: Clock,
   ) {}
 
@@ -82,6 +87,12 @@ export class GetInsightsUseCase {
       this.projectViews.forSpace(spaceId),
     ]);
 
+    // Revue du mois précédent : utile seulement la première semaine du mois.
+    const previousReview =
+      today.getUTCDate() <= REVIEW_LAST_DAY
+        ? await this.reviews.find(spaceId, previousMonth(currentMonth(today)))
+        : null;
+
     return {
       insights: buildInsights({
         month,
@@ -93,6 +104,12 @@ export class GetInsightsUseCase {
         common,
         provisions: buildProvisions(recurring, today),
         projects,
+        previousReview: previousReview
+          ? {
+              status: previousReview.status,
+              decision: previousReview.answers.decision,
+            }
+          : null,
         accounts: {
           accountCount: views.length,
           negativeProjected: views

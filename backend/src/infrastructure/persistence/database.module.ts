@@ -6,6 +6,7 @@ import { AccountOrmEntity } from './entities/account.orm-entity';
 import { HouseholdFiscalProfileOrmEntity } from './entities/household-fiscal-profile.orm-entity';
 import { InvitationOrmEntity } from './entities/invitation.orm-entity';
 import { MembershipOrmEntity } from './entities/membership.orm-entity';
+import { MonthReviewOrmEntity } from './entities/month-review.orm-entity';
 import { ProjectDepositOrmEntity } from './entities/project-deposit.orm-entity';
 import { ProjectOrmEntity } from './entities/project.orm-entity';
 import { RecurringItemOrmEntity } from './entities/recurring-item.orm-entity';
@@ -34,6 +35,7 @@ export const ORM_ENTITIES = [
   AccountOrmEntity,
   ProjectOrmEntity,
   ProjectDepositOrmEntity,
+  MonthReviewOrmEntity,
 ];
 
 @Module({

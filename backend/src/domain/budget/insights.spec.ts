@@ -6,6 +6,7 @@ import { buildSafetyNetProgress } from '../safety-net/safety-net-coverage';
 import { buildForecast } from './forecast';
 import { Project, ProjectProps } from '../project/project';
 import { ProjectDeposit } from '../project/project-deposit';
+import { ReviewStatus } from '../review/month-review';
 import { ProjectView, buildProjectViews } from '../project/project-progress';
 import { buildProvisions } from './provisions';
 import {
@@ -42,6 +43,7 @@ interface Scenario {
   common?: CommonInsightsContext | null;
   accounts?: AccountsInsightContext;
   projects?: ProjectView[];
+  previousReview?: { status: ReviewStatus; decision: string } | null;
 }
 
 function run(scenario: Scenario = {}): Insight[] {
@@ -74,6 +76,7 @@ function run(scenario: Scenario = {}): Insight[] {
     accounts: scenario.accounts ?? NO_ACCOUNTS,
     provisions: buildProvisions(recurring, today),
     projects: scenario.projects ?? [],
+    previousReview: scenario.previousReview ?? null,
   });
 }
 
@@ -1109,6 +1112,109 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('review ritual', () => {
+    const EARLY = '2026-11-04T08:00:00Z';
+    const done = (decision: string) => ({ status: 'DONE' as const, decision });
+
+    it('links the invitation to the review page', () => {
+      const current = byId(
+        run({ today: EARLY, transactions: recent }),
+        'monthly-review',
+      );
+      expect(current.link).toBe('/revue');
+      expect(current.detail).toContain('décidez une chose');
+      const previous = byId(
+        run({
+          month: '2026-10',
+          today: EARLY,
+          transactions: [tx('INCOME', null, 'Salaire', 320000, '2026-10-02')],
+        }),
+        'monthly-review',
+      );
+      expect(previous.link).toBe('/revue');
+    });
+
+    it('keeps the invitation while the previous review is a draft or not started', () => {
+      for (const previousReview of [
+        null,
+        { status: 'TODO' as const, decision: '' },
+        { status: 'DRAFT' as const, decision: 'À voir' },
+      ]) {
+        const insights = run({
+          today: EARLY,
+          transactions: recent,
+          previousReview,
+        });
+        expect(ids(insights)).toContain('monthly-review');
+        expect(ids(insights)).not.toContain('review-done');
+      }
+    });
+
+    it('replaces the invitation by review-done once the review is DONE, quoting the decision', () => {
+      for (const month of ['2026-11', '2026-10']) {
+        const insights = run({
+          month,
+          today: EARLY,
+          transactions: [tx('INCOME', null, 'Salaire', 320000, `${month}-02`)],
+          previousReview: done('Cuisiner davantage et limiter les restaurants'),
+        });
+        expect(ids(insights)).not.toContain('monthly-review');
+        expect(byId(insights, 'review-done')).toEqual({
+          id: 'review-done',
+          severity: 'GOOD',
+          title: 'Revue de octobre 2026 faite',
+          detail:
+            'Décision prise : « Cuisiner davantage et limiter les restaurants ». Gardez le cap ce mois-ci.',
+          lesson: 4,
+          link: '/revue',
+        });
+      }
+    });
+
+    it('only shows review-done during the first seven days and for the current or previous month', () => {
+      const at = (today: string, month = '2026-11') =>
+        ids(
+          run({
+            month,
+            today,
+            transactions: recent,
+            previousReview: done('x'),
+          }),
+        ).includes('review-done');
+      expect(at('2026-11-01T00:00:00Z')).toBe(true);
+      expect(at('2026-11-07T23:00:00Z')).toBe(true);
+      expect(at('2026-11-08T00:00:00Z')).toBe(false);
+      expect(at(EARLY, '2026-09')).toBe(false);
+      expect(at(EARLY, '2026-12')).toBe(false);
+    });
+
+    it('truncates a long decision and handles the year boundary', () => {
+      const long = 'a'.repeat(200);
+      const insight = byId(
+        run({
+          month: '2027-01',
+          today: '2027-01-03T08:00:00Z',
+          transactions: [tx('EXPENSE', 'COURANT', 'x', 100, '2027-01-02')],
+          previousReview: done(long),
+        }),
+        'review-done',
+      );
+      expect(insight.title).toBe('Revue de décembre 2026 faite');
+      expect(insight.detail).toBe(
+        `Décision prise : « ${'a'.repeat(119)}… ». Gardez le cap ce mois-ci.`,
+      );
+    });
+
+    it('counts as a real insight: no all-good next to it', () => {
+      const insights = run({
+        today: EARLY,
+        transactions: recent,
+        previousReview: done('x'),
+      });
+      expect(ids(insights)).toEqual(['review-done']);
+    });
+  });
+
   describe('ordering and limits', () => {
     const crowded: Scenario = {
       today: '2026-11-12T08:00:00Z',
@@ -1159,7 +1265,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
       );
       const insights = [
         ...run(crowded),
@@ -1174,6 +1280,10 @@ describe('buildInsights', () => {
           '/import',
           '/foyer',
           '/previsionnel',
+          '/aides',
+          '/comptes',
+          '/projets',
+          '/revue',
           '/',
         ]).toContain(insight.link);
         expect([null, 1, 2, 3, 4, 5, 6, 7, 8]).toContain(insight.lesson);
