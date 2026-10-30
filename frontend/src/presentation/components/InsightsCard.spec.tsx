@@ -126,6 +126,31 @@ describe('InsightsCard', () => {
     expect(within(items[1]).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
   });
 
+  it('sends the spending-riser insight to /tendances with « Voir mes tendances »', () => {
+    renderCard({
+      status: 'ready',
+      insights: [insight({ id: 'spending-riser', severity: 'INFO', title: 'Restaurant grimpe', detail: 'Passe de 50 € à 120 € par mois.', lesson: null, link: '/tendances' })],
+    });
+    const item = screen.getByRole('listitem');
+    expect(within(item).getByText(/Bon à savoir/)).toBeInTheDocument();
+    expect(within(item).getByRole('link', { name: 'Voir mes tendances' })).toHaveAttribute('href', '/tendances');
+  });
+
+  it('sends the pending contribution insight to the foyer with « Verser ma contribution » (opens the card)', () => {
+    renderCard({
+      status: 'ready',
+      insights: [insight({ id: 'contribution-pending', severity: 'ACTION', title: 'Votre contribution du mois reste à verser', detail: 'Il vous reste 550 € à verser au commun.', lesson: null, link: '/foyer' })],
+    });
+    const item = screen.getByRole('listitem');
+    expect(within(item).getByText(/À faire/)).toBeInTheDocument();
+    expect(within(item).getByRole('link', { name: 'Verser ma contribution' })).toHaveAttribute('href', '/foyer?verser=1');
+  });
+
+  it('keeps the generic « Ouvrir le foyer » for another insight linking to the foyer', () => {
+    renderCard({ status: 'ready', insights: [insight({ id: 'safety-net-unset', severity: 'INFO', title: 'x', link: '/foyer' })] });
+    expect(screen.getByRole('link', { name: 'Ouvrir le foyer' })).toHaveAttribute('href', '/foyer');
+  });
+
   it('omits the button and the lesson when the insight has neither', () => {
     renderCard({ status: 'ready', insights: [insight({ lesson: null, link: null })] });
     expect(screen.queryByRole('link')).not.toBeInTheDocument();

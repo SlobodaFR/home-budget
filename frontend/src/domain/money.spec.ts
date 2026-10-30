@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   centsToInputValue,
   formatCents,
+  formatCentsRounded,
   formatCentsShort,
   formatRatio,
   formatSignedCents,
@@ -12,6 +13,16 @@ import {
 } from './money';
 
 const normalize = (value: string) => value.replace(/[\s  ]/g, ' ');
+
+describe('formatCentsRounded', () => {
+  it('rounds to the nearest euro', () => {
+    expect(normalize(formatCentsRounded(136666))).toBe('1 367 €');
+    expect(normalize(formatCentsRounded(378333))).toBe('3 783 €');
+    expect(normalize(formatCentsRounded(49))).toBe('0 €');
+    expect(normalize(formatCentsRounded(50))).toBe('1 €');
+    expect(normalize(formatCentsRounded(-12060))).toMatch(/^[-−]\s?121 €$/);
+  });
+});
 
 describe('money formatting', () => {
   it('formats cents as euros with French locale', () => {

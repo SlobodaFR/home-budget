@@ -12,6 +12,7 @@ import { testHousehold } from '../../test/render-app';
 const api = vi.hoisted(() => ({
   fetchContribution: vi.fn(),
   fetchSafetyNet: vi.fn(),
+  fetchContributionStatus: vi.fn(),
   downloadExport: vi.fn(),
   downloadTransactionsCsv: vi.fn(),
 }));
@@ -52,6 +53,7 @@ describe('FoyerPage « Mes données »', () => {
     files.saveFile.mockReset();
     api.fetchContribution.mockResolvedValue({ mode: 'EQUAL', commonNeedCents: 0, incomplete: true, shortfallCents: 0, shares: [] });
     api.fetchSafetyNet.mockResolvedValue({ safetyNet: null, progress: null });
+    api.fetchContributionStatus.mockResolvedValue({ month: '2026-11', incomplete: true, members: [], totalExpectedCents: null, totalPaidCents: 0 });
     api.downloadExport.mockResolvedValue({ blob, filename: 'budget-export-2026-10-29.json' });
     api.downloadTransactionsCsv.mockResolvedValue({ blob, filename: 'operations-2026-01-01_2026-10-30.csv' });
   });

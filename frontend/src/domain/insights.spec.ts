@@ -122,3 +122,21 @@ describe('insightAction for the monthly review insights', () => {
     expect(insightAction('/plan', 'review-done')).toEqual({ to: '/plan', label: 'Ouvrir le plan' });
   });
 });
+
+describe('insightAction for the spending-riser insight', () => {
+  it('offers « Voir mes tendances »', () => {
+    expect(insightAction('/tendances', 'spending-riser')).toEqual({ to: '/tendances', label: 'Voir mes tendances' });
+  });
+});
+
+describe('insightAction for the pending contribution insight', () => {
+  it('offers « Verser ma contribution » and opens the contribution card', () => {
+    expect(insightAction('/foyer', 'contribution-pending')).toEqual({ to: '/foyer?verser=1', label: 'Verser ma contribution' });
+  });
+
+  it('keeps the generic label for other foyer insights and for another link', () => {
+    expect(insightAction('/foyer', 'safety-net-unset')).toEqual({ to: '/foyer', label: 'Ouvrir le foyer' });
+    expect(insightAction('/foyer')).toEqual({ to: '/foyer', label: 'Ouvrir le foyer' });
+    expect(insightAction('/plan', 'contribution-pending')).toEqual({ to: '/plan', label: 'Ouvrir le plan' });
+  });
+});

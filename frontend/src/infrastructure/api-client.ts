@@ -13,6 +13,7 @@ import {
   WhatIfQuery,
   WhatIfResult,
 } from '../domain/debt';
+import { parseTrends, Trends } from '../domain/trends';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
 import {
@@ -36,6 +37,13 @@ import {
   ReviewPayload,
 } from '../domain/review';
 import { parseSafetyNetState, SafetyNet, SafetyNetState } from '../domain/safety-net';
+import {
+  ContributionPaymentPayload,
+  ContributionPaymentResult,
+  ContributionReport,
+  parseContributionReport,
+  parsePaymentResult,
+} from '../domain/contribution-tracking';
 import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
 import { parseYearForecast, YearForecast } from '../domain/year-forecast';
 import { CommitItem, ImportPreview, Rule, RuleSet } from '../domain/statement-import';
@@ -165,6 +173,13 @@ export const apiClient = {
   fetchContribution(): Promise<Contribution> {
     return request<Contribution>('/household/contribution');
   },
+  async fetchContributionStatus(month: string): Promise<ContributionReport> {
+    return parseContributionReport(await request<unknown>(`/household/contributions/status?month=${encodeURIComponent(month)}`), month);
+  },
+  /** Jamais mis en file d'attente hors ligne : un versement de contribution touche deux espaces et doit réussir ou échouer d'un bloc. */
+  async createContributionPayment(payload: ContributionPaymentPayload): Promise<ContributionPaymentResult> {
+    return parsePaymentResult(await request<unknown>('/household/contributions/payments', 'POST', payload));
+  },
 
   fetchPlan(spaceId: string): Promise<Plan> {
     return request<Plan>(`${spacePath(spaceId)}/plan`);
@@ -250,6 +265,12 @@ export const apiClient = {
       throw new ApiError(502, 'Réponse illisible');
     }
     return result;
+  },
+
+  /** `to` : dernier mois inclus (défaut côté serveur : le mois courant). */
+  async fetchTrends(spaceId: string, months: number, to?: string): Promise<Trends> {
+    const query = `months=${months}${to ? `&to=${encodeURIComponent(to)}` : ''}`;
+    return parseTrends(await request<unknown>(`${spacePath(spaceId)}/trends?${query}`));
   },
 
   fetchForecast(spaceId: string, month: string): Promise<Forecast> {

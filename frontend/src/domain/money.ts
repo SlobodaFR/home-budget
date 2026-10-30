@@ -21,6 +21,11 @@ export function formatCentsShort(cents: number): string {
   return cents % 100 === 0 ? WHOLE_FORMATTER.format(cents / 100) : FORMATTER.format(cents / 100);
 }
 
+/** Arrondi à l'euro, pour les moyennes et les estimations : « 1 367 € ». */
+export function formatCentsRounded(cents: number): string {
+  return WHOLE_FORMATTER.format(Math.round(cents / 100));
+}
+
 export function formatSignedCents(cents: number): string {
   const sign = cents > 0 ? '+ ' : cents < 0 ? '- ' : '';
   return `${sign}${FORMATTER.format(Math.abs(cents) / 100)}`;
