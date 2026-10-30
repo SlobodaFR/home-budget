@@ -32,6 +32,41 @@ import {
 import { SpaceRulesRepository } from '../../../domain/import/space-rules.repository';
 import { SpaceRulesOrmEntity } from '../../../infrastructure/persistence/entities/space-rules.orm-entity';
 import { TypeOrmSpaceRulesRepository } from '../../../infrastructure/persistence/repositories/typeorm-space-rules.repository';
+import {
+  EstimateCrecheUseCase,
+  GetAidsUseCase,
+  GetFiscalProfileUseCase,
+  ListAidRulesUseCase,
+  SaveFiscalProfileUseCase,
+} from '../../../application/aid/aid.use-cases';
+import { GetForecastUseCase } from '../../../application/forecast/get-forecast.use-case';
+import { GetInsightsUseCase } from '../../../application/insights/get-insights.use-case';
+import {
+  CreateRecurringItemUseCase,
+  DeleteRecurringItemUseCase,
+  ListRecurringItemsUseCase,
+  UpdateRecurringItemUseCase,
+} from '../../../application/recurring/recurring.use-cases';
+import { SafetyNetProgressService } from '../../../application/safety-net/safety-net-progress.service';
+import {
+  GetSafetyNetUseCase,
+  SaveSafetyNetUseCase,
+} from '../../../application/safety-net/safety-net.use-cases';
+import { FiscalProfileRepository } from '../../../domain/aid/fiscal-profile.repository';
+import { RecurringItemRepository } from '../../../domain/recurring/recurring-item.repository';
+import { SafetyNetRepository } from '../../../domain/safety-net/safety-net.repository';
+import { Clock } from '../../../domain/shared/clock';
+import { HouseholdFiscalProfileOrmEntity } from '../../../infrastructure/persistence/entities/household-fiscal-profile.orm-entity';
+import { RecurringItemOrmEntity } from '../../../infrastructure/persistence/entities/recurring-item.orm-entity';
+import { SafetyNetOrmEntity } from '../../../infrastructure/persistence/entities/safety-net.orm-entity';
+import { TypeOrmFiscalProfileRepository } from '../../../infrastructure/persistence/repositories/typeorm-fiscal-profile.repository';
+import { TypeOrmRecurringItemRepository } from '../../../infrastructure/persistence/repositories/typeorm-recurring-item.repository';
+import { TypeOrmSafetyNetRepository } from '../../../infrastructure/persistence/repositories/typeorm-safety-net.repository';
+import { SystemClock } from '../../../infrastructure/time/system-clock';
+import { AidRulesController } from '../controllers/aid-rules.controller';
+import { GuidanceController } from '../controllers/guidance.controller';
+import { HouseholdGuidanceController } from '../controllers/household-guidance.controller';
+import { RecurringController } from '../controllers/recurring.controller';
 import { ImportsController } from '../controllers/imports.controller';
 import { HouseholdRepository } from '../../../domain/household/household.repository';
 import { FieldCipher } from '../../../domain/shared/field-cipher';
@@ -57,15 +92,36 @@ import { AuthModule } from './auth.module';
       SpacePlanOrmEntity,
       SpaceRulesOrmEntity,
       TransactionOrmEntity,
+      RecurringItemOrmEntity,
+      SafetyNetOrmEntity,
+      HouseholdFiscalProfileOrmEntity,
     ]),
   ],
-  controllers: [HouseholdController, SpacesController, ImportsController],
+  controllers: [
+    HouseholdController,
+    SpacesController,
+    ImportsController,
+    RecurringController,
+    GuidanceController,
+    HouseholdGuidanceController,
+    AidRulesController,
+  ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
     { provide: HouseholdRepository, useClass: TypeOrmHouseholdRepository },
     { provide: SpacePlanRepository, useClass: TypeOrmSpacePlanRepository },
     { provide: SpaceRulesRepository, useClass: TypeOrmSpaceRulesRepository },
     { provide: TransactionRepository, useClass: TypeOrmTransactionRepository },
+    { provide: Clock, useClass: SystemClock },
+    {
+      provide: RecurringItemRepository,
+      useClass: TypeOrmRecurringItemRepository,
+    },
+    { provide: SafetyNetRepository, useClass: TypeOrmSafetyNetRepository },
+    {
+      provide: FiscalProfileRepository,
+      useClass: TypeOrmFiscalProfileRepository,
+    },
     { provide: APP_FILTER, useClass: DomainErrorFilter },
     HouseholdViewBuilder,
     SpaceAccessService,
@@ -87,6 +143,20 @@ import { AuthModule } from './auth.module';
     CommitImportUseCase,
     GetRulesUseCase,
     SaveRulesUseCase,
+    ListRecurringItemsUseCase,
+    CreateRecurringItemUseCase,
+    UpdateRecurringItemUseCase,
+    DeleteRecurringItemUseCase,
+    GetForecastUseCase,
+    GetInsightsUseCase,
+    SafetyNetProgressService,
+    GetSafetyNetUseCase,
+    SaveSafetyNetUseCase,
+    GetFiscalProfileUseCase,
+    SaveFiscalProfileUseCase,
+    GetAidsUseCase,
+    ListAidRulesUseCase,
+    EstimateCrecheUseCase,
   ],
 })
 export class HouseholdModule {}

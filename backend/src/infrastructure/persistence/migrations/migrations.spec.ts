@@ -54,10 +54,49 @@ describe('FoyerSchema migration', () => {
 
     await ds.undoLastMigration();
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );
     expect(restored.map((c) => c.name)).toContain('account_id');
+    await ds.destroy();
+  });
+
+  it('creates the tranche 3 tables and removes them when undone', async () => {
+    const tables = async (ds: DataSource) => {
+      const rows: { name: string }[] = await ds.query(
+        `SELECT name FROM sqlite_master WHERE type = 'table'`,
+      );
+      return rows.map((row) => row.name);
+    };
+    const ds = await dataSource().initialize();
+    await ds.runMigrations();
+    expect(await tables(ds)).toEqual(
+      expect.arrayContaining([
+        'recurring_items',
+        'safety_nets',
+        'household_fiscal_profiles',
+      ]),
+    );
+    const columns: { name: string }[] = await ds.query(
+      `SELECT name FROM pragma_table_info('recurring_items')`,
+    );
+    expect(columns.map((c) => c.name)).toEqual(
+      expect.arrayContaining(['label', 'amount_cents', 'secret_payload']),
+    );
+
+    await ds.undoLastMigration();
+    const after = await tables(ds);
+    for (const dropped of [
+      'recurring_items',
+      'safety_nets',
+      'household_fiscal_profiles',
+    ]) {
+      expect(after).not.toContain(dropped);
+    }
+    expect(after).toContain('space_rules');
+    await ds.runMigrations();
+    expect(await tables(ds)).toContain('recurring_items');
     await ds.destroy();
   });
 

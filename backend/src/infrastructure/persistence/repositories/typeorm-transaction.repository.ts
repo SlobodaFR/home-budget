@@ -53,6 +53,27 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
     return rows.map((row) => this.toDomain(row, space.ownerUserId));
   }
 
+  async findBySpaceFrom(spaceId: string, from: Date): Promise<Transaction[]> {
+    const space = await this.spaces.findOneByOrFail({ id: spaceId });
+    const rows = await this.transactions
+      .createQueryBuilder('t')
+      .where('t.space_id = :spaceId', { spaceId })
+      .andWhere('t.date >= :from', { from: from.toISOString() })
+      .orderBy('t.date', 'ASC')
+      .addOrderBy('t.id', 'ASC')
+      .getMany();
+    return rows.map((row) => this.toDomain(row, space.ownerUserId));
+  }
+
+  async findLatestDate(spaceId: string): Promise<Date | null> {
+    const row = await this.transactions
+      .createQueryBuilder('t')
+      .select('MAX(t.date)', 'latest')
+      .where('t.space_id = :spaceId', { spaceId })
+      .getRawOne<{ latest: string | null }>();
+    return row?.latest ? new Date(row.latest) : null;
+  }
+
   async findById(id: string): Promise<Transaction | null> {
     const row = await this.transactions.findOne({ where: { id } });
     if (!row) {
