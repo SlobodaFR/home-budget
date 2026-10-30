@@ -50,6 +50,29 @@ describe('AesGcmFieldCipher', () => {
     expect(() => other.decrypt('alice', 'tx:1', token)).toThrow();
   });
 
+  it('accepts a 32-byte key written as 64 hexadecimal characters', () => {
+    const hex = randomBytes(32).toString('hex');
+    const a = cipherWith({ PERSONAL_DATA_KEY: hex });
+    const b = cipherWith({ PERSONAL_DATA_KEY: hex.toUpperCase() });
+    expect(b.decrypt('u', 'x', a.encrypt('u', 'x', 'ok'))).toBe('ok');
+    const same = cipherWith({
+      PERSONAL_DATA_KEY: Buffer.from(hex, 'hex').toString('base64'),
+    });
+    expect(same.decrypt('u', 'x', a.encrypt('u', 'x', 'ok'))).toBe('ok');
+  });
+
+  it('ignores surrounding whitespace in the key', () => {
+    const k = randomBytes(32).toString('hex');
+    const a = cipherWith({ PERSONAL_DATA_KEY: `${k}\n` });
+    expect(
+      a.decrypt(
+        'u',
+        'x',
+        cipherWith({ PERSONAL_DATA_KEY: k }).encrypt('u', 'x', 'ok'),
+      ),
+    ).toBe('ok');
+  });
+
   it('requires the key in production and rejects a malformed one', () => {
     expect(() => cipherWith({ NODE_ENV: 'production' })).toThrow('obligatoire');
     expect(() => cipherWith({ PERSONAL_DATA_KEY: 'court' })).toThrow(

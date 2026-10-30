@@ -53,7 +53,7 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 | --- | --- | --- | --- |
 | `AUTH_MODE` | non | `oauth` | `oauth` (auth.sloboda.fr) ou `dev` (connexion factice alice/bob, refuse de demarrer en production). |
 | `DEV_AUTH_SECRET` | non | - | Mode dev : secret de signature des jetons factices. |
-| `PERSONAL_DATA_KEY` | prod | - | Cle maitre (32 octets en base64) du chiffrement de l'espace personnel. Obligatoire en production. |
+| `PERSONAL_DATA_KEY` | prod | - | Cle maitre (32 octets : 64 caracteres hexadecimaux ou base64) du chiffrement de l'espace personnel. Obligatoire en production. |
 | `AUTH_SERVICE_URL` | oui (oauth) | - | Base URL du service d'authentification central (`https://auth.sloboda.fr`). |
 | `AUTH_CLIENT_ID` | oui | - | Identifiant client OAuth2 enregistre aupres d'auth-service. |
 | `AUTH_CLIENT_SECRET` | oui | - | Secret client OAuth2 correspondant. |

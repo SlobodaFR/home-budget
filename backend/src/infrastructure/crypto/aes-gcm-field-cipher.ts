@@ -18,13 +18,26 @@ const HKDF_INFO = 'home-budget/personal-space/v1';
  * Chiffrement AES-256-GCM des donnees de l'espace personnel.
  *
  * Methode volontairement simple pour la phase de dev : une cle maitre
- * (PERSONAL_DATA_KEY, 32 octets en base64) dont on derive une cle par utilisateur
+ * (PERSONAL_DATA_KEY, 32 octets en hexadecimal ou en base64) dont on derive une cle par utilisateur
  * (HKDF-SHA256). Protege la base, ses sauvegardes et le replica Litestream ; ne
  * protege PAS contre celui qui detient la cle maitre (l'hebergeur). Evolution
  * prevue : cle derivee d'un secret propre a chaque utilisateur.
  *
  * Format : v1.<iv>.<tag>.<chiffre> (base64url).
  */
+/** Accepte 32 octets en hexadecimal (64 caracteres) ou en base64 (44 caracteres). */
+function parseMasterKey(raw: string): Buffer {
+  const key = /^[0-9a-fA-F]{64}$/.test(raw)
+    ? Buffer.from(raw, 'hex')
+    : Buffer.from(raw, 'base64');
+  if (key.length !== KEY_BYTES) {
+    throw new Error(
+      'PERSONAL_DATA_KEY doit contenir 32 octets (64 caracteres hexadecimaux ou 44 en base64)',
+    );
+  }
+  return key;
+}
+
 @Injectable()
 export class AesGcmFieldCipher extends FieldCipher {
   private readonly masterKey: Buffer;
@@ -32,15 +45,9 @@ export class AesGcmFieldCipher extends FieldCipher {
 
   constructor(config: ConfigService) {
     super();
-    const raw = config.get<string>('PERSONAL_DATA_KEY');
+    const raw = config.get<string>('PERSONAL_DATA_KEY')?.trim();
     if (raw) {
-      const key = Buffer.from(raw, 'base64');
-      if (key.length !== KEY_BYTES) {
-        throw new Error(
-          'PERSONAL_DATA_KEY doit contenir 32 octets encodes en base64',
-        );
-      }
-      this.masterKey = key;
+      this.masterKey = parseMasterKey(raw);
     } else if (config.get<string>('NODE_ENV') === 'production') {
       throw new Error('PERSONAL_DATA_KEY est obligatoire en production');
     } else {
