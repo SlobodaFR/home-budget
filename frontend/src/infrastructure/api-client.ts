@@ -17,6 +17,16 @@ import { parseTrends, Trends } from '../domain/trends';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
 import {
+  LifeEvent,
+  LifeEventCreatePayload,
+  LifeEventDefinition,
+  LifeEventUpdatePayload,
+  parseCatalog,
+  parseLifeEvent,
+  parseLifeEvents,
+  StepChangePayload,
+} from '../domain/life-event';
+import {
   Deposit,
   DepositPayload,
   parseDeposits,
@@ -179,6 +189,27 @@ export const apiClient = {
   /** Jamais mis en file d'attente hors ligne : un versement de contribution touche deux espaces et doit réussir ou échouer d'un bloc. */
   async createContributionPayment(payload: ContributionPaymentPayload): Promise<ContributionPaymentResult> {
     return parsePaymentResult(await request<unknown>('/household/contributions/payments', 'POST', payload));
+  },
+
+  /** Le catalogue des démarches (code versionné côté serveur) : ouvert à tout utilisateur connecté. */
+  async fetchLifeEventCatalog(): Promise<LifeEventDefinition[]> {
+    return parseCatalog(await request<unknown>('/life-events/catalog'));
+  },
+  async fetchLifeEvents(): Promise<LifeEvent[]> {
+    return parseLifeEvents(await request<unknown>('/household/life-events'));
+  },
+  async createLifeEvent(payload: LifeEventCreatePayload): Promise<LifeEvent | null> {
+    return parseLifeEvent(await request<unknown>('/household/life-events', 'POST', payload));
+  },
+  updateLifeEvent(id: string, payload: LifeEventUpdatePayload): Promise<void> {
+    return request<void>(`/household/life-events/${encodeURIComponent(id)}`, 'PUT', payload);
+  },
+  deleteLifeEvent(id: string): Promise<void> {
+    return request<void>(`/household/life-events/${encodeURIComponent(id)}`, 'DELETE');
+  },
+  /** Jamais mis en file d'attente hors ligne : une coche doit être confirmée par le serveur (sinon elle est annulée à l'écran). */
+  setLifeEventStep(id: string, stepId: string, payload: StepChangePayload): Promise<void> {
+    return request<void>(`/household/life-events/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`, 'PUT', payload);
   },
 
   fetchPlan(spaceId: string): Promise<Plan> {

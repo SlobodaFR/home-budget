@@ -1,5 +1,6 @@
 import { Account } from '../domain/account';
 import { Debt } from '../domain/debt';
+import { LifeEvent, LifeEventDefinition, LifeEventStep, withCounts } from '../domain/life-event';
 import { Project } from '../domain/project';
 import { MonthlyReview, ReviewHistoryItem, ReviewSnapshot } from '../domain/review';
 import { PreviewRow } from '../domain/statement-import';
@@ -119,4 +120,103 @@ export function debt(overrides: Partial<Debt> = {}): Debt {
     recurringId: null,
     ...overrides,
   };
+}
+
+/** Par défaut : la déclaration en mairie d'une naissance prévue le 31 octobre 2026, « bientôt due » au 30 octobre 2026. */
+export function lifeEventStep(overrides: Partial<LifeEventStep> = {}): LifeEventStep {
+  return {
+    stepId: 'birth-declaration',
+    title: 'Déclarer la naissance à la mairie',
+    detail: 'À faire dans les 5 jours qui suivent la naissance (jour de l’accouchement non compté).',
+    category: 'ADMIN',
+    dueDate: '2026-11-05',
+    dueLabel: 'Dans les 5 jours après la naissance',
+    status: 'DUE_SOON',
+    doneAt: null,
+    note: '',
+    sourceLabel: 'service-public.gouv.fr',
+    sourceUrl: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F961',
+    verifiedOn: null,
+    link: null,
+    ...overrides,
+  };
+}
+
+/** Cinq démarches, une par groupe sauf « à venir » doublé : en retard, bientôt, à venir, sans échéance, faite. */
+export function lifeEvent(overrides: Partial<LifeEvent> = {}): LifeEvent {
+  return withCounts({
+    id: 'e1',
+    type: 'BIRTH',
+    label: 'Naissance d’un enfant',
+    eventDate: '2026-10-31',
+    progressPercent: 0,
+    doneCount: 0,
+    totalCount: 0,
+    steps: [
+      lifeEventStep({
+        stepId: 'birth-pregnancy-declaration',
+        title: 'Déclarer la grossesse',
+        category: 'SANTE',
+        dueDate: '2026-10-15',
+        dueLabel: 'Avant la fin du 3e mois de grossesse',
+        status: 'OVERDUE',
+        sourceUrl: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F968',
+      }),
+      lifeEventStep(),
+      lifeEventStep({
+        stepId: 'birth-tax-declaration',
+        title: 'Signaler la naissance aux impôts',
+        category: 'BUDGET',
+        dueDate: '2026-12-30',
+        dueLabel: 'Dans les 60 jours après la naissance',
+        status: 'UPCOMING',
+        sourceLabel: 'impots.gouv.fr',
+        sourceUrl: 'https://www.impots.gouv.fr/particulier/questions/jai-eu-un-enfant-quelles-demarches-dois-je-accomplir',
+        link: '/previsionnel',
+      }),
+      lifeEventStep({
+        stepId: 'birth-caf-declaration',
+        title: 'Déclarer la naissance à la Caf',
+        category: 'AIDES',
+        dueDate: null,
+        dueLabel: 'Dès la naissance',
+        status: 'NO_DATE',
+        sourceLabel: 'caf.fr',
+        sourceUrl: 'https://www.caf.fr/allocataires/caf-du-nord/actualites-departementales/comment-declarer-la-naissance-de-mon-enfant',
+        link: '/aides',
+      }),
+      lifeEventStep({
+        stepId: 'birth-family-booklet',
+        title: 'Récupérer le livret de famille',
+        dueDate: null,
+        dueLabel: 'Après la déclaration de naissance',
+        status: 'DONE',
+        doneAt: '2026-10-28T09:00:00.000Z',
+        note: 'Récupéré à la mairie',
+      }),
+    ],
+    ...overrides,
+  });
+}
+
+export function lifeEventCatalog(): LifeEventDefinition[] {
+  return [
+    {
+      type: 'BIRTH',
+      label: 'Naissance d’un enfant',
+      description: 'Les démarches et aides à prévoir autour d’une naissance.',
+      steps: lifeEvent().steps.map((step) => ({
+        id: step.stepId,
+        title: step.title,
+        detail: step.detail,
+        category: step.category,
+        dueOffsetDays: step.dueDate === null ? null : 5,
+        dueLabel: step.dueLabel,
+        sourceLabel: step.sourceLabel,
+        sourceUrl: step.sourceUrl,
+        verifiedOn: '2026-10-30',
+        link: step.link,
+      })),
+    },
+  ];
 }

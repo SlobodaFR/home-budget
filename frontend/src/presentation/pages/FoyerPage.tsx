@@ -155,6 +155,15 @@ export function FoyerPage() {
         </Link>
       </Section>
 
+      <Section title="Événements de vie">
+        <p className="font-body-sm text-body-sm text-mute">
+          Une naissance, et toutes les démarches à ne pas oublier : mairie, Caf, impôts, employeur… avec leurs échéances. Les mêmes pour tout le foyer.
+        </p>
+        <Link to="/evenements" className={`${buttonSecondary} w-full`}>
+          Voir mes démarches
+        </Link>
+      </Section>
+
       <Section title="Mes données">
         <ExportSection />
       </Section>

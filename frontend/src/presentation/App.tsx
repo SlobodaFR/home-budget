@@ -10,6 +10,7 @@ import { RequireHousehold } from './layout/RequireHousehold';
 import { AidesPage } from './pages/AidesPage';
 import { ComptesPage } from './pages/ComptesPage';
 import { DettesPage } from './pages/DettesPage';
+import { EvenementsPage } from './pages/EvenementsPage';
 import { FoyerPage } from './pages/FoyerPage';
 import { HomePage } from './pages/HomePage';
 import { ImportPage } from './pages/ImportPage';
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="revue" element={<RevuePage />} />
           <Route path="dettes" element={<DettesPage />} />
           <Route path="tendances" element={<TendancesPage />} />
+          <Route path="evenements" element={<EvenementsPage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>

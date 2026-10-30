@@ -257,3 +257,42 @@ export const ChartIcon = (props: IconProps) => (
     <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
   </Icon>
 );
+
+export const DocumentIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M7 3h7l5 5v13H7z" />
+    <path d="M14 3v5h5M10 13h6M10 17h6" />
+  </Icon>
+);
+
+export const GiftIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 10h16v10H4zM3 7h18v3H3z" />
+    <path d="M12 7v13M12 7c-1-3-5-3.5-5-1.5S10.5 7 12 7zM12 7c1-3 5-3.5 5-1.5S13.5 7 12 7z" />
+  </Icon>
+);
+
+export const HeartIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0112 7.3a4.3 4.3 0 017.5 2.5C19.5 15.4 12 20 12 20z" />
+  </Icon>
+);
+
+export const BriefcaseIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 8h18v12H3zM9 8V5h6v3M3 13h18" />
+  </Icon>
+);
+
+export const WalletIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 7a2 2 0 012-2h12v4M4 7v11a2 2 0 002 2h14V9H6a2 2 0 01-2-2z" />
+    <circle cx="16" cy="14.5" r="1" fill="currentColor" />
+  </Icon>
+);
+
+export const ExternalLinkIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" />
+  </Icon>
+);

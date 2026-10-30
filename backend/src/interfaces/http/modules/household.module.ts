@@ -5,6 +5,23 @@ import { GetContributionUseCase } from '../../../application/contribution/get-co
 import { ContributionStatusService } from '../../../application/contribution/contribution-status.service';
 import { GetContributionStatusUseCase } from '../../../application/contribution/get-contribution-status.use-case';
 import { RecordContributionPaymentUseCase } from '../../../application/contribution/record-contribution-payment.use-case';
+import { LifeEventViewsService } from '../../../application/life-event/life-event-views.service';
+import {
+  CreateLifeEventUseCase,
+  DeleteLifeEventUseCase,
+  GetLifeEventCatalogUseCase,
+  ListLifeEventsUseCase,
+  SetLifeEventStepUseCase,
+  UpdateLifeEventUseCase,
+} from '../../../application/life-event/life-event.use-cases';
+import { LifeEventRepository } from '../../../domain/life-event/life-event.repository';
+import { LifeEventStepOrmEntity } from '../../../infrastructure/persistence/entities/life-event-step.orm-entity';
+import { LifeEventOrmEntity } from '../../../infrastructure/persistence/entities/life-event.orm-entity';
+import { TypeOrmLifeEventRepository } from '../../../infrastructure/persistence/repositories/typeorm-life-event.repository';
+import {
+  HouseholdLifeEventsController,
+  LifeEventCatalogController,
+} from '../controllers/life-events.controller';
 import { CreateHouseholdUseCase } from '../../../application/household/create-household.use-case';
 import { CreateInvitationUseCase } from '../../../application/household/create-invitation.use-case';
 import { GetHouseholdUseCase } from '../../../application/household/get-household.use-case';
@@ -164,6 +181,8 @@ import { AuthModule } from './auth.module';
       ProjectDepositOrmEntity,
       MonthReviewOrmEntity,
       DebtOrmEntity,
+      LifeEventOrmEntity,
+      LifeEventStepOrmEntity,
     ]),
   ],
   controllers: [
@@ -180,6 +199,8 @@ import { AuthModule } from './auth.module';
     ExportController,
     DebtsController,
     TrendsController,
+    LifeEventCatalogController,
+    HouseholdLifeEventsController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -191,6 +212,7 @@ import { AuthModule } from './auth.module';
     { provide: AccountRepository, useClass: TypeOrmAccountRepository },
     { provide: ProjectRepository, useClass: TypeOrmProjectRepository },
     { provide: DebtRepository, useClass: TypeOrmDebtRepository },
+    { provide: LifeEventRepository, useClass: TypeOrmLifeEventRepository },
     { provide: MonthReviewRepository, useClass: TypeOrmMonthReviewRepository },
     {
       provide: RecurringItemRepository,
@@ -245,6 +267,13 @@ import { AuthModule } from './auth.module';
     ProjectViewsService,
     DebtViewsService,
     GetTrendsUseCase,
+    LifeEventViewsService,
+    GetLifeEventCatalogUseCase,
+    ListLifeEventsUseCase,
+    CreateLifeEventUseCase,
+    UpdateLifeEventUseCase,
+    DeleteLifeEventUseCase,
+    SetLifeEventStepUseCase,
     ListDebtsUseCase,
     GetDebtsSummaryUseCase,
     CreateDebtUseCase,

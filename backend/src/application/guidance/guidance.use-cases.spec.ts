@@ -7,6 +7,7 @@ import {
   InMemoryDebtRepository,
   InMemoryFiscalProfileRepository,
   InMemoryHouseholdRepository,
+  InMemoryLifeEventRepository,
   InMemoryMonthReviewRepository,
   InMemoryProjectRepository,
   InMemoryRecurringItemRepository,
@@ -16,6 +17,7 @@ import {
   InMemoryUserRepository,
 } from '../../testing/in-memory-repositories';
 import { AccountAssignmentService } from '../account/account-assignment.service';
+import { LifeEventViewsService } from '../life-event/life-event-views.service';
 import { ContributionStatusService } from '../contribution/contribution-status.service';
 import { GetContributionUseCase } from '../contribution/get-contribution.use-case';
 import { ProjectViewsService } from '../project/project-views.service';
@@ -144,6 +146,7 @@ async function setup(today = '2026-11-12T09:00:00Z') {
         new GetContributionUseCase(access, plans, users),
         transactions,
       ),
+      new LifeEventViewsService(new InMemoryLifeEventRepository(), clock),
       clock,
     ),
     getSafetyNet: new GetSafetyNetUseCase(access, safetyNets, progress),

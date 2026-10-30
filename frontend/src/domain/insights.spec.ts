@@ -124,6 +124,11 @@ describe('insightAction for the monthly review insights', () => {
 });
 
 describe('insightAction for the spending-riser insight', () => {
+  it('offers « Voir mes démarches » for the life event insights', () => {
+    expect(insightAction('/evenements', 'life-event-overdue')).toEqual({ to: '/evenements', label: 'Voir mes démarches' });
+    expect(insightAction('/evenements', 'life-event-due-soon')).toEqual({ to: '/evenements', label: 'Voir mes démarches' });
+  });
+
   it('offers « Voir mes tendances »', () => {
     expect(insightAction('/tendances', 'spending-riser')).toEqual({ to: '/tendances', label: 'Voir mes tendances' });
   });

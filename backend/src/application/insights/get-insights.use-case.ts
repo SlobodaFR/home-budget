@@ -3,6 +3,7 @@ import { buildForecast, monthPhase } from '../../domain/budget/forecast';
 import {
   CommonInsightsContext,
   Insight,
+  LifeEventsInsightContext,
   REVIEW_LAST_DAY,
   buildInsights,
 } from '../../domain/budget/insights';
@@ -28,6 +29,7 @@ import { summarizeDebts, isActiveDebt } from '../../domain/debt/debt-view';
 import { DebtViewsService } from '../debt/debt-views.service';
 import { ProjectViewsService } from '../project/project-views.service';
 import { AccountViewsService } from '../account/account-views.service';
+import { LifeEventViewsService } from '../life-event/life-event-views.service';
 import { ContributionStatusService } from '../contribution/contribution-status.service';
 import { SafetyNetProgressService } from '../safety-net/safety-net-progress.service';
 
@@ -46,6 +48,7 @@ export class GetInsightsUseCase {
     private readonly reviews: MonthReviewRepository,
     private readonly debtViews: DebtViewsService,
     private readonly contributionStatus: ContributionStatusService,
+    private readonly lifeEventViews: LifeEventViewsService,
     private readonly clock: Clock,
   ) {}
 
@@ -85,8 +88,11 @@ export class GetInsightsUseCase {
           (m) => m.netMonthlyIncomeCents === null,
         ),
         myContribution: null,
+        lifeEvents: { overdue: [], dueSoon: [] },
       };
       if (monthPhase(month, today) === 'CURRENT') {
+        const alerts = await this.lifeEventAlerts(snapshot.household.id);
+        common.lifeEvents = alerts;
         // Même calcul que GET /household/contributions/status ; seule MA part est transmise.
         const status = await this.contributionStatus.forMonth(userId, month);
         const mine = status.members.find((m) => m.isMe);
@@ -180,5 +186,26 @@ export class GetInsightsUseCase {
         },
       }),
     };
+  }
+
+  /** Démarches non faites des événements du foyer, en retard ou à faire sous 14 jours. */
+  private async lifeEventAlerts(
+    householdId: string,
+  ): Promise<LifeEventsInsightContext> {
+    const alerts: LifeEventsInsightContext = { overdue: [], dueSoon: [] };
+    for (const event of await this.lifeEventViews.forHousehold(householdId)) {
+      for (const step of event.steps) {
+        if (step.dueDate === null) {
+          continue;
+        }
+        const alert = { title: step.title, dueDate: step.dueDate };
+        if (step.status === 'OVERDUE') {
+          alerts.overdue.push(alert);
+        } else if (step.status === 'DUE_SOON') {
+          alerts.dueSoon.push(alert);
+        }
+      }
+    }
+    return alerts;
   }
 }

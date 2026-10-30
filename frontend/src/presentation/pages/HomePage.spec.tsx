@@ -241,6 +241,21 @@ describe('HomePage monthly review', () => {
     expect(screen.getByRole('link', { name: 'Mes tendances' })).toHaveAttribute('href', '/tendances');
   });
 
+  it('always links to the life events page from the quick links, in either space', async () => {
+    renderInApp(<HomePage />);
+    await screen.findByRole('region', { name: 'Synthèse du mois' });
+    expect(screen.getByRole('link', { name: 'Événements de vie' })).toHaveAttribute('href', '/evenements');
+  });
+
+  it('sends a life event insight to the life events page', async () => {
+    api.fetchInsights.mockResolvedValue([
+      { id: 'life-event-overdue', severity: 'WARNING', title: '2 démarches de naissance en retard', detail: 'Déclarer la grossesse.', lesson: null, link: '/evenements' },
+    ]);
+    renderInApp(<HomePage />);
+    const card = await screen.findByRole('region', { name: 'Prochaines actions' });
+    expect(within(card).getByRole('link', { name: 'Voir mes démarches' })).toHaveAttribute('href', '/evenements');
+  });
+
   it('offers to make the review from the monthly-review insight', async () => {
     api.fetchInsights.mockResolvedValue([
       { id: 'monthly-review', severity: 'ACTION', title: 'Faites votre revue d’octobre', detail: 'Dix minutes suffisent.', lesson: 5, link: '/revue' },
