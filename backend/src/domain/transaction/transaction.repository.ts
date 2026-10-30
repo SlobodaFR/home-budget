@@ -14,6 +14,15 @@ export abstract class TransactionRepository {
   abstract findLatestDate(spaceId: string): Promise<Date | null>;
   /** Toutes les opérations de l'espace rattachées à un compte (tous mois confondus). */
   abstract findAttachedBySpace(spaceId: string): Promise<Transaction[]>;
+  /**
+   * Total versé par membre au titre de la contribution du mois `month` (AAAA-MM) :
+   * revenus de l'espace dont `contributionMonth` = `month`, groupés par `contributionUserId`.
+   * Réservé à l'espace commun (montants en clair). Un membre sans versement est absent.
+   */
+  abstract sumContributionsByUser(
+    spaceId: string,
+    month: string,
+  ): Promise<Map<string, number>>;
   /** Nombre d'opérations rattachées au compte. */
   abstract countByAccount(accountId: string): Promise<number>;
   abstract findById(id: string): Promise<Transaction | null>;

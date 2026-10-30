@@ -28,6 +28,7 @@ import { summarizeDebts, isActiveDebt } from '../../domain/debt/debt-view';
 import { DebtViewsService } from '../debt/debt-views.service';
 import { ProjectViewsService } from '../project/project-views.service';
 import { AccountViewsService } from '../account/account-views.service';
+import { ContributionStatusService } from '../contribution/contribution-status.service';
 import { SafetyNetProgressService } from '../safety-net/safety-net-progress.service';
 
 /** Prochaines actions : conseils déterministes issus des règles du cours (aucun conseil de placement). */
@@ -44,6 +45,7 @@ export class GetInsightsUseCase {
     private readonly projectViews: ProjectViewsService,
     private readonly reviews: MonthReviewRepository,
     private readonly debtViews: DebtViewsService,
+    private readonly contributionStatus: ContributionStatusService,
     private readonly clock: Clock,
   ) {}
 
@@ -82,7 +84,21 @@ export class GetInsightsUseCase {
         contributionIncomplete: snapshot.memberships.some(
           (m) => m.netMonthlyIncomeCents === null,
         ),
+        myContribution: null,
       };
+      if (monthPhase(month, today) === 'CURRENT') {
+        // Même calcul que GET /household/contributions/status ; seule MA part est transmise.
+        const status = await this.contributionStatus.forMonth(userId, month);
+        const mine = status.members.find((m) => m.isMe);
+        common.myContribution = mine
+          ? {
+              status: mine.status,
+              expectedCents: mine.expectedCents,
+              paidCents: mine.paidCents,
+              remainingCents: mine.remainingCents,
+            }
+          : null;
+      }
       if (stored) {
         // Même calcul que GET /household/safety-net : une seule base de référence.
         const progress = await this.safetyNetProgress.compute(spaceId, stored);

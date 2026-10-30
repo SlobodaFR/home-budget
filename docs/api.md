@@ -288,8 +288,8 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 - `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/tendances`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `spending-riser`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
-- Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `spending-riser`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `contribution-pending`, `all-good`.
+- Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`, `contribution-pending`).
 
 ## Aides officielles (tranche 3)
 
@@ -669,6 +669,60 @@ Lecture seule : où va l'argent, et est-ce que ça évolue ? Calculées à la de
 ### Conseil
 Nouvel id `spending-riser` (`INFO`, lien `/tendances`) : le premier `risers` ≥ 50 € de hausse mensuelle, détail : libellé,
 avant/après. Émis au plus une fois par mois consulté (mois courant uniquement).
+
+## Suivi des contributions (tranche 10)
+
+L'espace commun est financé par la contribution de chaque membre (règle du foyer). Cette tranche permet de **dire
+qu'on a versé sa contribution** et de voir, pour le mois, ce qui est attendu, versé et restant. Une contribution
+versée = une **opération de revenu** dans l'espace commun (donc dans ses comptes et son prévisionnel), éventuellement
+accompagnée de la dépense correspondante dans l'espace **personnel** du membre qui verse. L'espace personnel d'un
+membre reste invisible aux autres : eux ne voient que la contribution côté commun.
+
+### Champs ajoutés aux opérations
+Les objets « opération » exposent `contributionUserId` (identifiant du membre qui a versé, `null` sinon) et
+`contributionMonth` (`AAAA-MM` ou `null`). Ces champs ne sont posés que par `POST /household/contributions/payments`
+(jamais par `POST …/transactions`, qui les ignore) ; ils ne concernent que des revenus de l'espace commun.
+
+### `POST /api/household/contributions/payments`
+Corps : `{ "month": "2026-11", "amountCents": 120000, "date"?: "2026-11-03", "accountId"?: "…",
+"debitPersonal"?: false, "personalAccountId"?: "…", "personalBloc"?: "FIXE" }`. L'auteur est toujours l'utilisateur
+courant (on ne verse que pour soi). `201` :
+```json
+{ "transactionId": "…", "personalTransactionId": null }
+```
+- Crée dans l'espace commun un **revenu** `Contribution de <prénom>` de `amountCents`, daté `date` (défaut : maintenant),
+  rattaché à `accountId` (un compte de l'espace commun, optionnel), avec `contributionUserId` et `contributionMonth`.
+- Si `debitPersonal` est vrai : crée en plus, dans l'espace personnel du membre, une **dépense** `Contribution au foyer`
+  du même montant et de la même date, du bloc `personalBloc` (`FIXE` par défaut ; `FIXE|COURANT|PLAISIR|EPARGNE`),
+  rattachée à `personalAccountId` (un compte de son espace personnel, optionnel). Les deux créations sont atomiques
+  (tout ou rien). `personalAccountId` sans `debitPersonal` : `400`.
+- `400` : `amountCents` entier ≤ 0, mois invalide ou futur de plus d'un mois, compte inexistant/archivé/d'un autre
+  espace, bloc inconnu. `404` : pas de foyer.
+
+### `GET /api/household/contributions/status?month=AAAA-MM`
+`month` par défaut : mois courant. Visible par tous les membres du foyer (c'est une information du commun).
+```json
+{
+  "month": "2026-11",
+  "incomplete": false,
+  "members": [{
+    "userId": "…", "name": "Alice", "expectedCents": 175000, "paidCents": 120000, "remainingCents": 55000,
+    "status": "PARTIAL", "isMe": true
+  }],
+  "totalExpectedCents": 350000, "totalPaidCents": 120000
+}
+```
+- `totalExpectedCents` vaut `null` quand `incomplete` est vrai.
+- `expectedCents` : contribution attendue selon la règle du foyer (même calcul que `GET /household/contribution`) pour
+  le plan **du mois** (plan commun courant) ; `null` pour tous et `incomplete: true` si la règle ne peut pas être
+  calculée (revenus manquants). Dans ce cas `remainingCents` et `status` valent `null`/`UNKNOWN`.
+- `paidCents` : somme des revenus du commun du mois avec `contributionUserId` = ce membre et `contributionMonth` = `month`.
+- `remainingCents` = max(0, attendu − versé) ; `status` : `PAID` (versé ≥ attendu, attendu > 0), `PARTIAL`, `PENDING`
+  (rien versé), `OVERPAID` (versé > attendu + 1 € ), `NONE` (attendu = 0), `UNKNOWN`.
+
+### Conseil
+Nouvel id `contribution-pending` (`ACTION`, espace commun, mois courant, à partir du 6 du mois) : MA contribution du mois
+est `PENDING` ou `PARTIAL` ; détail avec le reste à verser ; lien `/foyer`. Jamais de conseil sur la contribution des autres.
 
 ## Chiffrement de l'espace personnel (informatif)
 

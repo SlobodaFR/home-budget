@@ -86,6 +86,23 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
     return rows.map((row) => this.toDomain(row, space.ownerUserId));
   }
 
+  async sumContributionsByUser(
+    spaceId: string,
+    month: string,
+  ): Promise<Map<string, number>> {
+    const rows = await this.transactions
+      .createQueryBuilder('t')
+      .select('t.contribution_user_id', 'userId')
+      .addSelect('COALESCE(SUM(t.amount_cents), 0)', 'cents')
+      .where('t.space_id = :spaceId', { spaceId })
+      .andWhere('t.kind = :kind', { kind: 'INCOME' })
+      .andWhere('t.contribution_month = :month', { month })
+      .andWhere('t.contribution_user_id IS NOT NULL')
+      .groupBy('t.contribution_user_id')
+      .getRawMany<{ userId: string; cents: number | string }>();
+    return new Map(rows.map((row) => [row.userId, Number(row.cents)]));
+  }
+
   async countByAccount(accountId: string): Promise<number> {
     return this.transactions.count({ where: { accountId } });
   }
@@ -127,6 +144,8 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
       bloc: transaction.bloc,
       date: transaction.date.toISOString(),
       accountId: transaction.accountId,
+      contributionUserId: transaction.contributionUserId,
+      contributionMonth: transaction.contributionMonth,
     };
 
     if (space.ownerUserId) {
@@ -186,6 +205,8 @@ export class TypeOrmTransactionRepository extends TransactionRepository {
       amount: Money.fromCents(amountCents),
       date: new Date(row.date),
       accountId: row.accountId,
+      contributionUserId: row.contributionUserId,
+      contributionMonth: row.contributionMonth,
     });
   }
 }

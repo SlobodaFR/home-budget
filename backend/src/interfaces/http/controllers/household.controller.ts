@@ -1,5 +1,15 @@
-import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { GetContributionUseCase } from '../../../application/contribution/get-contribution.use-case';
+import { GetContributionStatusUseCase } from '../../../application/contribution/get-contribution-status.use-case';
+import { RecordContributionPaymentUseCase } from '../../../application/contribution/record-contribution-payment.use-case';
 import { CreateHouseholdUseCase } from '../../../application/household/create-household.use-case';
 import { CreateInvitationUseCase } from '../../../application/household/create-invitation.use-case';
 import { GetHouseholdUseCase } from '../../../application/household/get-household.use-case';
@@ -13,8 +23,10 @@ import {
   CurrentUserPayload,
 } from '../decorators/current-user.decorator';
 import {
+  ContributionStatusQueryDto,
   CreateHouseholdDto,
   JoinHouseholdDto,
+  RecordContributionPaymentDto,
   SetContributionModeDto,
   SetIncomeDto,
 } from '../dto/household.dto';
@@ -29,6 +41,8 @@ export class HouseholdController {
     private readonly setMyIncome: SetMyIncomeUseCase,
     private readonly setContributionMode: SetContributionModeUseCase,
     private readonly getContribution: GetContributionUseCase,
+    private readonly recordPayment: RecordContributionPaymentUseCase,
+    private readonly getStatus: GetContributionStatusUseCase,
   ) {}
 
   @Get()
@@ -73,5 +87,21 @@ export class HouseholdController {
   @Get('contribution')
   contribution(@CurrentUser() user: CurrentUserPayload) {
     return this.getContribution.execute(user.id);
+  }
+
+  @Post('contributions/payments')
+  recordContributionPayment(
+    @Body() dto: RecordContributionPaymentDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.recordPayment.execute(user.id, dto);
+  }
+
+  @Get('contributions/status')
+  contributionStatus(
+    @Query() query: ContributionStatusQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.getStatus.execute(user.id, query.month);
   }
 }

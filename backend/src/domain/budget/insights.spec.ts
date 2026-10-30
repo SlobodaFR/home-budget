@@ -16,6 +16,7 @@ import {
   DebtsInsightContext,
   Insight,
   MAX_INSIGHTS,
+  MyContributionStatus,
   buildInsights,
 } from './insights';
 import { summarizeMonth } from './month-summary';
@@ -471,6 +472,7 @@ describe('buildInsights', () => {
     const common = (over: Partial<CommonInsightsContext> = {}) => ({
       safetyNet: null,
       contributionIncomplete: false,
+      myContribution: null,
       ...over,
     });
 
@@ -566,6 +568,140 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('contribution-pending', () => {
+    const mine = (
+      status: MyContributionStatus['status'],
+      paidCents: number,
+      expectedCents: number | null = 175000,
+    ): MyContributionStatus => ({
+      status,
+      expectedCents,
+      paidCents,
+      remainingCents:
+        expectedCents === null ? null : Math.max(0, expectedCents - paidCents),
+    });
+    const withMine = (
+      myContribution: MyContributionStatus | null,
+      over: Partial<CommonInsightsContext> = {},
+    ): CommonInsightsContext => ({
+      safetyNet: status(700000, 6),
+      contributionIncomplete: false,
+      myContribution,
+      ...over,
+    });
+    const pending = (insights: Insight[]) =>
+      insights.filter((i) => i.id === 'contribution-pending');
+
+    it('asks me to pay a contribution that has not been paid at all', () => {
+      const insights = run({
+        transactions: recent,
+        common: withMine(mine('PENDING', 0)),
+      });
+      expect(pending(insights)).toEqual([
+        {
+          id: 'contribution-pending',
+          severity: 'ACTION',
+          title: `Contribution de novembre 2026 : 1${nbsp}750${nbsp}€ à verser`,
+          detail: `Vous n'avez encore rien versé au budget commun pour novembre 2026 : 1${nbsp}750${nbsp}€ attendus. Enregistrez votre versement une fois fait.`,
+          lesson: null,
+          link: '/foyer',
+        },
+      ]);
+    });
+
+    it('states what is left to pay when the contribution is partial', () => {
+      const [insight] = pending(
+        run({
+          transactions: recent,
+          common: withMine(mine('PARTIAL', 120000)),
+        }),
+      );
+      expect(insight.title).toBe(
+        `Contribution de novembre 2026 : 550${nbsp}€ à verser`,
+      );
+      expect(insight.detail).toBe(
+        `Vous avez versé 1${nbsp}200${nbsp}€ sur 1${nbsp}750${nbsp}€ attendus pour le budget commun : il reste 550${nbsp}€ à verser. Enregistrez votre versement une fois fait.`,
+      );
+      expect(insight.link).toBe('/foyer');
+    });
+
+    it('waits for the 6th of the month', () => {
+      const common = withMine(mine('PENDING', 0));
+      expect(
+        pending(
+          run({
+            today: '2026-11-05T23:00:00Z',
+            transactions: recent,
+            common,
+          }),
+        ),
+      ).toEqual([]);
+      expect(
+        pending(
+          run({ today: '2026-11-06T00:30:00Z', transactions: recent, common }),
+        ),
+      ).toHaveLength(1);
+    });
+
+    it('is only raised for the current month', () => {
+      const common = withMine(mine('PENDING', 0));
+      for (const month of ['2026-10', '2026-12']) {
+        expect(pending(run({ month, transactions: recent, common }))).toEqual(
+          [],
+        );
+      }
+    });
+
+    it('stays silent once paid, overpaid, or when nothing is expected', () => {
+      for (const contribution of [
+        mine('PAID', 175000),
+        mine('OVERPAID', 180000),
+        mine('NONE', 0, 0),
+        mine('UNKNOWN', 0, null),
+        null,
+      ]) {
+        expect(
+          pending(
+            run({ transactions: recent, common: withMine(contribution) }),
+          ),
+        ).toEqual([]);
+      }
+    });
+
+    it('gives no advice when the household rule cannot be computed', () => {
+      const insights = run({
+        transactions: recent,
+        common: withMine(mine('PENDING', 0), { contributionIncomplete: true }),
+      });
+      expect(pending(insights)).toEqual([]);
+      expect(ids(insights)).toContain('contribution-incomplete');
+    });
+
+    it('never exists for a personal space', () => {
+      expect(pending(run({ transactions: recent, common: null }))).toEqual([]);
+    });
+
+    it('ranks among ACTION insights right after contribution-incomplete, before savings-behind', () => {
+      const insights = run({
+        transactions: recent,
+        plan: SpacePlan.create({
+          incomeCents: 0,
+          fixeCents: 175000,
+          courantCents: 100000,
+          plaisirCents: 45000,
+          epargneCents: 20000,
+        }),
+        common: withMine(mine('PENDING', 0)),
+      });
+      const order = ids(insights);
+      expect(order).toContain('contribution-pending');
+      expect(order).toContain('savings-behind');
+      expect(order.indexOf('contribution-pending')).toBeLessThan(
+        order.indexOf('savings-behind'),
+      );
+    });
+  });
+
   describe('common space funded by contributions', () => {
     const COMMON_PLAN = SpacePlan.create({
       incomeCents: 0,
@@ -577,6 +713,7 @@ describe('buildInsights', () => {
     const common: CommonInsightsContext = {
       safetyNet: status(700000, 6),
       contributionIncomplete: false,
+      myContribution: null,
     };
 
     it('raises no false deficit, overcommitment or unassigned income on an unfunded plan', () => {
@@ -1412,6 +1549,7 @@ describe('buildInsights', () => {
       common: {
         safetyNet: null,
         contributionIncomplete: true,
+        myContribution: null,
       },
     };
 
@@ -1439,7 +1577,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|contribution-pending|all-good)$',
       );
       const insights = [
         ...run(crowded),

@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GetContributionUseCase } from '../../../application/contribution/get-contribution.use-case';
+import { ContributionStatusService } from '../../../application/contribution/contribution-status.service';
+import { GetContributionStatusUseCase } from '../../../application/contribution/get-contribution-status.use-case';
+import { RecordContributionPaymentUseCase } from '../../../application/contribution/record-contribution-payment.use-case';
 import { CreateHouseholdUseCase } from '../../../application/household/create-household.use-case';
 import { CreateInvitationUseCase } from '../../../application/household/create-invitation.use-case';
 import { GetHouseholdUseCase } from '../../../application/household/get-household.use-case';
@@ -208,6 +211,9 @@ import { AuthModule } from './auth.module';
     SetMyIncomeUseCase,
     SetContributionModeUseCase,
     GetContributionUseCase,
+    ContributionStatusService,
+    GetContributionStatusUseCase,
+    RecordContributionPaymentUseCase,
     GetSpacePlanUseCase,
     SaveSpacePlanUseCase,
     ListSpaceTransactionsUseCase,

@@ -60,6 +60,7 @@ describe('FoyerSchema migration', () => {
     await ds.undoLastMigration();
     await ds.undoLastMigration();
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );
@@ -90,6 +91,7 @@ describe('FoyerSchema migration', () => {
       expect.arrayContaining(['label', 'amount_cents', 'secret_payload']),
     );
 
+    await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
     await ds.undoLastMigration(); // tranche 7
     await ds.undoLastMigration(); // tranche 6
@@ -137,6 +139,7 @@ describe('FoyerSchema migration', () => {
     await ds.query(
       `INSERT INTO "transactions" ("id","space_id","kind","date","account_id") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','a1')`,
     );
+    await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
     await ds.undoLastMigration(); // tranche 7
     await ds.undoLastMigration(); // tranche 6
@@ -159,6 +162,7 @@ describe('FoyerSchema migration', () => {
   it('adds frequency (default MONTHLY) and month_of_year without touching existing rows, and undoes them', async () => {
     const ds = await dataSource().initialize();
     await ds.runMigrations();
+    await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
     await ds.undoLastMigration(); // tranche 7
     await ds.undoLastMigration(); // tranche 6
@@ -184,6 +188,7 @@ describe('FoyerSchema migration', () => {
     const drift = await ds.driver.createSchemaBuilder().log();
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);
 
+    await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
     await ds.undoLastMigration(); // tranche 7
     await ds.undoLastMigration(); // tranche 6
@@ -249,6 +254,7 @@ describe('FoyerSchema migration', () => {
       `INSERT INTO "recurring_items" ("id","space_id","kind","start_date","active","label","amount_cents") VALUES ('r1','s1','EXPENSE','2026-01-01',1,'Loyer',100)`,
     );
 
+    await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
     await ds.undoLastMigration(); // tranche 7
     await ds.undoLastMigration(); // tranche 6
@@ -297,6 +303,7 @@ describe('FoyerSchema migration', () => {
       `INSERT INTO "month_reviews" ("space_id","month") VALUES ('s1','2026-11'), ('s2','2026-10')`,
     );
 
+    await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
     await ds.undoLastMigration(); // tranche 7
     expect(
@@ -345,7 +352,8 @@ describe('FoyerSchema migration', () => {
       `INSERT INTO "month_reviews" ("space_id","month") VALUES ('s1','2026-10')`,
     );
 
-    await ds.undoLastMigration();
+    await ds.undoLastMigration(); // tranche 9
+    await ds.undoLastMigration(); // tranche 8
     expect(
       await ds.query(`SELECT name FROM sqlite_master WHERE name = 'debts'`),
     ).toEqual([]);
@@ -355,6 +363,61 @@ describe('FoyerSchema migration', () => {
     await ds.runMigrations();
     expect(await ds.query(`SELECT COUNT(*) AS n FROM debts`)).toEqual([
       { n: 0 },
+    ]);
+    const drift = await ds.driver.createSchemaBuilder().log();
+    expect(drift.upQueries.map((q) => q.query)).toEqual([]);
+    await ds.destroy();
+  });
+
+  it('adds the tranche 9 contribution columns and index without touching existing rows, and undoes them', async () => {
+    const ds = await dataSource().initialize();
+    await ds.runMigrations();
+    const columnsOf = async () => {
+      const rows: { name: string; notnull: number }[] = await ds.query(
+        `SELECT name, "notnull" FROM pragma_table_info('transactions')`,
+      );
+      return rows;
+    };
+    const columns = await columnsOf();
+    for (const name of ['contribution_user_id', 'contribution_month']) {
+      expect(columns).toContainEqual(
+        expect.objectContaining({ name, notnull: 0 }),
+      );
+    }
+    const indexColumns: { name: string }[] = await ds.query(
+      `SELECT name FROM pragma_index_info('idx_transactions_contribution') ORDER BY seqno`,
+    );
+    expect(indexColumns.map((c) => c.name)).toEqual([
+      'space_id',
+      'contribution_month',
+      'contribution_user_id',
+    ]);
+
+    await ds.undoLastMigration(); // tranche 9
+    expect((await columnsOf()).map((c) => c.name)).not.toEqual(
+      expect.arrayContaining(['contribution_user_id']),
+    );
+    expect(
+      await ds.query(
+        `SELECT name FROM sqlite_master WHERE name = 'idx_transactions_contribution'`,
+      ),
+    ).toEqual([]);
+    await ds.query(
+      `INSERT INTO "transactions" ("id","space_id","kind","date","label","amount_cents") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','Salaire',100000)`,
+    );
+    await ds.runMigrations();
+    expect(
+      await ds.query(
+        `SELECT id, label, amount_cents, contribution_user_id, contribution_month FROM transactions`,
+      ),
+    ).toEqual([
+      {
+        id: 't1',
+        label: 'Salaire',
+        amount_cents: 100000,
+        contribution_user_id: null,
+        contribution_month: null,
+      },
     ]);
     const drift = await ds.driver.createSchemaBuilder().log();
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);

@@ -131,6 +131,26 @@ export class InMemoryTransactionRepository extends TransactionRepository {
       .filter((t) => t.spaceId === spaceId && t.accountId !== null)
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }
+  async sumContributionsByUser(
+    spaceId: string,
+    month: string,
+  ): Promise<Map<string, number>> {
+    const totals = new Map<string, number>();
+    for (const t of this.items.values()) {
+      if (
+        t.spaceId === spaceId &&
+        t.kind === 'INCOME' &&
+        t.contributionMonth === month &&
+        t.contributionUserId !== null
+      ) {
+        totals.set(
+          t.contributionUserId,
+          (totals.get(t.contributionUserId) ?? 0) + t.amount.toCents(),
+        );
+      }
+    }
+    return totals;
+  }
   async countByAccount(accountId: string): Promise<number> {
     return [...this.items.values()].filter((t) => t.accountId === accountId)
       .length;
