@@ -18,6 +18,7 @@ import { MembersList } from '../components/MembersList';
 import { SafetyNetSection } from '../components/SafetyNetSection';
 import { useToast } from '../components/Toast';
 import { buttonSecondary, cardClass } from '../components/ui';
+import { HELP_ROUTE, HELP_TITLE } from '../../domain/routes';
 
 function Section({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
@@ -39,7 +40,12 @@ export function FoyerPage() {
 
   if (offline) {
     return (
-      <OfflineNotice message="Cette page a besoin d’une connexion. Vos saisies de dépenses restent possibles hors ligne depuis l’accueil." />
+      <>
+        <OfflineNotice message="Cette page a besoin d’une connexion. Vos saisies de dépenses restent possibles hors ligne depuis l’accueil." />
+        <Link to={HELP_ROUTE} className={`${buttonSecondary} w-full`}>
+          {HELP_TITLE}
+        </Link>
+      </>
     );
   }
 
@@ -166,6 +172,15 @@ export function FoyerPage() {
 
       <Section title="Mes données">
         <ExportSection />
+      </Section>
+
+      <Section title={HELP_TITLE}>
+        <p className="font-body-sm text-body-sm text-mute">
+          Comment ça marche, qui voit quoi, les règles officielles et leurs sources, les questions fréquentes. Lisible même sans réseau.
+        </p>
+        <Link to={HELP_ROUTE} className={`${buttonSecondary} w-full`}>
+          Ouvrir l’aide
+        </Link>
       </Section>
 
       <Section title="Inviter">

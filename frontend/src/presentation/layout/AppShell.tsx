@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { describeError } from '../../application/error-message';
 import { useAccounts } from '../../application/use-accounts';
 import { useOfflineQueue } from '../../application/use-offline-queue';
 import { Transaction, TransactionPayload } from '../../domain/budget';
+import { HELP_ROUTE, HELP_TITLE } from '../../domain/routes';
 import { apiClient } from '../../infrastructure/api-client';
 import { preferences } from '../../infrastructure/local-store';
 import { useSpace } from '../../application/use-space';
-import { PlusIcon } from '../components/Icons';
+import { HelpIcon, PlusIcon } from '../components/Icons';
 import { QuickEntrySheet } from '../components/QuickEntrySheet';
 import { SpaceSwitcher } from '../components/SpaceSwitcher';
 import { TabBar } from '../components/TabBar';
@@ -71,8 +72,23 @@ function ShellContent() {
       <div className="h-dvh bg-soft-cloud">
         <div className="relative mx-auto flex h-full w-full max-w-[600px] flex-col bg-surface md:border-x md:border-hairline-soft">
           <header className="shrink-0 border-b border-hairline-soft bg-surface pb-md pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]">
-            <div className="pt-md">
-              {showsSpace ? <SpaceSwitcher /> : <h1 className="py-sm text-center font-heading-lg text-heading-lg">Foyer</h1>}
+            <div className="flex items-start gap-sm pt-md">
+              <div className="min-w-0 flex-1">
+                {showsSpace ? (
+                  <SpaceSwitcher />
+                ) : (
+                  <h1 className="py-sm text-center font-heading-lg text-heading-lg">{location.pathname === HELP_ROUTE ? HELP_TITLE : 'Foyer'}</h1>
+                )}
+              </div>
+              {showsSpace && (
+                <Link
+                  to={HELP_ROUTE}
+                  aria-label={HELP_TITLE}
+                  className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-hairline-soft bg-white text-ink hover:bg-soft-cloud"
+                >
+                  <HelpIcon width={24} height={24} />
+                </Link>
+              )}
             </div>
           </header>
           <main className={`min-h-0 flex-1 overflow-y-auto ${reservesFabSpace ? 'pb-[120px]' : 'pb-0'} pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-md`}>
