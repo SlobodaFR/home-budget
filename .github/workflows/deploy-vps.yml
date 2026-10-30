@@ -70,6 +70,36 @@ jobs:
           echo "::add-mask::$(cat /tmp/key_body)"
           rm -f /tmp/key_body /tmp/key
 
+      # Le disque du VPS peut être plein AVANT que update-vps.sh ne tourne
+      # (l'écriture du .env échoue alors avec "No space left on device").
+      # On libère donc de la place en tout premier, sans dépendre d'aucun
+      # fichier à synchroniser. Les volumes nommés (budget-data) sont préservés.
+      - name: Free disk space on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VPS_HOST }}
+          username: ${{ env.VPS_USER }}
+          key: ${{ env.VPS_SSH_KEY }}
+          envs: IMAGE,IMAGE_TAG
+          script: |
+            echo "Espace disque avant nettoyage :"; df -h / | tail -n 1
+            docker container prune -f || true
+            in_use=$(docker ps -a --format '{{.Image}}')
+            docker image ls "$IMAGE" --format '{{.Tag}}' | grep -v '^<none>$' | tail -n +3 | while read -r tag; do
+              [ "$tag" = "$IMAGE_TAG" ] && continue
+              printf '%s\n' "$in_use" | grep -qxF "$IMAGE:$tag" && continue
+              docker image rm "$IMAGE:$tag" || true
+            done
+            docker image prune -f || true
+            docker builder prune -f || true
+            docker volume ls -q -f dangling=true | grep -E '^[0-9a-f]{64}$' | xargs -r docker volume rm || true
+            sudo journalctl --vacuum-size=200M || true
+            sudo apt-get clean || true
+            echo "Espace disque après nettoyage :"; df -h / | tail -n 1
+        env:
+          IMAGE: ${{ steps.tag.outputs.image }}
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+
       - name: Write remote .env
         uses: appleboy/ssh-action@v1
         with:
