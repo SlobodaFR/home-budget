@@ -1,6 +1,7 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
+import { account } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
@@ -9,6 +10,7 @@ const api = vi.hoisted(() => ({
   fetchInsights: vi.fn(),
   deleteTransaction: vi.fn(),
   createTransaction: vi.fn(),
+  fetchAccounts: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -34,6 +36,7 @@ const summary = {
 describe('HomePage insights card', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchAccounts.mockResolvedValue([]);
     api.fetchSummary.mockResolvedValue(summary);
     api.fetchTransactions.mockResolvedValue([]);
   });
@@ -68,5 +71,72 @@ describe('HomePage insights card', () => {
     renderInApp(<HomePage />);
     await screen.findByRole('region', { name: 'Synthèse du mois' });
     expect(screen.queryByRole('region', { name: 'Prochaines actions' })).not.toBeInTheDocument();
+  });
+});
+
+describe('HomePage bank accounts', () => {
+  const transaction = (id: string, accountId: string | null) => ({
+    id,
+    spaceId: 's-common',
+    kind: 'EXPENSE',
+    bloc: 'COURANT',
+    label: `Courses ${id}`,
+    amountCents: 4200,
+    date: '2026-11-03T00:00:00.000Z',
+    accountId,
+  });
+
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchSummary.mockResolvedValue(summary);
+    api.fetchInsights.mockResolvedValue([]);
+    api.fetchTransactions.mockResolvedValue([transaction('t1', 'a1'), transaction('t2', null)]);
+    api.fetchAccounts.mockResolvedValue([
+      account({ id: 'a1', name: 'Compte commun', balanceCents: 98450 }),
+      account({ id: 'a2', name: 'Courant de Thomas', balanceCents: 8000, projectedMonthEndCents: -4500 }),
+      account({ id: 'a3', name: 'Ancien', archived: true }),
+    ]);
+  });
+
+  it('summarises the balances of the active accounts with a link to manage them', async () => {
+    renderInApp(<HomePage />);
+    const section = await screen.findByRole('region', { name: 'Soldes des comptes' });
+    const rows = within(section).getAllByRole('listitem');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent(/Compte commun.*984,50\s€/);
+    expect(rows[1]).toHaveTextContent('sous zéro avant la fin du mois');
+    expect(within(section).getByRole('link', { name: 'Gérer mes comptes' })).toHaveAttribute('href', '/comptes');
+  });
+
+  it('shows the account of each operation as a chip, only when the space has accounts', async () => {
+    renderInApp(<HomePage />);
+    const rows = await screen.findAllByRole('button', { name: /Modifier Courses/ });
+    expect(rows[0]).toHaveTextContent('Compte : Compte commun');
+    expect(rows[1]).not.toHaveTextContent('Compte :');
+  });
+
+  it('shows no summary and no chip without accounts, but still links to the accounts page', async () => {
+    api.fetchAccounts.mockResolvedValue([]);
+    renderInApp(<HomePage />);
+    await screen.findAllByRole('button', { name: /Modifier Courses/ });
+    expect(screen.queryByRole('region', { name: 'Soldes des comptes' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Compte :/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mes comptes' })).toHaveAttribute('href', '/comptes');
+  });
+
+  it('keeps the home page usable when the accounts endpoint fails', async () => {
+    api.fetchAccounts.mockRejectedValue(new ApiError(404, 'nope'));
+    renderInApp(<HomePage />);
+    expect(await screen.findByRole('region', { name: 'Synthèse du mois' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Soldes des comptes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('offers the accounts page from an insight', async () => {
+    api.fetchInsights.mockResolvedValue([
+      { id: 'account-negative-projected', severity: 'WARNING', title: 'Un compte passerait sous zéro', detail: 'Courant de Thomas', lesson: 3, link: '/comptes' },
+    ]);
+    renderInApp(<HomePage />);
+    expect(await screen.findByRole('link', { name: 'Voir mes comptes' })).toHaveAttribute('href', '/comptes');
   });
 });

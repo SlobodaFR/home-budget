@@ -45,6 +45,9 @@ export function ForecastBlocs({ forecast }: { forecast: Forecast }) {
             Revenus
           </p>
           <Figures figure={forecast.income} />
+          {forecast.income.contributionAssumed && (
+            <p className="mt-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">Les contributions de chacun sont supposées versées.</p>
+          )}
         </li>
         {orderedBlocs(forecast.blocs).map((figure) => (
           <li key={figure.bloc} className="py-md">

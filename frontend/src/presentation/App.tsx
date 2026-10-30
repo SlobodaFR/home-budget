@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { AccountsProvider } from '../application/use-accounts';
 import { HouseholdProvider } from '../application/use-household';
 import { OfflineQueueProvider } from '../application/use-offline-queue';
 import { SelectedMonthProvider } from '../application/use-selected-month';
@@ -7,6 +8,7 @@ import { RequireAuth } from './auth/RequireAuth';
 import { AppShell } from './layout/AppShell';
 import { RequireHousehold } from './layout/RequireHousehold';
 import { AidesPage } from './pages/AidesPage';
+import { ComptesPage } from './pages/ComptesPage';
 import { FoyerPage } from './pages/FoyerPage';
 import { HomePage } from './pages/HomePage';
 import { ImportPage } from './pages/ImportPage';
@@ -30,9 +32,11 @@ function HouseholdArea() {
     <RequireHousehold>
       <SpaceProvider>
         <OfflineQueueProvider>
-          <SelectedMonthProvider>
-            <AppShell />
-          </SelectedMonthProvider>
+          <AccountsProvider>
+            <SelectedMonthProvider>
+              <AppShell />
+            </SelectedMonthProvider>
+          </AccountsProvider>
         </OfflineQueueProvider>
       </SpaceProvider>
     </RequireHousehold>
@@ -51,6 +55,7 @@ export default function App() {
           <Route path="plan" element={<PlanPage />} />
           <Route path="previsionnel" element={<PrevisionnelPage />} />
           <Route path="aides" element={<AidesPage />} />
+          <Route path="comptes" element={<ComptesPage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>

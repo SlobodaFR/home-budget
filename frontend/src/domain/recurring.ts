@@ -17,6 +17,7 @@ export interface RecurringPayment {
   endDate: string | null;
   active: boolean;
   aidRuleId: string | null;
+  accountId?: string | null;
 }
 
 export interface RecurringPayload {
@@ -29,6 +30,7 @@ export interface RecurringPayload {
   endDate: string | null;
   active: boolean;
   aidRuleId?: string | null;
+  accountId?: string | null;
 }
 
 export interface RecurringFormValues {
@@ -41,6 +43,8 @@ export interface RecurringFormValues {
   endDate: string;
   active: boolean;
   aidRuleId: string;
+  /** Identifiant du compte, ou chaîne vide pour « Aucun ». */
+  accountId: string;
 }
 
 export interface RecurringFormErrors {
@@ -66,6 +70,7 @@ export function emptyRecurringForm(now: Date = new Date()): RecurringFormValues 
     endDate: '',
     active: true,
     aidRuleId: '',
+    accountId: '',
   };
 }
 
@@ -80,6 +85,7 @@ export function recurringToForm(item: RecurringPayment): RecurringFormValues {
     endDate: item.endDate ?? '',
     active: item.active,
     aidRuleId: item.aidRuleId ?? '',
+    accountId: item.accountId ?? '',
   };
 }
 
@@ -99,6 +105,9 @@ export function recurringToPayload(item: RecurringPayment, overrides: Partial<Re
   if (item.aidRuleId !== null) {
     base.aidRuleId = item.aidRuleId;
   }
+  if (item.accountId) {
+    base.accountId = item.accountId;
+  }
   return { ...base, ...overrides };
 }
 
@@ -110,7 +119,7 @@ const DAY_PATTERN = /^\d{1,2}$/;
  */
 export function buildRecurringPayload(
   values: RecurringFormValues,
-  options: { allowAid: boolean },
+  options: { allowAid: boolean; accountSelectable?: boolean },
 ): RecurringFormResult {
   const errors: RecurringFormErrors = {};
 
@@ -171,6 +180,11 @@ export function buildRecurringPayload(
   }
   if (options.allowAid) {
     payload.aidRuleId = values.kind === 'EXPENSE' && values.aidRuleId !== '' ? values.aidRuleId : null;
+  }
+  if (values.accountId !== '') {
+    payload.accountId = values.accountId;
+  } else if (options.accountSelectable) {
+    payload.accountId = null;
   }
   return { ok: true, payload };
 }

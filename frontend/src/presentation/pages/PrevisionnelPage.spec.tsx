@@ -4,6 +4,7 @@ import { AidRule } from '../../domain/aids';
 import { Forecast } from '../../domain/forecast';
 import { RecurringPayment } from '../../domain/recurring';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
+import { account } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
@@ -14,6 +15,7 @@ const api = vi.hoisted(() => ({
   deleteRecurring: vi.fn(),
   fetchAidRules: vi.fn(),
   createTransaction: vi.fn(),
+  fetchAccounts: vi.fn(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -106,6 +108,7 @@ const renderPage = (kind: 'COMMON' | 'PERSONAL' = 'COMMON') => renderInApp(<Prev
 describe('PrevisionnelPage', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchAccounts.mockResolvedValue([]);
     api.fetchForecast.mockResolvedValue(forecast);
     api.fetchRecurring.mockResolvedValue(recurring);
     api.fetchAidRules.mockResolvedValue(aidRules);
@@ -342,5 +345,95 @@ describe('PrevisionnelPage', () => {
       expect(await within(dialog).findByText(/L’enregistrement a échoué/)).toBeInTheDocument();
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
+  });
+});
+
+describe('PrevisionnelPage and bank accounts', () => {
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset());
+    api.fetchForecast.mockResolvedValue(forecast);
+    api.fetchRecurring.mockResolvedValue(recurring);
+    api.fetchAidRules.mockResolvedValue(aidRules);
+    api.createRecurring.mockResolvedValue(recurring[0]);
+    api.updateRecurring.mockResolvedValue(undefined);
+    api.fetchAccounts.mockResolvedValue([
+      account({ id: 'a1', name: 'Compte commun' }),
+      account({ id: 'a2', name: 'Livret A', kind: 'SAVINGS' }),
+      account({ id: 'a3', name: 'Ancien', archived: true }),
+    ]);
+  });
+
+  it('says contributions are assumed paid when the forecast says so', async () => {
+    api.fetchForecast.mockResolvedValue({ ...forecast, income: { ...forecast.income, contributionAssumed: true } });
+    renderPage();
+    const blocs = await screen.findByRole('region', { name: 'Prévu, réel et projeté' });
+    expect(blocs).toHaveTextContent('Les contributions de chacun sont supposées versées.');
+  });
+
+  it('does not say it otherwise', async () => {
+    api.fetchForecast.mockResolvedValue({ ...forecast, income: { ...forecast.income, contributionAssumed: false } });
+    renderPage();
+    const blocs = await screen.findByRole('region', { name: 'Prévu, réel et projeté' });
+    expect(blocs).not.toHaveTextContent('supposées versées');
+  });
+
+  it('lets you attach a new recurring payment to an account, in the personal space too', async () => {
+    const user = renderPage('PERSONAL');
+    await screen.findByRole('region', { name: 'Paiements récurrents' });
+    await user.click(screen.getByRole('button', { name: /Ajouter/ }));
+    const dialog = await screen.findByRole('dialog');
+    const select = within(dialog).getByLabelText('Compte (facultatif)') as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Aucun', 'Compte commun', 'Livret A']);
+    await user.selectOptions(select, 'a2');
+    await user.type(within(dialog).getByLabelText('Libellé'), 'Salle de sport');
+    await user.type(within(dialog).getByLabelText('Montant par mois'), '30');
+    await user.click(within(dialog).getByRole('button', { name: 'Ajouter le paiement' }));
+    await waitFor(() => expect(api.createRecurring).toHaveBeenCalledWith('s-alice', expect.objectContaining({ accountId: 'a2' })));
+  });
+
+  it('sends an explicit null when no account is chosen', async () => {
+    const user = renderPage();
+    await screen.findByRole('region', { name: 'Paiements récurrents' });
+    await user.click(screen.getByRole('button', { name: /Ajouter/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText('Libellé'), 'Loyer');
+    await user.type(within(dialog).getByLabelText('Montant par mois'), '900');
+    await user.click(within(dialog).getByRole('button', { name: 'Ajouter le paiement' }));
+    await waitFor(() => expect(api.createRecurring).toHaveBeenCalled());
+    expect(api.createRecurring.mock.calls[0][1].accountId).toBeNull();
+  });
+
+  it('preselects the last account chosen in the space and remembers the new choice', async () => {
+    window.localStorage.setItem('foyer-budget:last-account:s-common', 'a1');
+    const user = renderPage();
+    await screen.findByRole('region', { name: 'Paiements récurrents' });
+    await waitFor(() => expect(api.fetchAccounts).toHaveBeenCalled());
+    await user.click(screen.getByRole('button', { name: /Ajouter/ }));
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() => expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue('a1'));
+    await user.selectOptions(within(dialog).getByLabelText('Compte (facultatif)'), 'a2');
+    await user.type(within(dialog).getByLabelText('Libellé'), 'Épargne');
+    await user.type(within(dialog).getByLabelText('Montant par mois'), '50');
+    await user.click(within(dialog).getByRole('button', { name: 'Ajouter le paiement' }));
+    await waitFor(() => expect(api.createRecurring).toHaveBeenCalled());
+    expect(window.localStorage.getItem('foyer-budget:last-account:s-common')).toBe('a2');
+  });
+
+  it('shows no selector when the space has no account', async () => {
+    api.fetchAccounts.mockResolvedValue([]);
+    const user = renderPage();
+    await screen.findByRole('region', { name: 'Paiements récurrents' });
+    await user.click(screen.getByRole('button', { name: /Ajouter/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByLabelText('Compte (facultatif)')).not.toBeInTheDocument();
+  });
+
+  it('keeps the account when a payment is paused', async () => {
+    api.fetchRecurring.mockResolvedValue([{ ...recurring[0], accountId: 'a1' }]);
+    const user = renderPage();
+    await screen.findByRole('region', { name: 'Paiements récurrents' });
+    expect(screen.getByRole('region', { name: 'Paiements récurrents' })).toHaveTextContent('Compte commun');
+    await user.click(screen.getByRole('switch', { name: 'Mettre en pause Loyer' }));
+    await waitFor(() => expect(api.updateRecurring).toHaveBeenCalledWith('s-common', 'r1', expect.objectContaining({ accountId: 'a1', active: false })));
   });
 });

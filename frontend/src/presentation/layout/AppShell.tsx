@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { describeError } from '../../application/error-message';
+import { useAccounts } from '../../application/use-accounts';
 import { useOfflineQueue } from '../../application/use-offline-queue';
 import { Transaction, TransactionPayload } from '../../domain/budget';
 import { apiClient } from '../../infrastructure/api-client';
@@ -21,10 +22,11 @@ function ShellContent() {
   const { space } = useSpace();
   const { submit, notifyChanged } = useOfflineQueue();
   const toast = useToast();
+  const { accounts, hasSelectableAccount, defaultAccountId, rememberAccount } = useAccounts();
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const closeSheet = useCallback(() => setSheet(null), []);
-  const showsSpace = ['/', '/plan', '/import', '/previsionnel'].includes(location.pathname);
+  const showsSpace = ['/', '/plan', '/import', '/previsionnel', '/comptes'].includes(location.pathname);
   const reservesFabSpace = location.pathname !== '/import';
 
   const quickEntry = useMemo<QuickEntryValue>(
@@ -58,6 +60,9 @@ function ShellContent() {
     if (payload.bloc) {
       preferences.setLastBloc(payload.bloc);
     }
+    if (!editing && hasSelectableAccount) {
+      rememberAccount(payload.accountId ?? null);
+    }
     closeSheet();
   };
 
@@ -89,7 +94,14 @@ function ShellContent() {
           <TabBar />
         </div>
       </div>
-      {sheet && <QuickEntrySheet editing={sheet.editing} defaultBloc={preferences.getLastBloc()} onClose={closeSheet} onSubmit={handleSubmit} />}
+      {sheet && <QuickEntrySheet
+          editing={sheet.editing}
+          defaultBloc={preferences.getLastBloc()}
+          accounts={accounts}
+          defaultAccountId={sheet.editing ? null : defaultAccountId()}
+          onClose={closeSheet}
+          onSubmit={handleSubmit}
+        />}
     </QuickEntryContext.Provider>
   );
 }

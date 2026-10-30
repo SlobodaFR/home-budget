@@ -11,6 +11,8 @@ export interface TransactionFormValues {
   bloc: Bloc;
   label: string;
   date: string;
+  /** `undefined` : pas de sélecteur de compte (rien n'est envoyé) ; `null` : aucun compte ; sinon l'identifiant. */
+  accountId?: string | null;
 }
 
 export interface TransactionFormErrors {
@@ -57,5 +59,8 @@ export function buildTransactionPayload(
     values.kind === 'EXPENSE'
       ? { kind: 'EXPENSE', bloc: values.bloc, label, amountCents, date }
       : { kind: 'INCOME', label, amountCents, date };
+  if (values.accountId !== undefined) {
+    payload.accountId = values.accountId;
+  }
   return { ok: true, payload };
 }

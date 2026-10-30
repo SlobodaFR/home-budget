@@ -62,6 +62,26 @@ describe('persistence', () => {
   });
 });
 
+describe('bank account in queued operations', () => {
+  const withAccount = (accountId: string | null) =>
+    createPendingTransaction('space-1', { ...payload, accountId }, 'a', new Date('2026-10-03T10:00:00Z'));
+
+  it('keeps the account through serialisation', () => {
+    const queue = [withAccount('acc-1')];
+    expect(parseQueue(serializeQueue(queue))[0].payload.accountId).toBe('acc-1');
+  });
+
+  it('keeps an explicit « no account » and an old item without the field', () => {
+    expect(parseQueue(serializeQueue([withAccount(null)]))).toHaveLength(1);
+    expect(parseQueue(serializeQueue([item('old')]))).toHaveLength(1);
+  });
+
+  it('drops an item whose account id is not a string', () => {
+    const broken = { ...item('x'), payload: { ...payload, accountId: 42 } };
+    expect(parseQueue(JSON.stringify([broken, item('ok')])).map((entry) => entry.clientId)).toEqual(['ok']);
+  });
+});
+
 describe('classifyFailure', () => {
   it('retries on network errors, expired sessions and gateway errors', () => {
     expect(classifyFailure('network')).toBe('retry');

@@ -219,6 +219,11 @@ describe('FoyerPage', () => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });
 
+    it('links to the bank accounts page', () => {
+      renderPage();
+      expect(screen.getByRole('link', { name: 'Voir mes comptes' })).toHaveAttribute('href', '/comptes');
+    });
+
     it('links to the official aids page', () => {
       renderPage();
       expect(screen.getByRole('link', { name: 'Voir mes aides' })).toHaveAttribute('href', '/aides');

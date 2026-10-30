@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { describeImportError } from '../../application/import-error';
+import { useAccounts } from '../../application/use-accounts';
 import { useOfflineQueue } from '../../application/use-offline-queue';
 import { useOnlineStatus } from '../../application/use-online-status';
 import { useSelectedMonth } from '../../application/use-selected-month';
@@ -10,6 +11,7 @@ import { mergeLearnedRules } from '../../domain/rule-keyword';
 import { dominantMonth, ImportPreview } from '../../domain/statement-import';
 import { statementSizeError, textByteLength } from '../../domain/statement-decoding';
 import { apiClient } from '../../infrastructure/api-client';
+import { AccountSelect } from '../components/AccountSelect';
 import { ChevronLeftIcon } from '../components/Icons';
 import { ImportReview, ReviewResult } from '../components/import/ImportReview';
 import { RulesEditor } from '../components/import/RulesEditor';
@@ -48,6 +50,10 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
   const online = useOnlineStatus();
   const { setMonth } = useSelectedMonth();
   const { notifyChanged } = useOfflineQueue();
+  const { accounts, hasSelectableAccount, defaultAccountId, rememberAccount, nameOf } = useAccounts();
+  // Tant que l'utilisateur n'a rien choisi, on suit le dernier compte retenu (les comptes peuvent charger après l'arrivée sur la page).
+  const [chosenAccount, setAccountId] = useState<string | null | undefined>(undefined);
+  const accountId = chosenAccount === undefined ? defaultAccountId() : chosenAccount;
   const [text, setText] = useState('');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -78,7 +84,7 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
     setAnalyzing(true);
     setAnalyzeError(null);
     try {
-      const result = await apiClient.previewImport(spaceId, text);
+      const result = await apiClient.previewImport(spaceId, text, accountId);
       reviewKey.current += 1;
       setSubmitError(null);
       setPreview(result);
@@ -114,7 +120,7 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
       }
       let created: number;
       try {
-        created = (await apiClient.commitImport(spaceId, items)).created;
+        created = (await apiClient.commitImport(spaceId, items, accountId)).created;
       } catch (error) {
         setSubmitError(describeImportError(error, 'L’import a échoué : rien n’a été créé, vos choix sont conservés.'));
         return;
@@ -122,6 +128,9 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
       const month = dominantMonth(items);
       if (month) {
         setMonth(month);
+      }
+      if (hasSelectableAccount) {
+        rememberAccount(accountId);
       }
       notifyChanged();
       toast.show(pluralize(created, 'opération importée', 'opérations importées'));
@@ -159,6 +168,12 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
         </p>
       </div>
 
+      {preview && nameOf(accountId) && (
+        <p className="rounded bg-soft-cloud p-md font-body-sm text-body-sm">
+          Les opérations importées seront rattachées au compte <span className="font-semibold">{nameOf(accountId)}</span>.
+        </p>
+      )}
+
       {preview ? (
         <ImportReview
           key={reviewKey.current}
@@ -170,6 +185,14 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
         />
       ) : (
         <div className="flex flex-col gap-gutter pb-xl">
+          <AccountSelect
+            id="import-account"
+            accounts={accounts}
+            value={accountId}
+            onChange={setAccountId}
+            label="Compte du relevé (facultatif)"
+            hint="Toutes les opérations importées seront rattachées à ce compte."
+          />
           <StatementSource
             text={text}
             online={online}

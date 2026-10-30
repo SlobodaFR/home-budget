@@ -39,6 +39,13 @@ export const preferences = {
   setLastBloc(bloc: Bloc): void {
     write('last-bloc', bloc);
   },
+  /** Dernier compte bancaire choisi dans un espace (`null` : « Aucun »). */
+  getLastAccountId(spaceId: string): string | null {
+    return read(`last-account:${spaceId}`);
+  },
+  setLastAccountId(spaceId: string, accountId: string | null): void {
+    write(`last-account:${spaceId}`, accountId);
+  },
 };
 
 export const pendingStore = {

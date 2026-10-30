@@ -11,6 +11,11 @@ export interface ForecastFigure {
   projectedCents: number;
 }
 
+export interface ForecastIncome extends ForecastFigure {
+  /** Espace commun : les contributions de chacun sont supposées versées. */
+  contributionAssumed?: boolean;
+}
+
 export interface ForecastBloc extends ForecastFigure {
   bloc: Bloc;
 }
@@ -29,7 +34,7 @@ export interface ForecastOccurrence {
 export interface Forecast {
   month: string;
   asOf: string;
-  income: ForecastFigure;
+  income: ForecastIncome;
   blocs: ForecastBloc[];
   projectedBalanceCents: number;
   cautiousBalanceCents: number;

@@ -106,6 +106,15 @@ export function FoyerPage() {
         </Link>
       </Section>
 
+      <Section title="Comptes bancaires">
+        <p className="font-body-sm text-body-sm text-mute">
+          Où circule l’argent : compte courant, livret, espèces. Ceux de l’espace que vous avez sélectionné (commun ou perso).
+        </p>
+        <Link to="/comptes" className={`${buttonSecondary} w-full`}>
+          Voir mes comptes
+        </Link>
+      </Section>
+
       <Section title="Inviter">
         <InvitationCard full={household.members.length >= MAX_HOUSEHOLD_MEMBERS} />
       </Section>

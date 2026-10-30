@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
+import { AccountsProvider } from '../application/use-accounts';
 import { HouseholdContext, HouseholdContextValue } from '../application/use-household';
 import { OfflineQueueProvider } from '../application/use-offline-queue';
 import { SelectedMonthProvider } from '../application/use-selected-month';
@@ -45,9 +46,11 @@ export function renderInApp(page: ReactElement, { path = '/', month = '2026-11',
       <HouseholdContext.Provider value={value}>
         <SpaceProvider>
           <OfflineQueueProvider>
-            <SelectedMonthProvider initialMonth={month}>
-              <ToastProvider>{page}</ToastProvider>
-            </SelectedMonthProvider>
+            <AccountsProvider>
+              <SelectedMonthProvider initialMonth={month}>
+                <ToastProvider>{page}</ToastProvider>
+              </SelectedMonthProvider>
+            </AccountsProvider>
           </OfflineQueueProvider>
         </SpaceProvider>
       </HouseholdContext.Provider>

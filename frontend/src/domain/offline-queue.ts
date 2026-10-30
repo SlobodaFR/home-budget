@@ -62,6 +62,7 @@ function isPendingTransaction(value: unknown): value is PendingTransaction {
     payload !== null &&
     (payload.kind === 'INCOME' || payload.kind === 'EXPENSE') &&
     (payload.bloc === undefined || isBloc(payload.bloc)) &&
+    (payload.accountId === undefined || payload.accountId === null || typeof payload.accountId === 'string') &&
     typeof payload.label === 'string' &&
     Number.isInteger(payload.amountCents) &&
     typeof payload.date === 'string'
