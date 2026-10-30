@@ -51,6 +51,10 @@ import { AccountRepository } from '../../../domain/account/account.repository';
 import { AccountOrmEntity } from '../../../infrastructure/persistence/entities/account.orm-entity';
 import { TypeOrmAccountRepository } from '../../../infrastructure/persistence/repositories/typeorm-account.repository';
 import { AccountsController } from '../controllers/accounts.controller';
+import {
+  GetProvisionsUseCase,
+  GetYearForecastUseCase,
+} from '../../../application/provision/provision.use-cases';
 import { GetForecastUseCase } from '../../../application/forecast/get-forecast.use-case';
 import { GetInsightsUseCase } from '../../../application/insights/get-insights.use-case';
 import {
@@ -173,6 +177,8 @@ import { AuthModule } from './auth.module';
     ListAidRulesUseCase,
     EstimateCrecheUseCase,
     AccountViewsService,
+    GetProvisionsUseCase,
+    GetYearForecastUseCase,
     AccountAssignmentService,
     ListAccountsUseCase,
     CreateAccountUseCase,

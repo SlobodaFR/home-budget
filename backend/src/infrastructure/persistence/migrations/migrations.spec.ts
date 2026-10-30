@@ -56,6 +56,7 @@ describe('FoyerSchema migration', () => {
     await ds.undoLastMigration();
     await ds.undoLastMigration();
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );
@@ -86,6 +87,7 @@ describe('FoyerSchema migration', () => {
       expect.arrayContaining(['label', 'amount_cents', 'secret_payload']),
     );
 
+    await ds.undoLastMigration(); // tranche 5
     await ds.undoLastMigration(); // tranche 4
     await ds.undoLastMigration(); // tranche 3
     const after = await tables(ds);
@@ -129,7 +131,8 @@ describe('FoyerSchema migration', () => {
     await ds.query(
       `INSERT INTO "transactions" ("id","space_id","kind","date","account_id") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','a1')`,
     );
-    await ds.undoLastMigration();
+    await ds.undoLastMigration(); // tranche 5
+    await ds.undoLastMigration(); // tranche 4
     expect(await columnsOf(ds, 'accounts')).toEqual([]);
     expect(await columnsOf(ds, 'transactions')).not.toContain('account_id');
     expect(await columnsOf(ds, 'recurring_items')).not.toContain('account_id');
@@ -141,6 +144,45 @@ describe('FoyerSchema migration', () => {
     expect(await columnsOf(ds, 'transactions')).toContain('account_id');
     const drift = await ds.driver.createSchemaBuilder().log();
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);
+    await ds.destroy();
+  });
+
+  it('adds frequency (default MONTHLY) and month_of_year without touching existing rows, and undoes them', async () => {
+    const ds = await dataSource().initialize();
+    await ds.runMigrations();
+    await ds.undoLastMigration(); // revient à la tranche 4
+    await ds.query(
+      `INSERT INTO "recurring_items" ("id","space_id","kind","bloc","day_of_month","start_date","active","label","amount_cents") VALUES ('r1','s1','EXPENSE','FIXE',5,'2026-01-01',1,'Loyer',110000)`,
+    );
+
+    await ds.runMigrations();
+    const rows: Record<string, unknown>[] = await ds.query(
+      `SELECT * FROM recurring_items`,
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({
+        id: 'r1',
+        label: 'Loyer',
+        amount_cents: 110000,
+        day_of_month: 5,
+        frequency: 'MONTHLY',
+        month_of_year: null,
+      }),
+    ]);
+    const drift = await ds.driver.createSchemaBuilder().log();
+    expect(drift.upQueries.map((q) => q.query)).toEqual([]);
+
+    await ds.undoLastMigration();
+    const columns: { name: string }[] = await ds.query(
+      `SELECT name FROM pragma_table_info('recurring_items')`,
+    );
+    expect(columns.map((c) => c.name)).not.toEqual(
+      expect.arrayContaining(['frequency']),
+    );
+    expect(columns.map((c) => c.name)).not.toContain('month_of_year');
+    expect(await ds.query(`SELECT label FROM recurring_items`)).toEqual([
+      { label: 'Loyer' },
+    ]);
     await ds.destroy();
   });
 

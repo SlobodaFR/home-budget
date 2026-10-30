@@ -1,6 +1,9 @@
 import { Bloc } from '../../domain/shared/bloc';
 import { AidRuleId } from '../../domain/aid/aid-rules';
-import { RecurringItem } from '../../domain/recurring/recurring-item';
+import {
+  RecurringFrequency,
+  RecurringItem,
+} from '../../domain/recurring/recurring-item';
 import { TransactionKind } from '../../domain/transaction/transaction';
 
 export interface RecurringItemDto {
@@ -16,6 +19,8 @@ export interface RecurringItemDto {
   active: boolean;
   aidRuleId: AidRuleId | null;
   accountId: string | null;
+  frequency: RecurringFrequency;
+  monthOfYear: number | null;
 }
 
 export function toRecurringItemDto(item: RecurringItem): RecurringItemDto {
@@ -32,5 +37,7 @@ export function toRecurringItemDto(item: RecurringItem): RecurringItemDto {
     active: item.active,
     aidRuleId: item.aidRuleId,
     accountId: item.accountId,
+    frequency: item.frequency,
+    monthOfYear: item.monthOfYear,
   };
 }

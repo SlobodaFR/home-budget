@@ -1,12 +1,20 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { GetAidsUseCase } from '../../../application/aid/aid.use-cases';
+import {
+  GetProvisionsUseCase,
+  GetYearForecastUseCase,
+} from '../../../application/provision/provision.use-cases';
 import { GetForecastUseCase } from '../../../application/forecast/get-forecast.use-case';
 import { GetInsightsUseCase } from '../../../application/insights/get-insights.use-case';
 import {
   CurrentUser,
   CurrentUserPayload,
 } from '../decorators/current-user.decorator';
-import { AidsQueryDto } from '../dto/guidance.dto';
+import {
+  AidsQueryDto,
+  ProvisionsQueryDto,
+  YearQueryDto,
+} from '../dto/guidance.dto';
 import { MonthQueryDto } from '../dto/space.dto';
 
 /** Prévisionnel, prochaines actions et aides d'un espace. */
@@ -16,6 +24,8 @@ export class GuidanceController {
     private readonly getForecast: GetForecastUseCase,
     private readonly getInsights: GetInsightsUseCase,
     private readonly getAids: GetAidsUseCase,
+    private readonly getProvisions: GetProvisionsUseCase,
+    private readonly getYearForecast: GetYearForecastUseCase,
   ) {}
 
   @Get('forecast')
@@ -25,6 +35,24 @@ export class GuidanceController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.getForecast.execute(user.id, spaceId, query.month);
+  }
+
+  @Get('forecast/year')
+  yearForecast(
+    @Param('spaceId') spaceId: string,
+    @Query() query: YearQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.getYearForecast.execute(user.id, spaceId, query.year);
+  }
+
+  @Get('provisions')
+  provisions(
+    @Param('spaceId') spaceId: string,
+    @Query() query: ProvisionsQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.getProvisions.execute(user.id, spaceId, query.asOf);
   }
 
   @Get('insights')

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
 import { useAccounts } from '../../application/use-accounts';
 import { useAidRules } from '../../application/use-aid-rules';
@@ -7,19 +7,38 @@ import { useForecast } from '../../application/use-forecast';
 import { useRecurring } from '../../application/use-recurring';
 import { useSelectedMonth } from '../../application/use-selected-month';
 import { useSpace } from '../../application/use-space';
-import { RecurringPayload, RecurringPayment } from '../../domain/recurring';
+import { currentYear } from '../../domain/month';
+import { RecurringFrequency, RecurringPayload, RecurringPayment } from '../../domain/recurring';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
 import { BalanceHero } from '../components/forecast/BalanceHero';
 import { ForecastBlocs } from '../components/forecast/ForecastBlocs';
 import { ForecastOccurrences } from '../components/forecast/ForecastOccurrences';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { MonthPicker } from '../components/MonthPicker';
+import { ProvisionsPanel } from '../components/provisions/ProvisionsPanel';
 import { RecurringForm } from '../components/recurring/RecurringForm';
 import { RecurringList } from '../components/recurring/RecurringList';
+import { panelId, SegmentedTabs, tabId, TabOption } from '../components/SegmentedTabs';
 import { useToast } from '../components/Toast';
 import { cardClass } from '../components/ui';
+import { YearPanel } from '../components/year/YearPanel';
 
-type SheetState = { editing: RecurringPayment | null } | null;
+type SheetState = { editing: RecurringPayment | null; frequency?: RecurringFrequency } | null;
+
+type View = 'mois' | 'provisions' | 'annee';
+
+const VIEWS: readonly TabOption<View>[] = [
+  { id: 'mois', label: 'Ce mois-ci' },
+  { id: 'provisions', label: 'Provisions' },
+  { id: 'annee', label: 'Mon année' },
+];
+
+const TABS_ID = 'previsionnel';
+
+/** L'onglet se lit dans l'adresse (`?vue=provisions`) pour que les conseils puissent y renvoyer ; tout le reste = « Ce mois-ci ». */
+function viewFromParam(value: string | null): View {
+  return VIEWS.some((view) => view.id === value) ? (value as View) : 'mois';
+}
 
 export function PrevisionnelPage() {
   const { space, kind } = useSpace();
@@ -27,6 +46,9 @@ export function PrevisionnelPage() {
   const toast = useToast();
   const [version, setVersion] = useState(0);
   const [sheet, setSheet] = useState<SheetState>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = viewFromParam(searchParams.get('vue'));
+  const changeView = (next: View) => setSearchParams(next === 'mois' ? {} : { vue: next }, { replace: true });
   const refreshForecast = useCallback(() => setVersion((value) => value + 1), []);
 
   const forecast = useForecast(space.id, month, version);
@@ -94,49 +116,75 @@ export function PrevisionnelPage() {
         <h2 className="font-heading-lg text-heading-lg">Prévisionnel</h2>
         <p className="font-body-sm text-body-sm text-mute">Où en sera le budget à la fin du mois ?</p>
       </div>
-      <MonthPicker month={month} onChange={setMonth} />
+      <SegmentedTabs label="Vue du prévisionnel" idPrefix={TABS_ID} options={VIEWS} value={view} onChange={changeView} />
 
-      {forecast.data ? (
-        <>
-          <BalanceHero forecast={forecast.data} />
-          <ForecastBlocs forecast={forecast.data} />
-          <ForecastOccurrences occurrences={forecast.data.occurrences} />
-        </>
-      ) : offline ? (
-        <OfflineNotice message="Hors ligne : le prévisionnel reviendra avec le réseau." onRetry={retry} />
-      ) : forecast.error ? (
-        <ErrorNotice message={describeError(forecast.error, 'Impossible de calculer le prévisionnel.')} onRetry={forecast.reload} />
-      ) : (
-        <LoadingScreen />
+      {view === 'mois' && (
+        <div role="tabpanel" id={panelId(TABS_ID, 'mois')} aria-labelledby={tabId(TABS_ID, 'mois')} className="flex flex-col gap-gutter">
+          <MonthPicker month={month} onChange={setMonth} />
+
+          {forecast.data ? (
+            <>
+              <BalanceHero forecast={forecast.data} />
+              <ForecastBlocs forecast={forecast.data} />
+              <ForecastOccurrences occurrences={forecast.data.occurrences} />
+            </>
+          ) : offline ? (
+            <OfflineNotice message="Hors ligne : le prévisionnel reviendra avec le réseau." onRetry={retry} />
+          ) : forecast.error ? (
+            <ErrorNotice message={describeError(forecast.error, 'Impossible de calculer le prévisionnel.')} onRetry={forecast.reload} />
+          ) : (
+            <LoadingScreen />
+          )}
+
+          {recurring.items ? (
+            <RecurringList
+              items={recurring.items}
+              aidRules={aidRules.rules}
+              accountNameOf={nameOf}
+              busy={recurring.saving}
+              onAdd={() => setSheet({ editing: null })}
+              onEdit={(item) => setSheet({ editing: item })}
+              onToggle={handleToggle}
+              onDelete={handleDelete}
+            />
+          ) : offline ? null : recurring.error ? (
+            <ErrorNotice
+              message={describeError(recurring.error, 'Impossible de charger les paiements récurrents.')}
+              onRetry={recurring.reload}
+            />
+          ) : (
+            <LoadingScreen />
+          )}
+
+          {isCommon && (
+            <section className={`${cardClass} flex flex-col gap-sm`}>
+              <h3 className="font-label-caps text-label-caps uppercase text-mute">Aides officielles</h3>
+              <p className="font-body-sm text-body-sm text-mute">
+                Garde d’enfants, ménage à domicile… une partie de certaines dépenses vous revient en crédit d’impôt.
+              </p>
+              <Link to="/aides" className="inline-flex min-h-[44px] items-center font-body-md text-body-md font-semibold underline">
+                Voir mes aides et estimer une crèche
+              </Link>
+            </section>
+          )}
+        </div>
       )}
 
-      {recurring.items ? (
-        <RecurringList
-          items={recurring.items}
-          aidRules={aidRules.rules}
-          accountNameOf={nameOf}
-          busy={recurring.saving}
-          onAdd={() => setSheet({ editing: null })}
-          onEdit={(item) => setSheet({ editing: item })}
-          onToggle={handleToggle}
-          onDelete={handleDelete}
-        />
-      ) : offline ? null : recurring.error ? (
-        <ErrorNotice message={describeError(recurring.error, 'Impossible de charger les paiements récurrents.')} onRetry={recurring.reload} />
-      ) : (
-        <LoadingScreen />
+      {view === 'provisions' && (
+        <div
+          role="tabpanel"
+          id={panelId(TABS_ID, 'provisions')}
+          aria-labelledby={tabId(TABS_ID, 'provisions')}
+          className="flex flex-col gap-lg"
+        >
+          <ProvisionsPanel spaceId={space.id} refreshToken={version} onAdd={() => setSheet({ editing: null, frequency: 'YEARLY' })} />
+        </div>
       )}
 
-      {isCommon && (
-        <section className={`${cardClass} flex flex-col gap-sm`}>
-          <h3 className="font-label-caps text-label-caps uppercase text-mute">Aides officielles</h3>
-          <p className="font-body-sm text-body-sm text-mute">
-            Garde d’enfants, ménage à domicile… une partie de certaines dépenses vous revient en crédit d’impôt.
-          </p>
-          <Link to="/aides" className="inline-flex min-h-[44px] items-center font-body-md text-body-md font-semibold underline">
-            Voir mes aides et estimer une crèche
-          </Link>
-        </section>
+      {view === 'annee' && (
+        <div role="tabpanel" id={panelId(TABS_ID, 'annee')} aria-labelledby={tabId(TABS_ID, 'annee')} className="flex flex-col gap-gutter">
+          <YearPanel spaceId={space.id} initialYear={Number(month.slice(0, 4)) || currentYear()} refreshToken={version} />
+        </div>
       )}
 
       {sheet && (
@@ -147,6 +195,7 @@ export function PrevisionnelPage() {
           aidRules={aidRules.rules}
           accounts={accounts}
           defaultAccountId={defaultAccountId()}
+          initialFrequency={sheet.frequency}
           onClose={closeSheet}
           onSubmit={handleSubmit}
         />

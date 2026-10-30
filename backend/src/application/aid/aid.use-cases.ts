@@ -139,7 +139,8 @@ export class GetAidsUseCase {
         .map((i) => ({
           recurringId: i.id,
           label: i.label,
-          monthlyCents: i.amount.toCents(),
+          // Paiement non mensuel : coût lissé par mois (annuel ÷ 12, trimestriel ÷ 3).
+          monthlyCents: i.monthlyEquivalentCents(),
           yearlySpentCents: yearly.get(i.id)!,
         }));
       if (lines.length > 0) {

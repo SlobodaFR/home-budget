@@ -89,3 +89,26 @@ export function formatLongDateInput(value: string): string {
   const day = value.slice(0, 10);
   return isValidDateInput(day) ? LONG_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`)) : value;
 }
+
+const MONTH_NAME_FORMAT = new Intl.DateTimeFormat('fr-FR', { month: 'long', timeZone: 'UTC' });
+const MONTH_SHORT_FORMAT = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
+
+export function isMonthOfYear(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 12;
+}
+
+/** 10 → « octobre » (minuscules, pour les phrases). */
+export function monthName(monthOfYear: number): string {
+  return MONTH_NAME_FORMAT.format(Date.UTC(2026, monthOfYear - 1, 1));
+}
+
+/** 1 → « janv. ». */
+export function monthShortName(monthOfYear: number): string {
+  return MONTH_SHORT_FORMAT.format(Date.UTC(2026, monthOfYear - 1, 1));
+}
+
+/** « 2026-10 » → 10, ou `null` si ce n'est pas un mois. */
+export function monthNumberOf(month: string): number | null {
+  const match = MONTH_PATTERN.exec(month);
+  return match ? Number(match[2]) : null;
+}

@@ -52,10 +52,23 @@ const ACTION_LABELS: Record<string, string> = {
   '/aides': 'Voir les aides',
 };
 
+/**
+ * Conseils de la tranche 5 : un libellé plus précis et, pour le gros paiement à venir, une ouverture directe sur l'onglet
+ * « Provisions ». Ils ne s'appliquent que si le serveur envoie bien le lien attendu (sinon on retombe sur le bouton générique).
+ */
+const INSIGHT_ACTIONS: Record<string, { link: string; to: string; label: string }> = {
+  'upcoming-big-payment': { link: '/previsionnel', to: '/previsionnel?vue=provisions', label: 'Voir mes provisions' },
+  'provision-suggestion': { link: '/plan', to: '/plan', label: 'Ajuster mon plan' },
+};
+
 /** Seules les routes connues de l'application sont suivies ; « / » (l'accueil) n'a pas de bouton. */
-export function insightAction(link: string | null): InsightAction | null {
+export function insightAction(link: string | null, id?: string): InsightAction | null {
   if (link === null || !Object.prototype.hasOwnProperty.call(ACTION_LABELS, link)) {
     return null;
+  }
+  const special = id !== undefined && Object.prototype.hasOwnProperty.call(INSIGHT_ACTIONS, id) ? INSIGHT_ACTIONS[id] : null;
+  if (special && special.link === link) {
+    return { to: special.to, label: special.label };
   }
   return { to: link, label: ACTION_LABELS[link] };
 }

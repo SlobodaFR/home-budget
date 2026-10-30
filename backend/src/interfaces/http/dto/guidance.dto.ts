@@ -15,6 +15,10 @@ import {
 } from 'class-validator';
 import { CRECHE_KINDS, CrecheKind } from '../../../domain/aid/creche-estimate';
 import { MAX_CHILDREN } from '../../../domain/aid/fiscal-profile';
+import {
+  RECURRING_FREQUENCIES,
+  RecurringFrequency,
+} from '../../../domain/recurring/recurring-item';
 import { BLOCS, Bloc } from '../../../domain/shared/bloc';
 import { TransactionKind } from '../../../domain/transaction/transaction';
 
@@ -65,6 +69,18 @@ export class SaveRecurringDto {
   @IsString({ message: 'accountId doit être un identifiant de compte ou null' })
   @MaxLength(100, { message: 'accountId est trop long' })
   accountId?: string | null;
+
+  @IsOptional()
+  @IsIn(RECURRING_FREQUENCIES, {
+    message: 'frequency doit être MONTHLY, QUARTERLY ou YEARLY',
+  })
+  frequency?: RecurringFrequency;
+
+  @IsOptional()
+  @IsInt({ message: 'monthOfYear doit être un entier de 1 à 12 ou null' })
+  @Min(1, { message: 'monthOfYear doit être compris entre 1 et 12' })
+  @Max(12, { message: 'monthOfYear doit être compris entre 1 et 12' })
+  monthOfYear?: number | null;
 }
 
 export class SaveSafetyNetDto {
@@ -115,6 +131,21 @@ export class AidsQueryDto {
   @Min(2000, { message: 'year doit être compris entre 2000 et 2100' })
   @Max(2100, { message: 'year doit être compris entre 2000 et 2100' })
   year?: number;
+}
+
+export class YearQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'year doit être une année (AAAA)' })
+  @Min(2000, { message: 'year doit être compris entre 2000 et 2100' })
+  @Max(2100, { message: 'year doit être compris entre 2000 et 2100' })
+  year?: number;
+}
+
+export class ProvisionsQueryDto {
+  @IsOptional()
+  @Matches(DATE_PATTERN, { message: 'asOf doit être au format AAAA-MM-JJ' })
+  asOf?: string;
 }
 
 export class CrecheEstimateQueryDto {

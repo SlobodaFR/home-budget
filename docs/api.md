@@ -288,7 +288,7 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 - `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`).
 
 ## Aides officielles (tranche 3)
@@ -423,6 +423,64 @@ détection de doublons reste calculée sur tout l'espace.
 Nouveaux ids d'insights : `account-negative-projected` (`WARNING` : un compte passerait sous zéro avant la fin du mois
 d'après `projectedMonthEndCents` ; lien `/comptes`) et `accounts-unassigned` (`INFO` : le mois a des opérations non
 rattachées alors que l'espace a au moins un compte ; lien `/comptes`). Aucun des deux pour un espace sans compte.
+
+## Paiements non mensuels et provisions (tranche 5)
+
+Les gros paiements qui ne tombent pas chaque mois (taxe foncière, assurance annuelle, impôt, vacances) cassent un
+budget mensuel : on les **lisse** en les provisionnant chaque mois (cf. cours).
+
+### Périodicité des paiements récurrents
+Les objets « paiement récurrent » (`GET/POST/PUT …/recurring`) gagnent deux champs :
+`"frequency": "MONTHLY" | "QUARTERLY" | "YEARLY"` (défaut `MONTHLY` si absent) et `"monthOfYear": 1-12 | null`.
+- `MONTHLY` : comme avant ; `monthOfYear` doit être `null`.
+- `YEARLY` : une occurrence par an, au mois `monthOfYear` (obligatoire), au `dayOfMonth` (ou fin de mois si `null`).
+- `QUARTERLY` : une occurrence tous les 3 mois à partir de `monthOfYear` (obligatoire, 1-12) : mois m, m+3, m+6, m+9.
+- Les occurrences respectent `startDate` / `endDate` comme avant. Le prévisionnel, l'appariement (PAID/MISSING/DUE), les
+  aides (dépensé annuel) et les insights n'utilisent que les mois où une occurrence existe.
+- `400` si `monthOfYear` manque pour `YEARLY`/`QUARTERLY`, ou est fourni pour `MONTHLY`, ou hors 1-12.
+- Les revenus peuvent aussi être non mensuels (prime annuelle, 13e mois).
+
+### `GET /api/spaces/:spaceId/provisions?asOf=AAAA-MM-JJ`
+`asOf` par défaut : aujourd'hui. Dépenses **non mensuelles actives** de l'espace, avec ce qu'il faut mettre de côté.
+```json
+{
+  "asOf": "2026-10-30",
+  "items": [{
+    "recurringId": "…", "label": "Taxe foncière", "bloc": "FIXE", "frequency": "YEARLY",
+    "amountCents": 120000, "nextDueDate": "2027-10-15", "monthsUntilDue": 11,
+    "monthlyProvisionCents": 10000, "provisionedSoFarCents": null
+  }],
+  "totalMonthlyProvisionCents": 10000,
+  "totalNextTwelveMonthsCents": 120000
+}
+```
+- `monthlyProvisionCents` = montant ÷ 12 pour `YEARLY`, ÷ 3 pour `QUARTERLY`, arrondi à l'entier supérieur.
+- `nextDueDate` : prochaine occurrence à partir de `asOf` (incluse), `monthsUntilDue` : mois entiers restants.
+- `provisionedSoFarCents` : toujours `null` dans cette tranche (le suivi des provisions viendra avec les projets).
+- Triés par `nextDueDate` croissante. `totalNextTwelveMonthsCents` : somme des occurrences dans les 12 mois.
+
+### `GET /api/spaces/:spaceId/forecast/year?year=AAAA`
+Vue des 12 mois à partir des paiements récurrents seulement (pas des opérations) pour voir où sont les pics.
+```json
+{
+  "year": 2026,
+  "months": [{
+    "month": "2026-01", "incomeCents": 380000, "expenseCents": 291000,
+    "balanceCents": 89000, "cumulativeCents": 89000, "peak": false,
+    "items": [{ "recurringId": "…", "label": "Loyer", "kind": "EXPENSE", "amountCents": 110000 }]
+  }],
+  "totalIncomeCents": 4560000, "totalExpenseCents": 3492000, "provisionHintCents": 10000
+}
+```
+`peak` : vrai pour un mois dont les dépenses dépassent de 30 % la moyenne mensuelle des dépenses de l'année.
+`provisionHintCents` = `totalMonthlyProvisionCents` des provisions. Pour l'espace commun, les revenus récurrents
+absents sont complétés comme dans le prévisionnel (contributions supposées : somme des blocs du plan par mois).
+
+### Conseils
+Nouveaux ids : `upcoming-big-payment` (`INFO`, une dépense non mensuelle ≥ 20 % du revenu mensuel connu ou ≥ 500 € dans
+les 60 jours ; détail : montant, date, provision mensuelle conseillée ; lien `/previsionnel`) et
+`provision-suggestion` (`INFO`, des dépenses non mensuelles existent et le bloc `EPARGNE` prévu du plan est inférieur
+à `totalMonthlyProvisionCents` ; lien `/plan`).
 
 ## Chiffrement de l'espace personnel (informatif)
 

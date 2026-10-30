@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AidRuleId } from '../../domain/aid/aid-rules';
-import { RecurringItem } from '../../domain/recurring/recurring-item';
+import {
+  RecurringFrequency,
+  RecurringItem,
+} from '../../domain/recurring/recurring-item';
 import { RecurringItemRepository } from '../../domain/recurring/recurring-item.repository';
 import { Bloc } from '../../domain/shared/bloc';
 import { Money } from '../../domain/shared/money';
@@ -23,6 +26,9 @@ export interface SaveRecurringCommand {
   /** Validé par le domaine : une valeur inconnue est refusée en 400. */
   aidRuleId?: string | null;
   accountId?: string | null;
+  /** Absent = MONTHLY. */
+  frequency?: RecurringFrequency;
+  monthOfYear?: number | null;
 }
 
 @Injectable()
@@ -124,6 +130,8 @@ function buildItem(
     active: command.active,
     aidRuleId: (command.aidRuleId ?? null) as AidRuleId | null,
     accountId,
+    frequency: command.frequency ?? 'MONTHLY',
+    monthOfYear: command.monthOfYear ?? null,
   });
 }
 

@@ -1,9 +1,26 @@
 import { Bloc, BLOC_INFO } from './bloc';
 import { TransactionKind } from './budget';
 import { centsToInputValue, parseAmountToCents } from './money';
-import { formatDateInput, isValidDateInput, todayInputValue } from './month';
+import { formatDateInput, isMonthOfYear, isValidDateInput, monthName, todayInputValue } from './month';
 
 export const MAX_RECURRING_LABEL_LENGTH = 80;
+
+export type RecurringFrequency = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+export const FREQUENCIES: readonly RecurringFrequency[] = ['MONTHLY', 'QUARTERLY', 'YEARLY'];
+
+export const FREQUENCY_LABEL: Record<RecurringFrequency, string> = {
+  MONTHLY: 'Chaque mois',
+  QUARTERLY: 'Chaque trimestre',
+  YEARLY: 'Chaque année',
+};
+
+/** Ce que l'on dit du montant saisi : « Montant par mois », « par trimestre », « par an ». */
+export const FREQUENCY_AMOUNT_LABEL: Record<RecurringFrequency, string> = {
+  MONTHLY: 'Montant par mois',
+  QUARTERLY: 'Montant par trimestre',
+  YEARLY: 'Montant par an',
+};
 
 export interface RecurringPayment {
   id: string;
@@ -18,6 +35,9 @@ export interface RecurringPayment {
   active: boolean;
   aidRuleId: string | null;
   accountId?: string | null;
+  /** Absent d'un ancien serveur : on lit alors `MONTHLY` (voir `frequencyOf`). */
+  frequency?: RecurringFrequency;
+  monthOfYear?: number | null;
 }
 
 export interface RecurringPayload {
@@ -31,6 +51,9 @@ export interface RecurringPayload {
   active: boolean;
   aidRuleId?: string | null;
   accountId?: string | null;
+  frequency: RecurringFrequency;
+  /** 1-12 pour `QUARTERLY` / `YEARLY`, `null` pour `MONTHLY`. */
+  monthOfYear: number | null;
 }
 
 export interface RecurringFormValues {
@@ -45,6 +68,9 @@ export interface RecurringFormValues {
   aidRuleId: string;
   /** Identifiant du compte, ou chaîne vide pour « Aucun ». */
   accountId: string;
+  frequency: RecurringFrequency;
+  /** « 1 » à « 12 ». Toujours renseigné pour ne pas laisser un choix vide ; ignoré pour `MONTHLY`. */
+  monthOfYear: string;
 }
 
 export interface RecurringFormErrors {
@@ -53,11 +79,53 @@ export interface RecurringFormErrors {
   dayOfMonth?: string;
   startDate?: string;
   endDate?: string;
+  monthOfYear?: string;
 }
 
 export type RecurringFormResult =
   | { ok: true; payload: RecurringPayload }
   | { ok: false; errors: RecurringFormErrors };
+
+/** Un serveur qui ne parle pas encore de périodicité, ou une valeur inconnue : on traite comme mensuel. */
+export function frequencyOf(item: { frequency?: unknown }): RecurringFrequency {
+  return FREQUENCIES.includes(item.frequency as RecurringFrequency) ? (item.frequency as RecurringFrequency) : 'MONTHLY';
+}
+
+/** Le mois de l'année d'un paiement non mensuel, ou `null` (mensuel, ou mois illisible). */
+export function monthOfYearOf(item: { frequency?: unknown; monthOfYear?: unknown }): number | null {
+  return frequencyOf(item) !== 'MONTHLY' && isMonthOfYear(item.monthOfYear) ? item.monthOfYear : null;
+}
+
+export function isNonMonthly(item: { frequency?: unknown }): boolean {
+  return frequencyOf(item) !== 'MONTHLY';
+}
+
+/** Les 4 mois d'un paiement trimestriel qui commence en `start` : 11 → [11, 2, 5, 8]. */
+export function quarterlyMonths(start: number): number[] {
+  return [0, 3, 6, 9].map((offset) => ((start - 1 + offset) % 12) + 1);
+}
+
+/** « octobre, janvier, avril et juillet ». */
+export function joinMonthNames(months: readonly number[]): string {
+  const names = months.map(monthName);
+  return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
+}
+
+/** « Paiements en novembre, février, mai et août » — la phrase « mois M, M+3, M+6, M+9 » du formulaire. */
+export function describeQuarterlyMonths(start: number): string {
+  return `Paiements en ${joinMonthNames(quarterlyMonths(start))}`;
+}
+
+/**
+ * Ce qu'il faut mettre de côté chaque mois pour lisser un paiement non mensuel (÷ 12 par an, ÷ 3 par trimestre,
+ * arrondi à l'entier supérieur comme le serveur). `0` pour un paiement mensuel : rien à provisionner.
+ */
+export function monthlyProvisionCents(amountCents: number, frequency: RecurringFrequency): number {
+  if (frequency === 'MONTHLY') {
+    return 0;
+  }
+  return Math.ceil(amountCents / (frequency === 'YEARLY' ? 12 : 3));
+}
 
 export function emptyRecurringForm(now: Date = new Date()): RecurringFormValues {
   return {
@@ -71,6 +139,8 @@ export function emptyRecurringForm(now: Date = new Date()): RecurringFormValues 
     active: true,
     aidRuleId: '',
     accountId: '',
+    frequency: 'MONTHLY',
+    monthOfYear: String(now.getMonth() + 1),
   };
 }
 
@@ -86,7 +156,14 @@ export function recurringToForm(item: RecurringPayment): RecurringFormValues {
     active: item.active,
     aidRuleId: item.aidRuleId ?? '',
     accountId: item.accountId ?? '',
+    frequency: frequencyOf(item),
+    monthOfYear: String(monthOfYearOf(item) ?? startMonthOf(item.startDate)),
   };
+}
+
+function startMonthOf(startDate: string): number {
+  const month = Number(startDate.slice(5, 7));
+  return isMonthOfYear(month) ? month : 1;
 }
 
 export function recurringToPayload(item: RecurringPayment, overrides: Partial<RecurringPayload> = {}): RecurringPayload {
@@ -98,6 +175,8 @@ export function recurringToPayload(item: RecurringPayment, overrides: Partial<Re
     startDate: item.startDate,
     endDate: item.endDate,
     active: item.active,
+    frequency: frequencyOf(item),
+    monthOfYear: monthOfYearOf(item),
   };
   if (item.kind === 'EXPENSE' && item.bloc) {
     base.bloc = item.bloc;
@@ -112,6 +191,7 @@ export function recurringToPayload(item: RecurringPayment, overrides: Partial<Re
 }
 
 const DAY_PATTERN = /^\d{1,2}$/;
+const MONTH_OF_YEAR_PATTERN = /^\d{1,2}$/;
 
 /**
  * `allowAid` : l'espace est le commun (les aides ne concernent pas l'espace personnel).
@@ -162,6 +242,18 @@ export function buildRecurringPayload(
     }
   }
 
+  const frequency = FREQUENCIES.includes(values.frequency) ? values.frequency : 'MONTHLY';
+  let monthOfYear: number | null = null;
+  if (frequency !== 'MONTHLY') {
+    const month = MONTH_OF_YEAR_PATTERN.test(values.monthOfYear.trim()) ? Number(values.monthOfYear) : Number.NaN;
+    if (!isMonthOfYear(month)) {
+      errors.monthOfYear =
+        frequency === 'YEARLY' ? 'Choisissez le mois où ce paiement tombe chaque année.' : 'Choisissez le mois du premier paiement.';
+    } else {
+      monthOfYear = month;
+    }
+  }
+
   if (Object.keys(errors).length > 0 || amountCents === null) {
     return { ok: false, errors };
   }
@@ -174,6 +266,8 @@ export function buildRecurringPayload(
     startDate: values.startDate,
     endDate: endText === '' ? null : endText,
     active: values.active,
+    frequency,
+    monthOfYear,
   };
   if (values.kind === 'EXPENSE') {
     payload.bloc = values.bloc;
@@ -189,7 +283,26 @@ export function buildRecurringPayload(
   return { ok: true, payload };
 }
 
-export function describeSchedule(item: Pick<RecurringPayment, 'dayOfMonth'>): string {
+/** « Tous les ans en octobre », « Tous les 3 mois à partir de novembre », « Chaque mois ». */
+export function describeFrequency(item: { frequency?: unknown; monthOfYear?: unknown }): string {
+  const frequency = frequencyOf(item);
+  const month = monthOfYearOf(item);
+  if (frequency === 'YEARLY') {
+    return month === null ? 'Tous les ans' : `Tous les ans en ${monthName(month)}`;
+  }
+  if (frequency === 'QUARTERLY') {
+    return month === null ? 'Tous les 3 mois' : `Tous les 3 mois à partir de ${monthName(month)}`;
+  }
+  return 'Chaque mois';
+}
+
+export function describeSchedule(
+  item: Pick<RecurringPayment, 'dayOfMonth'> & { frequency?: unknown; monthOfYear?: unknown },
+): string {
+  if (isNonMonthly(item)) {
+    const day = item.dayOfMonth === null ? 'compté en fin de mois' : item.dayOfMonth === 1 ? 'le 1er' : `le ${item.dayOfMonth}`;
+    return `${describeFrequency(item)}, ${day}`;
+  }
   return item.dayOfMonth === null
     ? 'Jour inconnu : compté en fin de mois'
     : item.dayOfMonth === 1
@@ -222,11 +335,12 @@ export function sortRecurring(items: readonly RecurringPayment[]): RecurringPaym
   });
 }
 
+/** Ce qui revient chaque mois : les paiements trimestriels et annuels n'y sont pas comptés (voir les provisions). */
 export function monthlyTotals(items: readonly RecurringPayment[]): { incomeCents: number; expenseCents: number } {
   let incomeCents = 0;
   let expenseCents = 0;
   for (const item of items) {
-    if (!item.active) {
+    if (!item.active || isNonMonthly(item)) {
       continue;
     }
     if (item.kind === 'INCOME') {
@@ -236,4 +350,8 @@ export function monthlyTotals(items: readonly RecurringPayment[]): { incomeCents
     }
   }
   return { incomeCents, expenseCents };
+}
+
+export function countNonMonthly(items: readonly RecurringPayment[]): number {
+  return items.filter((item) => item.active && isNonMonthly(item)).length;
 }

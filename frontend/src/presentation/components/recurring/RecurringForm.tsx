@@ -3,10 +3,18 @@ import { BLOC_INFO, BLOCS } from '../../../domain/bloc';
 import { Account, selectableAccounts } from '../../../domain/account';
 import { TransactionKind } from '../../../domain/budget';
 import { AidRule } from '../../../domain/aids';
+import { formatCents, parseAmountToCents } from '../../../domain/money';
+import { monthName } from '../../../domain/month';
 import {
   buildRecurringPayload,
+  describeQuarterlyMonths,
   emptyRecurringForm,
+  FREQUENCIES,
+  FREQUENCY_AMOUNT_LABEL,
+  FREQUENCY_LABEL,
   MAX_RECURRING_LABEL_LENGTH,
+  monthlyProvisionCents,
+  RecurringFrequency,
   RecurringFormErrors,
   RecurringPayload,
   RecurringPayment,
@@ -27,6 +35,8 @@ interface Props {
   accounts?: Account[];
   /** Compte présélectionné pour un nouveau paiement (le dernier choisi dans l'espace). */
   defaultAccountId?: string | null;
+  /** Périodicité d'un nouveau paiement (ex. « Chaque année » quand on vient de l'onglet Provisions). */
+  initialFrequency?: RecurringFrequency;
   onClose: () => void;
   onSubmit: (payload: RecurringPayload) => Promise<void>;
   now?: () => Date;
@@ -45,9 +55,11 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   ) : null;
 }
 
-export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defaultAccountId = null, onClose, onSubmit, now = () => new Date() }: Props) {
+export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defaultAccountId = null, initialFrequency = 'MONTHLY', onClose, onSubmit, now = () => new Date() }: Props) {
   const [values, setValues] = useState(() =>
-    editing ? recurringToForm(editing) : { ...emptyRecurringForm(now()), accountId: defaultAccountId ?? '' },
+    editing
+      ? recurringToForm(editing)
+      : { ...emptyRecurringForm(now()), accountId: defaultAccountId ?? '', frequency: initialFrequency },
   );
   const [errors, setErrors] = useState<RecurringFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -58,6 +70,10 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
     setValues((previous) => ({ ...previous, [key]: value }));
 
   const selectedAid = aidRules?.find((rule) => rule.id === values.aidRuleId) ?? null;
+  const nonMonthly = values.frequency !== 'MONTHLY';
+  const monthNumber = Number(values.monthOfYear);
+  const provisionCents =
+    nonMonthly && values.kind === 'EXPENSE' ? monthlyProvisionCents(parseAmountToCents(values.amount) ?? 0, values.frequency) : 0;
   const showAid = allowAid && values.kind === 'EXPENSE' && aidRules !== null && aidRules.length > 0;
 
   const handleSubmit = async (event: FormEvent) => {
@@ -146,9 +162,61 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
           <FieldError id="rec-label-error" message={errors.label} />
         </div>
 
+        <div role="group" aria-label="Périodicité">
+          <span className={labelClass}>Périodicité</span>
+          <div className="grid grid-cols-3 gap-sm">
+            {FREQUENCIES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={values.frequency === option}
+                onClick={() => set('frequency', option)}
+                className={`min-h-[48px] rounded-full border-2 px-sm font-button-md text-body-sm font-semibold leading-tight ${
+                  values.frequency === option ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
+                }`}
+              >
+                {FREQUENCY_LABEL[option]}
+              </button>
+            ))}
+          </div>
+          {!nonMonthly && (
+            <p className="mt-1 font-body-sm text-body-sm text-mute">
+              Loyer, abonnements… Pour une taxe, une assurance annuelle ou des vacances, choisissez trimestre ou année.
+            </p>
+          )}
+        </div>
+
+        {nonMonthly && (
+          <div>
+            <label htmlFor="rec-month" className={labelClass}>
+              {values.frequency === 'YEARLY' ? 'Mois de l’année' : 'Mois de départ'}
+            </label>
+            <select
+              id="rec-month"
+              value={values.monthOfYear}
+              onChange={(event) => set('monthOfYear', event.target.value)}
+              aria-invalid={errors.monthOfYear ? true : undefined}
+              aria-describedby={errors.monthOfYear ? 'rec-month-error' : 'rec-month-hint'}
+              className={`${inputClass} capitalize`}
+            >
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                <option key={month} value={String(month)}>
+                  {monthName(month)}
+                </option>
+              ))}
+            </select>
+            <p id="rec-month-hint" className="mt-1 font-body-sm text-body-sm text-mute">
+              {values.frequency === 'YEARLY'
+                ? `Ce paiement tombe chaque année en ${monthName(monthNumber >= 1 && monthNumber <= 12 ? monthNumber : 1)}.`
+                : `${describeQuarterlyMonths(monthNumber >= 1 && monthNumber <= 12 ? monthNumber : 1)} (tous les 3 mois).`}
+            </p>
+            <FieldError id="rec-month-error" message={errors.monthOfYear} />
+          </div>
+        )}
+
         <div>
           <label htmlFor="rec-amount" className={labelClass}>
-            Montant par mois
+            {FREQUENCY_AMOUNT_LABEL[values.frequency]}
           </label>
           <div className="relative">
             <input
@@ -166,6 +234,11 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
             <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">€</span>
           </div>
           <FieldError id="rec-amount-error" message={errors.amount} />
+          {provisionCents > 0 && (
+            <p className="mt-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">
+              Pour ne pas être surpris, mettez de côté environ <span className="font-semibold">{formatCents(provisionCents)} par mois</span>.
+            </p>
+          )}
         </div>
 
         <div>

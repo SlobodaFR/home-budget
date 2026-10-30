@@ -47,6 +47,36 @@ describe('InsightsCard', () => {
     expect(within(items[3]).getByText(/Bien joué/)).toBeInTheDocument();
   });
 
+  it('sends a big upcoming payment to the provisions tab, with an info icon label', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({
+          id: 'upcoming-big-payment',
+          severity: 'INFO',
+          title: 'Taxe foncière : 1 200,00 € le 15 novembre',
+          detail: 'Mettez de côté 100,00 € par mois pour l’année prochaine.',
+          lesson: 2,
+          link: '/previsionnel',
+        }),
+      ],
+    });
+    const item = screen.getByRole('listitem');
+    expect(within(item).getByText(/Bon à savoir/)).toBeInTheDocument();
+    expect(within(item).getByRole('link', { name: 'Voir mes provisions' })).toHaveAttribute('href', '/previsionnel?vue=provisions');
+    expect(within(item).getByText('Leçon 2 du cours')).toBeInTheDocument();
+  });
+
+  it('offers to adjust the plan for a provision suggestion', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({ id: 'provision-suggestion', severity: 'INFO', title: 'Prévoyez une provision', detail: 'Votre épargne prévue est plus basse.', lesson: 2, link: '/plan' }),
+      ],
+    });
+    expect(screen.getByRole('link', { name: 'Ajuster mon plan' })).toHaveAttribute('href', '/plan');
+  });
+
   it('omits the button and the lesson when the insight has neither', () => {
     renderCard({ status: 'ready', insights: [insight({ lesson: null, link: null })] });
     expect(screen.queryByRole('link')).not.toBeInTheDocument();

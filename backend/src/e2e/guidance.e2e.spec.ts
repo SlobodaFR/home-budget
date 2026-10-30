@@ -133,6 +133,8 @@ describe('Guidance API (tranche 3, end to end, AUTH_MODE=dev, in-memory SQLite)'
         active: true,
         aidRuleId: null,
         accountId: null,
+        frequency: 'MONTHLY',
+        monthOfYear: null,
       });
 
       // Champs optionnels absents : dayOfMonth, endDate et aidRuleId valent null.

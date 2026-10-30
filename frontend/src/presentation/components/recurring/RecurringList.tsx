@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { AidRule } from '../../../domain/aids';
 import { formatCents } from '../../../domain/money';
+import { pluralize } from '../../../domain/plural';
 import {
+  countNonMonthly,
   describeBloc,
   describePeriod,
   describeSchedule,
@@ -140,6 +142,7 @@ function Row({
 export function RecurringList({ items, aidRules, accountNameOf, busy, onAdd, onEdit, onToggle, onDelete }: Props) {
   const totals = monthlyTotals(items);
   const sorted = sortRecurring(items);
+  const nonMonthly = countNonMonthly(items);
   const aidLabel = (item: RecurringPayment) =>
     item.aidRuleId ? (aidRules?.find((rule) => rule.id === item.aidRuleId)?.label ?? 'aide officielle') : null;
 
@@ -153,7 +156,7 @@ export function RecurringList({ items, aidRules, accountNameOf, busy, onAdd, onE
         </button>
       </div>
       <p className="mt-sm font-body-sm text-body-sm text-mute">
-        Loyer, salaire, abonnements… Ce qui revient chaque mois, pour que la prévision soit juste.
+        Loyer, salaire, abonnements… Et aussi ce qui revient chaque trimestre ou chaque année, pour que la prévision soit juste.
       </p>
 
       {items.length === 0 ? (
@@ -166,6 +169,11 @@ export function RecurringList({ items, aidRules, accountNameOf, busy, onAdd, onE
             Chaque mois : <span className="font-semibold text-success">+ {formatCents(totals.incomeCents)}</span> de revenus,{' '}
             <span className="font-semibold">− {formatCents(totals.expenseCents)}</span> de dépenses
           </p>
+          {nonMonthly > 0 && (
+            <p className="mt-1 font-body-sm text-body-sm text-mute">
+              Non compté ici : {pluralize(nonMonthly, 'paiement non mensuel', 'paiements non mensuels')} (trimestre ou année), à retrouver dans l’onglet Provisions.
+            </p>
+          )}
           <ul className="mt-sm divide-y divide-hairline-soft">
             {sorted.map((item) => (
               <Row key={item.id} item={item} aidLabel={aidLabel(item)} accountLabel={accountNameOf?.(item.accountId) ?? null} busy={busy} onEdit={onEdit} onToggle={onToggle} onDelete={onDelete} />

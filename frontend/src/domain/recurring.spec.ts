@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildRecurringPayload,
+  countNonMonthly,
+  describeFrequency,
   describePeriod,
+  describeQuarterlyMonths,
+  frequencyOf,
+  monthlyProvisionCents,
+  monthOfYearOf,
+  quarterlyMonths,
   describeSchedule,
   emptyRecurringForm,
   monthlyTotals,
@@ -50,6 +57,8 @@ describe('buildRecurringPayload', () => {
         startDate: '2026-11-12',
         endDate: null,
         active: true,
+        frequency: 'MONTHLY',
+        monthOfYear: null,
       },
     });
   });
@@ -165,6 +174,8 @@ describe('form conversions', () => {
       active: true,
       aidRuleId: 'X',
       accountId: '',
+      frequency: 'MONTHLY',
+      monthOfYear: '1',
     });
   });
 
@@ -184,6 +195,8 @@ describe('form conversions', () => {
       startDate: '2026-01-01',
       endDate: null,
       active: false,
+      frequency: 'MONTHLY',
+      monthOfYear: null,
       aidRuleId: 'X',
     });
   });
@@ -223,5 +236,129 @@ describe('display helpers', () => {
         item({ kind: 'INCOME', bloc: null, amountCents: 3000 }),
       ]),
     ).toEqual({ incomeCents: 3000, expenseCents: 1000 });
+  });
+});
+
+describe('periodicity', () => {
+  it('reads a missing or unknown frequency as monthly', () => {
+    expect(frequencyOf(item())).toBe('MONTHLY');
+    expect(frequencyOf({ frequency: 'WEEKLY' })).toBe('MONTHLY');
+    expect(frequencyOf(item({ frequency: 'YEARLY', monthOfYear: 10 }))).toBe('YEARLY');
+  });
+
+  it('only keeps a valid month for a non monthly payment', () => {
+    expect(monthOfYearOf(item({ frequency: 'YEARLY', monthOfYear: 10 }))).toBe(10);
+    expect(monthOfYearOf(item({ frequency: 'YEARLY', monthOfYear: 13 }))).toBeNull();
+    expect(monthOfYearOf(item({ frequency: 'YEARLY' }))).toBeNull();
+    expect(monthOfYearOf(item({ frequency: 'MONTHLY', monthOfYear: 4 }))).toBeNull();
+    expect(monthOfYearOf(item({ monthOfYear: 4 }))).toBeNull();
+  });
+
+  it('computes the four months of a quarterly payment, wrapping over the year', () => {
+    expect(quarterlyMonths(1)).toEqual([1, 4, 7, 10]);
+    expect(quarterlyMonths(11)).toEqual([11, 2, 5, 8]);
+    expect(quarterlyMonths(12)).toEqual([12, 3, 6, 9]);
+    expect(describeQuarterlyMonths(11)).toBe('Paiements en novembre, février, mai et août');
+  });
+
+  it('describes the frequency in plain French', () => {
+    expect(describeFrequency(item({ frequency: 'YEARLY', monthOfYear: 10 }))).toBe('Tous les ans en octobre');
+    expect(describeFrequency(item({ frequency: 'QUARTERLY', monthOfYear: 11 }))).toBe('Tous les 3 mois à partir de novembre');
+    expect(describeFrequency(item())).toBe('Chaque mois');
+    expect(describeFrequency(item({ frequency: 'YEARLY', monthOfYear: null }))).toBe('Tous les ans');
+    expect(describeFrequency(item({ frequency: 'QUARTERLY', monthOfYear: null }))).toBe('Tous les 3 mois');
+  });
+
+  it('describes the schedule of a non monthly payment with its day', () => {
+    expect(describeSchedule({ dayOfMonth: 15, frequency: 'YEARLY', monthOfYear: 10 })).toBe('Tous les ans en octobre, le 15');
+    expect(describeSchedule({ dayOfMonth: 1, frequency: 'QUARTERLY', monthOfYear: 2 })).toBe('Tous les 3 mois à partir de février, le 1er');
+    expect(describeSchedule({ dayOfMonth: null, frequency: 'YEARLY', monthOfYear: 6 })).toBe('Tous les ans en juin, compté en fin de mois');
+  });
+
+  it('computes the monthly provision, rounded up', () => {
+    expect(monthlyProvisionCents(120000, 'YEARLY')).toBe(10000);
+    expect(monthlyProvisionCents(100000, 'YEARLY')).toBe(8334);
+    expect(monthlyProvisionCents(30000, 'QUARTERLY')).toBe(10000);
+    expect(monthlyProvisionCents(10001, 'QUARTERLY')).toBe(3334);
+    expect(monthlyProvisionCents(50000, 'MONTHLY')).toBe(0);
+  });
+
+  it('keeps non monthly payments out of the monthly totals and counts the active ones', () => {
+    const items = [
+      item({ amountCents: 1000 }),
+      item({ amountCents: 120000, frequency: 'YEARLY', monthOfYear: 10 }),
+      item({ kind: 'INCOME', bloc: null, amountCents: 30000, frequency: 'QUARTERLY', monthOfYear: 1 }),
+      item({ amountCents: 5000, frequency: 'YEARLY', monthOfYear: 3, active: false }),
+    ];
+    expect(monthlyTotals(items)).toEqual({ incomeCents: 0, expenseCents: 1000 });
+    expect(countNonMonthly(items)).toBe(2);
+  });
+});
+
+describe('periodicity in the form', () => {
+  it('defaults to monthly with the current month preselected', () => {
+    expect(emptyRecurringForm(NOW)).toMatchObject({ frequency: 'MONTHLY', monthOfYear: '11' });
+  });
+
+  it('sends frequency YEARLY with its month', () => {
+    const result = buildRecurringPayload(values({ frequency: 'YEARLY', monthOfYear: '10', dayOfMonth: '15' }), { allowAid: false });
+    expect(result.ok && result.payload).toMatchObject({ frequency: 'YEARLY', monthOfYear: 10, dayOfMonth: 15 });
+  });
+
+  it('sends frequency QUARTERLY with its starting month', () => {
+    const result = buildRecurringPayload(values({ frequency: 'QUARTERLY', monthOfYear: '11' }), { allowAid: false });
+    expect(result.ok && result.payload).toMatchObject({ frequency: 'QUARTERLY', monthOfYear: 11 });
+  });
+
+  it('sends a null month for a monthly payment, whatever the month field holds', () => {
+    const result = buildRecurringPayload(values({ frequency: 'MONTHLY', monthOfYear: '7' }), { allowAid: false });
+    expect(result.ok && result.payload).toMatchObject({ frequency: 'MONTHLY', monthOfYear: null });
+  });
+
+  it('allows a non monthly income', () => {
+    const result = buildRecurringPayload(
+      values({ kind: 'INCOME', label: 'Prime annuelle', frequency: 'YEARLY', monthOfYear: '12' }),
+      { allowAid: true },
+    );
+    expect(result.ok && result.payload).toMatchObject({ kind: 'INCOME', frequency: 'YEARLY', monthOfYear: 12, aidRuleId: null });
+  });
+
+  it('rejects a missing or out of range month for a non monthly payment', () => {
+    for (const monthOfYear of ['', '0', '13', 'x', '1.5', '-2']) {
+      expect(buildRecurringPayload(values({ frequency: 'YEARLY', monthOfYear }), { allowAid: false })).toMatchObject({
+        ok: false,
+        errors: { monthOfYear: expect.any(String) },
+      });
+      expect(buildRecurringPayload(values({ frequency: 'QUARTERLY', monthOfYear }), { allowAid: false })).toMatchObject({
+        ok: false,
+        errors: { monthOfYear: expect.any(String) },
+      });
+    }
+  });
+
+  it('does not ask for a month when monthly', () => {
+    expect(buildRecurringPayload(values({ frequency: 'MONTHLY', monthOfYear: '' }), { allowAid: false }).ok).toBe(true);
+  });
+
+  it('fills the form from a yearly payment and round-trips it', () => {
+    const original = item({ frequency: 'YEARLY', monthOfYear: 10, dayOfMonth: 15, amountCents: 120000 });
+    expect(recurringToForm(original)).toMatchObject({ frequency: 'YEARLY', monthOfYear: '10' });
+    expect(buildRecurringPayload(recurringToForm(original), { allowAid: false })).toMatchObject({
+      ok: true,
+      payload: { frequency: 'YEARLY', monthOfYear: 10, amountCents: 120000 },
+    });
+  });
+
+  it('falls back to the start month when the server sent no month, and to monthly without frequency', () => {
+    expect(recurringToForm(item({ startDate: '2026-04-02' })).monthOfYear).toBe('4');
+    expect(recurringToForm(item({ startDate: '2026-04-02' })).frequency).toBe('MONTHLY');
+  });
+
+  it('keeps frequency and month when pausing a non monthly payment', () => {
+    expect(recurringToPayload(item({ frequency: 'QUARTERLY', monthOfYear: 11 }), { active: false })).toMatchObject({
+      frequency: 'QUARTERLY',
+      monthOfYear: 11,
+      active: false,
+    });
   });
 });
