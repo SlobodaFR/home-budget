@@ -244,3 +244,10 @@ export const DownloadIcon = (props: IconProps) => (
     <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
   </Icon>
 );
+
+export const CreditCardIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 10h18M7 15h4" />
+  </Icon>
+);

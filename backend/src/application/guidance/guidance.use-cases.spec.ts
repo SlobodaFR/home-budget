@@ -4,6 +4,7 @@ import { User } from '../../domain/user/user';
 import { FakeClock } from '../../testing/fake-clock';
 import {
   InMemoryAccountRepository,
+  InMemoryDebtRepository,
   InMemoryFiscalProfileRepository,
   InMemoryHouseholdRepository,
   InMemoryMonthReviewRepository,
@@ -16,6 +17,7 @@ import {
 } from '../../testing/in-memory-repositories';
 import { AccountAssignmentService } from '../account/account-assignment.service';
 import { ProjectViewsService } from '../project/project-views.service';
+import { DebtViewsService } from '../debt/debt-views.service';
 import { AccountViewsService } from '../account/account-views.service';
 import {
   EstimateCrecheUseCase,
@@ -134,6 +136,7 @@ async function setup(today = '2026-11-12T09:00:00Z') {
       accountViews,
       projectViews,
       new InMemoryMonthReviewRepository(),
+      new DebtViewsService(new InMemoryDebtRepository(), access, clock),
       clock,
     ),
     getSafetyNet: new GetSafetyNetUseCase(access, safetyNets, progress),

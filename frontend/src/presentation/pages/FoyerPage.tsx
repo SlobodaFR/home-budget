@@ -125,6 +125,15 @@ export function FoyerPage() {
         </Link>
       </Section>
 
+      <Section title="Crédits et dettes">
+        <p className="font-body-sm text-body-sm text-mute">
+          Immobilier, auto, consommation : combien il reste à rembourser, pour combien de temps, et l’effet d’un remboursement plus rapide. Ceux de l’espace que vous avez sélectionné (commun ou perso).
+        </p>
+        <Link to="/dettes" className={`${buttonSecondary} w-full`}>
+          Voir mes crédits
+        </Link>
+      </Section>
+
       <Section title="Revue mensuelle">
         <p className="font-body-sm text-body-sm text-mute">
           Une fois par mois : regarder ce qui s’est passé, répondre à trois questions et décider une chose pour le mois suivant.

@@ -9,6 +9,7 @@ import { AppShell } from './layout/AppShell';
 import { RequireHousehold } from './layout/RequireHousehold';
 import { AidesPage } from './pages/AidesPage';
 import { ComptesPage } from './pages/ComptesPage';
+import { DettesPage } from './pages/DettesPage';
 import { FoyerPage } from './pages/FoyerPage';
 import { HomePage } from './pages/HomePage';
 import { ImportPage } from './pages/ImportPage';
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="comptes" element={<ComptesPage />} />
           <Route path="projets" element={<ProjetsPage />} />
           <Route path="revue" element={<RevuePage />} />
+          <Route path="dettes" element={<DettesPage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>

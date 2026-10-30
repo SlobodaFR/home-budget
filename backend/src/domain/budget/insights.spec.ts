@@ -12,6 +12,7 @@ import { buildProvisions } from './provisions';
 import {
   AccountsInsightContext,
   CommonInsightsContext,
+  DebtsInsightContext,
   Insight,
   MAX_INSIGHTS,
   buildInsights,
@@ -33,6 +34,17 @@ const NO_ACCOUNTS: AccountsInsightContext = {
   unassignedTransactionCount: 0,
 };
 
+const NO_DEBTS: DebtsInsightContext = {
+  summary: {
+    activeCount: 0,
+    totalRemainingCents: 0,
+    totalMonthlyCents: 0,
+    debtToIncomePercent: null,
+  },
+  monthlyIncomeCents: null,
+  neverPaidOff: [],
+};
+
 interface Scenario {
   month?: string;
   today?: string;
@@ -44,6 +56,7 @@ interface Scenario {
   accounts?: AccountsInsightContext;
   projects?: ProjectView[];
   previousReview?: { status: ReviewStatus; decision: string } | null;
+  debts?: DebtsInsightContext;
 }
 
 function run(scenario: Scenario = {}): Insight[] {
@@ -77,6 +90,7 @@ function run(scenario: Scenario = {}): Insight[] {
     provisions: buildProvisions(recurring, today),
     projects: scenario.projects ?? [],
     previousReview: scenario.previousReview ?? null,
+    debts: scenario.debts ?? NO_DEBTS,
   });
 }
 
@@ -1215,6 +1229,124 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('debts', () => {
+    const summary = (percent: number | null, monthly = 142000) => ({
+      activeCount: 2,
+      totalRemainingCents: 21000000,
+      totalMonthlyCents: monthly,
+      debtToIncomePercent: percent,
+    });
+    const ctx = (
+      over: Partial<DebtsInsightContext> = {},
+    ): DebtsInsightContext => ({
+      summary: summary(36),
+      monthlyIncomeCents: 400000,
+      neverPaidOff: [],
+      ...over,
+    });
+    const stuck = (name: string, payment = 30000, interest = 30000) => ({
+      name,
+      monthlyPaymentCents: payment,
+      nextMonthInterestCents: interest,
+    });
+
+    it('warns above 35 % of the income, with the cost and the income', () => {
+      const insight = byId(
+        run({ transactions: recent, debts: ctx() }),
+        'debt-ratio-high',
+      );
+      expect(insight).toEqual({
+        id: 'debt-ratio-high',
+        severity: 'WARNING',
+        title: 'Endettement à 36 % de vos revenus',
+        detail: `Vos crédits coûtent 1${nbsp}420${nbsp}€ par mois (assurances comprises) pour 4${nbsp}000${nbsp}€ de revenus : au-dessus du repère de 35 %, la marge de manœuvre est faible. Évitez un nouveau crédit et regardez l'effet d'un remboursement accéléré.`,
+        lesson: 5,
+        link: '/dettes',
+      });
+    });
+
+    it('stays silent at 35 % or below, without income, and outside the current month', () => {
+      const has = (over: Parameters<typeof run>[0]) =>
+        ids(run({ transactions: recent, ...over })).includes('debt-ratio-high');
+      expect(has({ debts: ctx({ summary: summary(35) }) })).toBe(false);
+      expect(has({ debts: ctx({ summary: summary(36) }) })).toBe(true);
+      expect(has({ debts: ctx({ summary: summary(0) }) })).toBe(false);
+      expect(
+        has({
+          debts: ctx({ summary: summary(null), monthlyIncomeCents: null }),
+        }),
+      ).toBe(false);
+      expect(has({ debts: ctx(), month: '2026-10' })).toBe(false);
+      expect(has({ debts: ctx(), month: '2026-12' })).toBe(false);
+    });
+
+    it('flags a credit that never decreases, then groups several', () => {
+      const one = byId(
+        run({
+          transactions: recent,
+          debts: ctx({
+            summary: summary(10),
+            neverPaidOff: [stuck('Prêt auto', 29900, 30000)],
+          }),
+        }),
+        'debt-never-paid-off',
+      );
+      expect(one).toEqual({
+        id: 'debt-never-paid-off',
+        severity: 'ACTION',
+        title: 'Le crédit « Prêt auto » ne diminue pas',
+        detail: `Sa mensualité de 299${nbsp}€ ne dépasse pas les intérêts du mois (300${nbsp}€) ou ne le rembourserait pas en 100 ans. Vérifiez la mensualité et le taux saisis.`,
+        lesson: 5,
+        link: '/dettes',
+      });
+      const many = byId(
+        run({
+          transactions: recent,
+          debts: ctx({
+            summary: summary(10),
+            neverPaidOff: [stuck('A'), stuck('B'), stuck('C'), stuck('D')],
+          }),
+        }),
+        'debt-never-paid-off',
+      );
+      expect(many.title).toBe('4 crédits ne diminuent pas');
+      expect(many.detail).toContain('A, B, C et 1 autre');
+      expect(
+        ids(
+          run({
+            transactions: recent,
+            debts: ctx({ summary: summary(10), neverPaidOff: [stuck('A')] }),
+            month: '2026-10',
+          }),
+        ),
+      ).not.toContain('debt-never-paid-off');
+    });
+
+    it('ranks the ratio warning before the never-paid-off action', () => {
+      const insights = run({
+        transactions: recent,
+        debts: ctx({ neverPaidOff: [stuck('Prêt auto')] }),
+      });
+      const order = ids(insights);
+      expect(order.indexOf('debt-ratio-high')).toBeLessThan(
+        order.indexOf('debt-never-paid-off'),
+      );
+      expect(order).not.toContain('all-good');
+    });
+
+    it('gives no investment advice or loan buy-back suggestion', () => {
+      const text = JSON.stringify(
+        run({
+          transactions: recent,
+          debts: ctx({ neverPaidOff: [stuck('Prêt auto')] }),
+        }),
+      ).toLowerCase();
+      for (const word of ['investir', 'placement', 'rachat', 'renégoci']) {
+        expect(text).not.toContain(word);
+      }
+    });
+  });
+
   describe('ordering and limits', () => {
     const crowded: Scenario = {
       today: '2026-11-12T08:00:00Z',
@@ -1265,7 +1397,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|safety-net-unset|safety-net-progress|contribution-incomplete|all-good)$',
       );
       const insights = [
         ...run(crowded),
@@ -1284,6 +1416,7 @@ describe('buildInsights', () => {
           '/comptes',
           '/projets',
           '/revue',
+          '/dettes',
           '/',
         ]).toContain(insight.link);
         expect([null, 1, 2, 3, 4, 5, 6, 7, 8]).toContain(insight.lesson);

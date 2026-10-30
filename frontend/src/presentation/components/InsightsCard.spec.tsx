@@ -111,6 +111,21 @@ describe('InsightsCard', () => {
     expect(within(items[1]).getByText(/fixer 400 € pour les courses/)).toBeInTheDocument();
   });
 
+  it('sends the debt insights to /dettes with « Voir mes crédits », each with the right severity', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({ id: 'debt-ratio-high', severity: 'WARNING', title: 'Vos mensualités dépassent 35 % de vos revenus', detail: 'C’est un repère courant, pas une règle de droit.', lesson: 6, link: '/dettes' }),
+        insight({ id: 'debt-never-paid-off', severity: 'ACTION', title: 'Un crédit ne diminue pas', detail: 'La mensualité ne couvre pas les intérêts.', lesson: 6, link: '/dettes' }),
+      ],
+    });
+    const items = screen.getAllByRole('listitem');
+    expect(within(items[0]).getByText(/Attention/)).toBeInTheDocument();
+    expect(within(items[0]).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
+    expect(within(items[1]).getByText(/À faire/)).toBeInTheDocument();
+    expect(within(items[1]).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
+  });
+
   it('omits the button and the lesson when the insight has neither', () => {
     renderCard({ status: 'ready', insights: [insight({ lesson: null, link: null })] });
     expect(screen.queryByRole('link')).not.toBeInTheDocument();

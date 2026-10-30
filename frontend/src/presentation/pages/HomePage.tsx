@@ -10,6 +10,7 @@ import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
 import { BankIcon, ClipboardCheckIcon, TargetIcon, UploadIcon } from '../components/Icons';
+import { DebtsHomeLink } from '../components/debts/DebtsHomeLink';
 import { AccountsSummary } from '../components/AccountsSummary';
 import { InsightsCard } from '../components/InsightsCard';
 import { LoadingScreen } from '../components/LoadingScreen';
@@ -85,6 +86,7 @@ export function HomePage() {
           <ClipboardCheckIcon width={18} height={18} />
           Ma revue du mois
         </Link>
+        <DebtsHomeLink spaceId={space.id} />
       </div>
 
       <InsightsCard state={insights} />
