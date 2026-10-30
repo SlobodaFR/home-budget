@@ -1,63 +1,106 @@
-import { TransactionCategory, TransactionItem } from '../../domain/transaction';
-import { formatSignedCents } from '../../domain/money';
+import { useState } from 'react';
+import { BLOC_INFO } from '../../domain/bloc';
+import { Transaction } from '../../domain/budget';
+import { formatCents } from '../../domain/money';
+import { formatDay } from '../../domain/month';
+import { BLOC_STYLE } from './bloc-style';
+import { ClockIcon, TrashIcon } from './Icons';
 
-const CATEGORY_ICONS: Record<TransactionCategory, string> = {
-  Logement: 'home',
-  Alimentation: 'shopping_cart',
-  Transport: 'train',
-  Loisirs: 'stadia_controller',
-  Sante: 'favorite',
-  Revenus: 'payments',
-  Autre: 'receipt_long',
-};
-
-const DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long' });
-
-interface TransactionRowProps {
-  transaction: TransactionItem;
-  onEdit: (transaction: TransactionItem) => void;
-  onDelete: (transaction: TransactionItem) => void;
+interface Props {
+  transaction: Transaction;
+  onEdit: (transaction: Transaction) => void;
+  onDelete: (transaction: Transaction) => Promise<void>;
 }
 
-export function TransactionRow({ transaction, onEdit, onDelete }: TransactionRowProps) {
-  const isCredit = transaction.amountCents > 0;
+export function TransactionRow({ transaction, onEdit, onDelete }: Props) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const income = transaction.kind === 'INCOME';
+  const blocLabel = transaction.bloc ? BLOC_INFO[transaction.bloc].label : 'Revenu';
+
+  const confirmDelete = async () => {
+    setBusy(true);
+    try {
+      await onDelete(transaction);
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  };
 
   return (
-    <div className="flex items-center justify-between py-xl border-b border-hairline-soft hover:bg-soft-cloud px-md transition-colors group">
-      <div className="flex items-center gap-xl">
-        <div className="w-12 h-12 flex items-center justify-center bg-ink text-surface rounded-full">
-          <span className="material-symbols-outlined">{CATEGORY_ICONS[transaction.category]}</span>
+    <li className="flex min-h-[64px] items-center gap-md py-sm">
+      <span
+        className={`h-10 w-1.5 shrink-0 rounded-full ${transaction.bloc ? BLOC_STYLE[transaction.bloc].dot : 'bg-success'}`}
+        aria-hidden="true"
+      />
+      {confirming ? (
+        <div className="flex flex-1 items-center justify-between gap-md">
+          <p className="font-body-md text-body-md font-semibold">Supprimer ?</p>
+          <div className="flex shrink-0 gap-sm">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              className="min-h-[44px] rounded-full border border-hairline px-lg font-button-md text-body-sm font-semibold"
+            >
+              Non
+            </button>
+            <button
+              type="button"
+              onClick={confirmDelete}
+              disabled={busy}
+              className="min-h-[44px] rounded-full bg-error px-lg font-button-md text-body-sm font-semibold text-white disabled:opacity-40"
+            >
+              Supprimer
+            </button>
+          </div>
         </div>
-        <div>
-          <p className="font-heading-lg text-heading-lg text-ink">{transaction.label}</p>
-          <p className="font-body-sm text-body-sm text-mute">
-            {DATE_FORMATTER.format(new Date(transaction.date))} - {transaction.category}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-md">
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      ) : (
+        <>
           <button
             type="button"
-            className="material-symbols-outlined text-mute hover:text-ink p-1 text-base"
             onClick={() => onEdit(transaction)}
             aria-label={`Modifier ${transaction.label}`}
+            className="flex min-h-[48px] min-w-0 flex-1 items-center justify-between gap-md text-left"
           >
-            edit
+            <span className="min-w-0">
+              <span className="block truncate font-body-md text-body-md font-semibold">{transaction.label}</span>
+              <span className="block font-body-sm text-body-sm text-mute">
+                {formatDay(transaction.date)} · {blocLabel}
+              </span>
+            </span>
+            <span className={`tabular shrink-0 font-body-md text-body-md font-semibold ${income ? 'text-success' : 'text-ink'}`}>
+              {income ? '+ ' : '− '}
+              {formatCents(transaction.amountCents)}
+            </span>
           </button>
           <button
             type="button"
-            className="material-symbols-outlined text-mute hover:text-error p-1 text-base"
-            onClick={() => onDelete(transaction)}
+            onClick={() => setConfirming(true)}
             aria-label={`Supprimer ${transaction.label}`}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-mute hover:bg-soft-cloud hover:text-error"
           >
-            delete
+            <TrashIcon width={20} height={20} />
           </button>
-        </div>
-        <p className={`font-heading-lg text-heading-lg text-right ${isCredit ? 'text-success' : 'text-ink'}`}>
-          {formatSignedCents(transaction.amountCents)}
-        </p>
-      </div>
-    </div>
+        </>
+      )}
+    </li>
+  );
+}
+
+export function PendingRow({ label, amountCents, income }: { label: string; amountCents: number; income: boolean }) {
+  return (
+    <li className="flex min-h-[64px] items-center gap-md py-sm opacity-80">
+      <ClockIcon className="h-5 w-5 shrink-0 text-mute" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-body-md text-body-md font-semibold">{label}</span>
+        <span className="block font-body-sm text-body-sm text-mute">En attente d’envoi</span>
+      </span>
+      <span className="tabular shrink-0 font-body-md text-body-md font-semibold">
+        {income ? '+ ' : '− '}
+        {formatCents(amountCents)}
+      </span>
+    </li>
   );
 }

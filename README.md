@@ -1,6 +1,9 @@
 # Foyer Budget
 
-Application de gestion de budget de foyer : comptes de depenses + comptes de revenus.
+Application de budget de foyer, mobile d'abord (PWA) : un espace commun et un espace personnel prive par
+membre, chacun organise en 4 blocs (Fixe, Courant, Plaisir, Epargne) avec un plan prevu, des operations et une
+regle de contribution au commun. Cadre pedagogique : le cours « Finances familiales » (4 blocs, epargne de
+securite, suivi mensuel).
 
 ## Stack
 
@@ -48,7 +51,10 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 
 | Variable | Requis | Defaut | Description |
 | --- | --- | --- | --- |
-| `AUTH_SERVICE_URL` | oui | - | Base URL du service d'authentification central (`https://auth.sloboda.fr`). |
+| `AUTH_MODE` | non | `oauth` | `oauth` (auth.sloboda.fr) ou `dev` (connexion factice alice/bob, refuse de demarrer en production). |
+| `DEV_AUTH_SECRET` | non | - | Mode dev : secret de signature des jetons factices. |
+| `PERSONAL_DATA_KEY` | prod | - | Cle maitre (32 octets : 64 caracteres hexadecimaux ou base64) du chiffrement de l'espace personnel. Obligatoire en production. |
+| `AUTH_SERVICE_URL` | oui (oauth) | - | Base URL du service d'authentification central (`https://auth.sloboda.fr`). |
 | `AUTH_CLIENT_ID` | oui | - | Identifiant client OAuth2 enregistre aupres d'auth-service. |
 | `AUTH_CLIENT_SECRET` | oui | - | Secret client OAuth2 correspondant. |
 | `AUTH_WEBHOOK_SECRET` | oui | - | Secret partage pour le webhook `POST /api/auth/internal/session-revoked`. |
@@ -102,15 +108,43 @@ replication.
 
 ## Domain model
 
-- **Account**: `EXPENSE` (3 comptes de prelevements, avec budget mensuel) ou `SOURCE` (1 compte d'entrees, sans budget)
-- **Transaction**: montant signe (positif = credit, negatif = debit), categorie, date
-- Le solde d'un compte est calcule a la volee comme la somme de ses transactions
-- **RecurringTransaction**: gabarit de paiement recurrent mensuel (loyer, salaire, remboursement...) utilise pour le
-  previsionnel. `dayOfMonth` peut etre `null` quand la date exacte est inconnue (ex: remboursement secu) ; dans ce
-  cas l'occurrence est estimee en fin de mois.
+- **Household** : un foyer (4 membres au plus ; un utilisateur n'appartient qu'a un foyer). On le rejoint avec un
+  code d'invitation a usage unique valable 7 jours.
+- **Space** : `COMMON` (visible par tous les membres) ou `PERSONAL` (visible par son seul proprietaire). L'espace
+  d'un autre membre n'existe pas pour vous : 404, jamais 403. Regle unique : `isVisibleTo` (domaine) appliquee par
+  `SpaceAccessService` (application) ; testee dans `space-access.spec.ts` et `e2e/app.e2e.spec.ts`.
+- **SpacePlan** : budget prevu d'un espace (revenus + 4 blocs).
+- **Transaction** : revenu (`INCOME`) ou depense (`EXPENSE`, rangee dans un bloc), montant positif en centimes.
+- **Contribution** : part de chacun dans le budget du commun selon la regle du foyer (`EQUAL`, `PROPORTIONAL`,
+  `EQUAL_REMAINDER`), a l'euro pres (methode du plus fort reste).
 
-## Previsionnel
+Contrat HTTP : [docs/api.md](docs/api.md).
 
-`/forecast` (page "Previsionnel") affiche, pour une date cible choisie, le solde projete de chaque compte
-(solde actuel + occurrences des paiements recurrents prevues d'ici cette date) ainsi que la liste des paiements a
-venir. Les paiements recurrents se gerent depuis la meme page.
+## Import de releve
+
+Ecran `/import` (frontend) : on choisit le CSV du mois de sa banque (lu sur l'appareil, decode en UTF-8 ou
+Windows-1252), le serveur propose un bloc par ligne a partir de regles de mots-cles propres a chaque espace
+(jeu de depart, modifiable, chiffre pour un espace personnel), repere les lignes deja importees, puis
+l'utilisateur corrige et valide : l'enregistrement est tout ou rien. Details et formats lus : docs/api.md.
+
+## Donnees personnelles chiffrees
+
+Libelles et montants des operations de l'espace personnel, ainsi que son plan, sont chiffres au repos
+(AES-256-GCM, cle par utilisateur derivee de `PERSONAL_DATA_KEY` par HKDF, le chiffre est lie a sa ligne). Limite
+assumee : qui detient `PERSONAL_DATA_KEY` (l'hebergeur) peut dechiffrer. Evolution prevue : cle derivee d'un secret
+propre a chaque utilisateur. Sans `PERSONAL_DATA_KEY` hors production, une cle de dev non secrete est utilisee
+(avertissement au demarrage).
+
+## Migrations
+
+`synchronize` est desactive : le schema evolue par migrations TypeORM (`backend/src/infrastructure/persistence/migrations`,
+listees dans `index.ts`), jouees au demarrage. `migrations.spec.ts` verifie qu'elles produisent exactement le schema
+des entites. La premiere migration conserve l'ancien modele (comptes, operations, recurrents) sous le prefixe
+`legacy_`. Au deploiement, `PERSONAL_DATA_KEY` doit exister dans 1Password (`BUDGET_PERSONAL_DATA_KEY`).
+
+## Developper avec la connexion factice
+
+```bash
+AUTH_MODE=dev npm run dev:backend      # base: backend/data/budget.sqlite
+npm run dev:frontend                   # http://localhost:5173 -> boutons « alice » / « bob » sur la page de connexion
+```

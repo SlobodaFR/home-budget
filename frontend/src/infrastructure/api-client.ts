@@ -1,123 +1,143 @@
-import { AccountSummary, AccountType } from '../domain/account';
-import { TransactionCategory, TransactionItem } from '../domain/transaction';
-import { BalanceForecast, RecurringTransaction } from '../domain/recurring-transaction';
+import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
+import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
+import { CommitItem, ImportPreview, Rule, RuleSet } from '../domain/statement-import';
 
 const BASE_URL = '/api';
-
-async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, { credentials: 'include' });
-  if (!response.ok) {
-    throw new Error(`Request to ${path} failed with status ${response.status}`);
-  }
-  return response.json() as Promise<T>;
-}
-
-async function sendJson(path: string, method: string, body: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    throw new Error(errorBody?.message ? String(errorBody.message) : `La requete a echoue (${response.status})`);
-  }
-  return response;
-}
-
-export interface EquitySummary {
-  totalBalanceCents: number;
-}
 
 export interface CurrentUser {
   id: string;
   email: string;
   name: string;
-  avatarUrl: string;
 }
 
-export interface SaveTransactionPayload {
-  accountId: string;
-  label: string;
-  category: TransactionCategory;
-  amountCents: number;
-  date?: string;
+export type AuthConfig = { mode: 'oauth' } | { mode: 'dev'; devUsers: string[] };
+
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
-export interface SaveAccountPayload {
-  name: string;
-  type: AccountType;
-  icon: string;
-  monthlyBudgetCents: number | null;
+export class NetworkError extends Error {
+  constructor() {
+    super('Réseau indisponible');
+    this.name = 'NetworkError';
+  }
 }
 
-export interface SaveRecurringTransactionPayload {
-  accountId: string;
-  label: string;
-  category: TransactionCategory;
-  amountCents: number;
-  dayOfMonth: number | null;
-  startDate: string;
-  endDate: string | null;
-  active: boolean;
+type UnauthorizedListener = () => void;
+let unauthorizedListener: UnauthorizedListener | null = null;
+
+export function onUnauthorized(listener: UnauthorizedListener | null): void {
+  unauthorizedListener = listener;
 }
+
+async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method,
+      credentials: 'include',
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new NetworkError();
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 && !path.startsWith('/auth/')) {
+      unauthorizedListener?.();
+    }
+    const errorBody = (await response.json().catch(() => null)) as { message?: unknown } | null;
+    const message = Array.isArray(errorBody?.message) ? errorBody.message.join(', ') : errorBody?.message;
+    throw new ApiError(response.status, typeof message === 'string' ? message : `Erreur ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  return (await response.json()) as T;
+}
+
+const spacePath = (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}`;
 
 export const apiClient = {
-  fetchAccounts(): Promise<AccountSummary[]> {
-    return getJson<AccountSummary[]>('/accounts');
-  },
-  fetchEquity(): Promise<EquitySummary> {
-    return getJson<EquitySummary>('/accounts/equity');
-  },
-  fetchRecentTransactions(limit = 10): Promise<TransactionItem[]> {
-    return getJson<TransactionItem[]>(`/transactions?limit=${limit}`);
-  },
-  async createTransaction(payload: SaveTransactionPayload): Promise<TransactionItem> {
-    const response = await sendJson('/transactions', 'POST', payload);
-    return response.json() as Promise<TransactionItem>;
-  },
-  async updateTransaction(id: string, payload: SaveTransactionPayload): Promise<void> {
-    await sendJson(`/transactions/${id}`, 'PUT', payload);
-  },
-  async deleteTransaction(id: string): Promise<void> {
-    await sendJson(`/transactions/${id}`, 'DELETE', undefined);
-  },
-  async createAccount(payload: SaveAccountPayload): Promise<AccountSummary> {
-    const response = await sendJson('/accounts', 'POST', payload);
-    return response.json() as Promise<AccountSummary>;
-  },
-  async updateAccount(id: string, payload: SaveAccountPayload): Promise<void> {
-    await sendJson(`/accounts/${id}`, 'PUT', payload);
-  },
-  async deleteAccount(id: string): Promise<void> {
-    await sendJson(`/accounts/${id}`, 'DELETE', undefined);
+  fetchAuthConfig(): Promise<AuthConfig> {
+    return request<AuthConfig>('/auth/config');
   },
   async fetchCurrentUser(): Promise<CurrentUser | null> {
-    const response = await fetch(`${BASE_URL}/auth/me`, { credentials: 'include' });
-    if (!response.ok) {
-      return null;
+    try {
+      return (await request<{ user: CurrentUser }>('/auth/me')).user;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return null;
+      }
+      throw error;
     }
-    const body = (await response.json()) as { user: CurrentUser };
-    return body.user;
   },
-  async logout(): Promise<void> {
-    await sendJson('/auth/logout', 'POST', undefined);
+  logout(): Promise<void> {
+    return request<void>('/auth/logout', 'POST');
   },
-  fetchRecurringTransactions(): Promise<RecurringTransaction[]> {
-    return getJson<RecurringTransaction[]>('/recurring-transactions');
+
+  async fetchHousehold(): Promise<Household | null> {
+    return (await request<{ household: Household | null }>('/household')).household;
   },
-  fetchBalanceForecast(date: string): Promise<BalanceForecast> {
-    return getJson<BalanceForecast>(`/recurring-transactions/forecast?date=${date}`);
+  createHousehold(payload: { name: string; netMonthlyIncomeCents?: number }): Promise<Household> {
+    return request<Household>('/household', 'POST', payload);
   },
-  async createRecurringTransaction(payload: SaveRecurringTransactionPayload): Promise<RecurringTransaction> {
-    const response = await sendJson('/recurring-transactions', 'POST', payload);
-    return response.json() as Promise<RecurringTransaction>;
+  createInvitation(): Promise<Invitation> {
+    return request<Invitation>('/household/invitations', 'POST');
   },
-  async updateRecurringTransaction(id: string, payload: SaveRecurringTransactionPayload): Promise<void> {
-    await sendJson(`/recurring-transactions/${id}`, 'PUT', payload);
+  joinHousehold(code: string): Promise<Household> {
+    return request<Household>('/household/join', 'POST', { code });
   },
-  async deleteRecurringTransaction(id: string): Promise<void> {
-    await sendJson(`/recurring-transactions/${id}`, 'DELETE', undefined);
+  updateMyIncome(netMonthlyIncomeCents: number | null): Promise<void> {
+    return request<void>('/household/me/income', 'PUT', { netMonthlyIncomeCents });
+  },
+  updateContributionMode(mode: ContributionMode): Promise<void> {
+    return request<void>('/household/contribution-mode', 'PUT', { mode });
+  },
+  fetchContribution(): Promise<Contribution> {
+    return request<Contribution>('/household/contribution');
+  },
+
+  fetchPlan(spaceId: string): Promise<Plan> {
+    return request<Plan>(`${spacePath(spaceId)}/plan`);
+  },
+  updatePlan(spaceId: string, plan: Plan): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/plan`, 'PUT', plan);
+  },
+  fetchTransactions(spaceId: string, month: string): Promise<Transaction[]> {
+    return request<Transaction[]>(`${spacePath(spaceId)}/transactions?month=${month}`);
+  },
+  createTransaction(spaceId: string, payload: TransactionPayload): Promise<Transaction> {
+    return request<Transaction>(`${spacePath(spaceId)}/transactions`, 'POST', payload);
+  },
+  updateTransaction(spaceId: string, id: string, payload: TransactionPayload): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/transactions/${encodeURIComponent(id)}`, 'PUT', payload);
+  },
+  deleteTransaction(spaceId: string, id: string): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/transactions/${encodeURIComponent(id)}`, 'DELETE');
+  },
+  fetchSummary(spaceId: string, month: string): Promise<Summary> {
+    return request<Summary>(`${spacePath(spaceId)}/summary?month=${month}`);
+  },
+
+  previewImport(spaceId: string, text: string): Promise<ImportPreview> {
+    return request<ImportPreview>(`${spacePath(spaceId)}/imports/preview`, 'POST', { text });
+  },
+  commitImport(spaceId: string, items: CommitItem[]): Promise<{ created: number }> {
+    return request<{ created: number }>(`${spacePath(spaceId)}/imports/commit`, 'POST', { items });
+  },
+  fetchRules(spaceId: string): Promise<RuleSet> {
+    return request<RuleSet>(`${spacePath(spaceId)}/rules`);
+  },
+  saveRules(spaceId: string, rules: Rule[]): Promise<void> {
+    return request<void>(`${spacePath(spaceId)}/rules`, 'PUT', { rules });
   },
 };
