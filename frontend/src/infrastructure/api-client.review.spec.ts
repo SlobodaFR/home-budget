@@ -55,6 +55,15 @@ describe('apiClient reviews', () => {
   });
 });
 
+// jsdom's Blob has no text() on every Node version used in CI: read through FileReader instead.
+const readBlobAsText = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(blob);
+  });
+
 describe('apiClient exports', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -68,7 +77,7 @@ describe('apiClient exports', () => {
     expect(lastCall()[0]).toBe('/api/export');
     expect(lastCall()[1]).toMatchObject({ method: 'GET', credentials: 'include' });
     expect(file.filename).toBe('budget-export-2026-10-29.json');
-    expect(await file.blob.text()).toBe('{"version":1}');
+    expect(await readBlobAsText(file.blob)).toBe('{"version":1}');
   });
 
   it('falls back to budget-export-AAAA-MM-JJ.json without a header', async () => {
