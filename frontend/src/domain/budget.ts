@@ -12,6 +12,10 @@ export interface Transaction {
   date: string;
   /** Compte bancaire rattaché (`null` ou absent : aucun). */
   accountId?: string | null;
+  /** Membre qui a versé sa contribution au commun (revenus « Contribution de … » seulement ; `null` ou absent sinon). */
+  contributionUserId?: string | null;
+  /** Mois (`AAAA-MM`) que couvre cette contribution. */
+  contributionMonth?: string | null;
 }
 
 export interface TransactionPayload {

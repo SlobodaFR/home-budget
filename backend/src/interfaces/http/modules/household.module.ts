@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GetContributionUseCase } from '../../../application/contribution/get-contribution.use-case';
+import { ContributionStatusService } from '../../../application/contribution/contribution-status.service';
+import { GetContributionStatusUseCase } from '../../../application/contribution/get-contribution-status.use-case';
+import { RecordContributionPaymentUseCase } from '../../../application/contribution/record-contribution-payment.use-case';
 import { CreateHouseholdUseCase } from '../../../application/household/create-household.use-case';
 import { CreateInvitationUseCase } from '../../../application/household/create-invitation.use-case';
 import { GetHouseholdUseCase } from '../../../application/household/get-household.use-case';
@@ -69,6 +72,8 @@ import { MonthReviewOrmEntity } from '../../../infrastructure/persistence/entiti
 import { TypeOrmMonthReviewRepository } from '../../../infrastructure/persistence/repositories/typeorm-month-review.repository';
 import { ExportController } from '../controllers/export.controller';
 import { ReviewsController } from '../controllers/reviews.controller';
+import { GetTrendsUseCase } from '../../../application/trend/get-trends.use-case';
+import { TrendsController } from '../controllers/trends.controller';
 import { DebtViewsService } from '../../../application/debt/debt-views.service';
 import {
   CreateDebtUseCase,
@@ -174,6 +179,7 @@ import { AuthModule } from './auth.module';
     ReviewsController,
     ExportController,
     DebtsController,
+    TrendsController,
   ],
   providers: [
     { provide: FieldCipher, useClass: AesGcmFieldCipher },
@@ -205,6 +211,9 @@ import { AuthModule } from './auth.module';
     SetMyIncomeUseCase,
     SetContributionModeUseCase,
     GetContributionUseCase,
+    ContributionStatusService,
+    GetContributionStatusUseCase,
+    RecordContributionPaymentUseCase,
     GetSpacePlanUseCase,
     SaveSpacePlanUseCase,
     ListSpaceTransactionsUseCase,
@@ -235,6 +244,7 @@ import { AuthModule } from './auth.module';
     GetYearForecastUseCase,
     ProjectViewsService,
     DebtViewsService,
+    GetTrendsUseCase,
     ListDebtsUseCase,
     GetDebtsSummaryUseCase,
     CreateDebtUseCase,

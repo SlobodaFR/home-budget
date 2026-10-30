@@ -16,7 +16,16 @@ export interface TransactionProps {
   date: Date;
   /** Compte bancaire de l'espace ; absent ou null = non rattachée. */
   accountId?: string | null;
+  /**
+   * Membre qui a versé sa contribution au foyer : uniquement un revenu de l'espace
+   * commun, posé par le suivi des contributions. Va de pair avec `contributionMonth`.
+   */
+  contributionUserId?: string | null;
+  /** Mois (AAAA-MM) que couvre la contribution versée. */
+  contributionMonth?: string | null;
 }
+
+const CONTRIBUTION_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export const MAX_LABEL_LENGTH = 80;
 
@@ -41,6 +50,22 @@ export class Transaction {
     }
     if (Number.isNaN(props.date.getTime())) {
       throw new DomainError('Date invalide');
+    }
+    const hasUser = (props.contributionUserId ?? null) !== null;
+    const hasMonth = (props.contributionMonth ?? null) !== null;
+    if (hasUser !== hasMonth) {
+      throw new DomainError(
+        'Une contribution porte à la fois un membre et un mois',
+      );
+    }
+    if (hasUser && props.kind !== 'INCOME') {
+      throw new DomainError('Seul un revenu peut être une contribution');
+    }
+    if (
+      hasMonth &&
+      !CONTRIBUTION_MONTH_PATTERN.test(props.contributionMonth as string)
+    ) {
+      throw new DomainError('Mois de contribution invalide : AAAA-MM');
     }
   }
 
@@ -78,5 +103,13 @@ export class Transaction {
 
   get accountId(): string | null {
     return this.props.accountId ?? null;
+  }
+
+  get contributionUserId(): string | null {
+    return this.props.contributionUserId ?? null;
+  }
+
+  get contributionMonth(): string | null {
+    return this.props.contributionMonth ?? null;
   }
 }

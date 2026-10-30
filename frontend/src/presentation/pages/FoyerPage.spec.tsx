@@ -12,6 +12,7 @@ const api = vi.hoisted(() => ({
   updateContributionMode: vi.fn(),
   createInvitation: vi.fn(),
   fetchSafetyNet: vi.fn(),
+  fetchContributionStatus: vi.fn(),
   saveSafetyNet: vi.fn(),
 }));
 
@@ -87,6 +88,7 @@ describe('FoyerPage', () => {
     api.updateMyIncome.mockResolvedValue(undefined);
     api.updateContributionMode.mockResolvedValue(undefined);
     api.fetchSafetyNet.mockResolvedValue({ safetyNet: null, progress: null });
+    api.fetchContributionStatus.mockResolvedValue({ month: '2026-11', incomplete: true, members: [], totalExpectedCents: null, totalPaidCents: 0 });
     api.saveSafetyNet.mockResolvedValue(undefined);
   });
 
@@ -230,6 +232,11 @@ describe('FoyerPage', () => {
     it('links to the savings projects page', () => {
       renderPage();
       expect(screen.getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
+    });
+
+    it('links to the trends page', () => {
+      renderPage();
+      expect(screen.getByRole('link', { name: 'Voir mes tendances' })).toHaveAttribute('href', '/tendances');
     });
 
     it('links to the credits page', () => {

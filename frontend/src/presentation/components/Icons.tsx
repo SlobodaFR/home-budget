@@ -251,3 +251,9 @@ export const CreditCardIcon = (props: IconProps) => (
     <path d="M3 10h18M7 15h4" />
   </Icon>
 );
+
+export const ChartIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+  </Icon>
+);

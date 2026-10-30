@@ -235,6 +235,12 @@ describe('HomePage monthly review', () => {
     expect(screen.getByRole('link', { name: 'Ma revue du mois' })).toHaveAttribute('href', '/revue');
   });
 
+  it('always links to the trends page from the quick links', async () => {
+    renderInApp(<HomePage />);
+    await screen.findByRole('region', { name: 'Synthèse du mois' });
+    expect(screen.getByRole('link', { name: 'Mes tendances' })).toHaveAttribute('href', '/tendances');
+  });
+
   it('offers to make the review from the monthly-review insight', async () => {
     api.fetchInsights.mockResolvedValue([
       { id: 'monthly-review', severity: 'ACTION', title: 'Faites votre revue d’octobre', detail: 'Dix minutes suffisent.', lesson: 5, link: '/revue' },

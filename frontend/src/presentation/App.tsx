@@ -18,6 +18,7 @@ import { PlanPage } from './pages/PlanPage';
 import { PrevisionnelPage } from './pages/PrevisionnelPage';
 import { ProjetsPage } from './pages/ProjetsPage';
 import { RevuePage } from './pages/RevuePage';
+import { TendancesPage } from './pages/TendancesPage';
 import { WelcomePage } from './pages/WelcomePage';
 
 function Protected() {
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="projets" element={<ProjetsPage />} />
           <Route path="revue" element={<RevuePage />} />
           <Route path="dettes" element={<DettesPage />} />
+          <Route path="tendances" element={<TendancesPage />} />
           <Route path="foyer" element={<FoyerPage />} />
         </Route>
       </Route>

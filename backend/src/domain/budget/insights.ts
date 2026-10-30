@@ -13,6 +13,8 @@ import { SpacePlan } from '../space/space-plan';
 import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
 import { DEBT_RATIO_THRESHOLD_PERCENT, DebtSummary } from '../debt/debt-view';
+import { Riser } from '../trend/trends';
+import { ContributionStatus } from '../contribution/contribution-tracking';
 import { ReviewStatus } from '../review/month-review';
 import { Provisions } from './provisions';
 import { ProjectView, summarizeProjects } from '../project/project-progress';
@@ -40,6 +42,8 @@ export const BIG_PAYMENT_MIN_CENTS = 50000;
 export const BIG_PAYMENT_INCOME_SHARE_PERCENT = 20;
 /** Un projet atteint reste mis en avant pendant ce nombre de jours (`project-reached`). */
 export const PROJECT_REACHED_DAYS = 30;
+/** À partir de ce jour du mois (inclus), une contribution non soldée est signalée. */
+export const CONTRIBUTION_PENDING_FROM_DAY = 6;
 /** Fenêtre de `upcoming-big-payment`, en jours. */
 export const BIG_PAYMENT_DAYS = 60;
 /** Fenêtre des « paiements à venir ». */
@@ -61,12 +65,25 @@ export interface SafetyNetStatus extends SafetyNetProgress {
   targetMonths: number;
 }
 
+/** Contribution du mois de l'utilisateur lui-même (jamais celle d'un autre membre). */
+export interface MyContributionStatus {
+  status: ContributionStatus;
+  expectedCents: number | null;
+  paidCents: number;
+  remainingCents: number | null;
+}
+
 /** Données propres à l'espace commun (absentes pour un espace personnel). */
 export interface CommonInsightsContext {
   /** null = épargne de sécurité non renseignée. */
   safetyNet: SafetyNetStatus | null;
   /** Vrai si le revenu d'un membre manque. */
   contributionIncomplete: boolean;
+  /**
+   * Ma contribution du mois consulté, null si elle n'a pas été calculée. N'est
+   * utilisée que pour le mois courant (cf. `contribution-pending`).
+   */
+  myContribution: MyContributionStatus | null;
 }
 
 /** Résumé des comptes de l'espace utile aux conseils (vide si l'espace n'a aucun compte). */
@@ -113,6 +130,11 @@ export interface InsightsInput {
    */
   previousReview: { status: ReviewStatus; decision: string } | null;
   debts: DebtsInsightContext;
+  /**
+   * Plus forte hausse de dépense d'au moins 50 € par mois (cf. `findSpendingRiser`),
+   * null s'il n'y en a pas ou si les données couvrent moins de 4 mois.
+   */
+  spendingRiser: Riser | null;
 }
 
 const SEVERITY_RANK: Record<InsightSeverity, number> = {
@@ -135,6 +157,7 @@ const PRIORITY = [
   'plan-missing',
   'plan-unassigned',
   'contribution-incomplete',
+  'contribution-pending',
   'projects-exceed-savings',
   'savings-behind',
   'no-recent-activity',
@@ -142,6 +165,7 @@ const PRIORITY = [
   'upcoming-big-payment',
   'accounts-unassigned',
   'provision-suggestion',
+  'spending-riser',
   'monthly-review',
   'safety-net-unset',
   'safety-net-progress',
@@ -179,6 +203,7 @@ export function buildInsights(input: InsightsInput): Insight[] {
     ...provisionInsights(input),
     ...projectInsights(input),
     ...debtInsights(input),
+    ...trendInsights(input),
     ...(input.common ? commonInsights(input, input.common) : []),
   ];
 
@@ -568,6 +593,31 @@ function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
   return result;
 }
 
+/**
+ * Tendance : le poste de dépense qui a le plus augmenté (moyenne mensuelle de
+ * la moitié récente de la fenêtre contre l'ancienne). Mois courant seulement,
+ * au plus un conseil. Les dépenses du bloc EPARGNE ne comptent pas.
+ */
+function trendInsights({
+  month,
+  today,
+  spendingRiser,
+}: InsightsInput): Insight[] {
+  if (spendingRiser === null || monthPhase(month, today) !== 'CURRENT') {
+    return [];
+  }
+  return [
+    {
+      id: 'spending-riser',
+      severity: 'INFO',
+      title: `Dépense en hausse : ${spendingRiser.label}`,
+      detail: `${spendingRiser.label} passe de ${formatEuros(spendingRiser.previousAverageCents)} à ${formatEuros(spendingRiser.recentAverageCents)} par mois en moyenne (+${formatEuros(spendingRiser.deltaCents)}). Est-ce voulu ? Regardez le détail avant que ça devienne une habitude.`,
+      lesson: LESSON_TRACKING,
+      link: '/tendances',
+    },
+  ];
+}
+
 function joinNames(names: string[]): string {
   return names.length === 1
     ? names[0]
@@ -743,6 +793,41 @@ function monthlyReview(
   };
 }
 
+/**
+ * `contribution-pending` : à partir du 6 du mois courant, MA contribution du mois
+ * n'est pas soldée (PENDING ou PARTIAL). Rien si la règle du foyer est incalculable,
+ * et jamais rien sur la contribution d'un autre membre.
+ */
+function pendingContribution(
+  { month, today }: InsightsInput,
+  common: CommonInsightsContext,
+): Insight | null {
+  const mine = common.myContribution;
+  if (
+    mine === null ||
+    common.contributionIncomplete ||
+    mine.expectedCents === null ||
+    mine.remainingCents === null ||
+    (mine.status !== 'PENDING' && mine.status !== 'PARTIAL') ||
+    monthPhase(month, today) !== 'CURRENT' ||
+    today.getUTCDate() < CONTRIBUTION_PENDING_FROM_DAY
+  ) {
+    return null;
+  }
+  const label = formatMonthLabel(month);
+  return {
+    id: 'contribution-pending',
+    severity: 'ACTION',
+    title: `Contribution de ${label} : ${formatEuros(mine.remainingCents)} à verser`,
+    detail:
+      mine.status === 'PARTIAL'
+        ? `Vous avez versé ${formatEuros(mine.paidCents)} sur ${formatEuros(mine.expectedCents)} attendus pour le budget commun : il reste ${formatEuros(mine.remainingCents)} à verser. Enregistrez votre versement une fois fait.`
+        : `Vous n'avez encore rien versé au budget commun pour ${label} : ${formatEuros(mine.remainingCents)} attendus. Enregistrez votre versement une fois fait.`,
+    lesson: null,
+    link: '/foyer',
+  };
+}
+
 function commonInsights(
   input: InsightsInput,
   common: CommonInsightsContext,
@@ -759,6 +844,11 @@ function commonInsights(
       lesson: null,
       link: '/foyer',
     });
+  }
+
+  const pending = pendingContribution(input, common);
+  if (pending) {
+    result.push(pending);
   }
 
   if (common.safetyNet === null) {

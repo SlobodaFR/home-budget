@@ -2,7 +2,7 @@ import { Forecast } from '../budget/forecast';
 import { MonthSummary } from '../budget/month-summary';
 import { normalizeText } from '../import/classification';
 import { Bloc } from '../shared/bloc';
-import { roundDiv } from '../shared/rounding';
+import { roundDivSigned } from '../shared/rounding';
 import { Transaction } from '../transaction/transaction';
 
 export const MAX_TOP_EXPENSES = 5;
@@ -32,12 +32,6 @@ export interface ReviewSnapshotInput {
   transactions: Transaction[];
   /** Nombre de comptes de l'espace : sans compte, rien n'est « à rattacher ». */
   accountCount: number;
-}
-
-/** Arrondi au plus proche, la moitié s'éloignant de zéro, pour des entiers relatifs. */
-function roundSigned(numerator: number, denominator: number): number {
-  const rounded = roundDiv(Math.abs(numerator), denominator);
-  return numerator < 0 && rounded !== 0 ? -rounded : rounded;
 }
 
 /**
@@ -89,7 +83,7 @@ export function buildReviewSnapshot(
     expenseCents,
     balanceCents,
     savingsRatePercent:
-      incomeCents > 0 ? roundSigned(balanceCents * 100, incomeCents) : 0,
+      incomeCents > 0 ? roundDivSigned(balanceCents * 100, incomeCents) : 0,
     blocs: summary.blocs.map((b) => ({
       bloc: b.bloc,
       plannedCents: b.plannedCents,

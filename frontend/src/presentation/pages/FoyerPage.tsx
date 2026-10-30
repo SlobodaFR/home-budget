@@ -7,6 +7,7 @@ import { ContributionMode, MAX_HOUSEHOLD_MEMBERS } from '../../domain/household'
 import { apiClient } from '../../infrastructure/api-client';
 import { useAuth } from '../auth/AuthProvider';
 import { ContributionPreview } from '../components/ContributionPreview';
+import { ContributionStatusCard } from '../components/contributions/ContributionStatusCard';
 import { ContributionRule } from '../components/ContributionRule';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
 import { ExportSection } from '../components/ExportSection';
@@ -18,9 +19,9 @@ import { SafetyNetSection } from '../components/SafetyNetSection';
 import { useToast } from '../components/Toast';
 import { buttonSecondary, cardClass } from '../components/ui';
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
-    <section className={`${cardClass} flex flex-col gap-md`}>
+    <section id={id} className={`${cardClass} flex flex-col gap-md`}>
       <h3 className="font-label-caps text-label-caps uppercase text-mute">{title}</h3>
       {children}
     </section>
@@ -77,7 +78,7 @@ export function FoyerPage() {
         <MembersList household={household} currentUserId={user?.id ?? ''} />
       </Section>
 
-      <Section title="Mon revenu net mensuel">
+      <Section title="Mon revenu net mensuel" id="mon-revenu">
         <IncomeForm key={me?.netMonthlyIncomeCents ?? 'none'} currentCents={me?.netMonthlyIncomeCents ?? null} onSave={saveIncome} />
       </Section>
 
@@ -95,6 +96,8 @@ export function FoyerPage() {
           loading && <LoadingScreen />
         )}
       </Section>
+
+      <ContributionStatusCard />
 
       <SafetyNetSection />
 
@@ -131,6 +134,15 @@ export function FoyerPage() {
         </p>
         <Link to="/dettes" className={`${buttonSecondary} w-full`}>
           Voir mes crédits
+        </Link>
+      </Section>
+
+      <Section title="Tendances">
+        <p className="font-body-sm text-body-sm text-mute">
+          Où va l’argent sur les derniers mois, ce qui grimpe et votre taux d’épargne moyen. Ceux de l’espace que vous avez sélectionné (commun ou perso).
+        </p>
+        <Link to="/tendances" className={`${buttonSecondary} w-full`}>
+          Voir mes tendances
         </Link>
       </Section>
 

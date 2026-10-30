@@ -102,7 +102,7 @@ export class UpdateSpaceTransactionUseCase {
       existing.accountId,
     );
     await this.transactions.save(
-      buildTransaction(id, spaceId, command, accountId),
+      buildTransaction(id, spaceId, command, accountId, existing),
     );
   }
 }
@@ -152,7 +152,12 @@ function buildTransaction(
   spaceId: string,
   command: SaveTransactionCommand,
   accountId: string | null,
+  existing?: Transaction,
 ): Transaction {
+  // Une contribution versée reste une contribution quand on corrige son montant, sa
+  // date ou son compte ; elle n'en est plus une si elle cesse d'être un revenu.
+  const keepsContribution =
+    existing?.contributionUserId != null && command.kind === 'INCOME';
   return Transaction.create({
     id,
     spaceId,
@@ -162,5 +167,7 @@ function buildTransaction(
     amount: Money.fromCents(command.amountCents),
     date: command.date ?? new Date(),
     accountId,
+    contributionUserId: keepsContribution ? existing.contributionUserId : null,
+    contributionMonth: keepsContribution ? existing.contributionMonth : null,
   });
 }

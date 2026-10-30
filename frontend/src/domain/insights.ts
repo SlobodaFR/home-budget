@@ -53,10 +53,11 @@ const ACTION_LABELS: Record<string, string> = {
   '/projets': 'Voir mes projets',
   '/revue': 'Faire ma revue',
   '/dettes': 'Voir mes crédits',
+  '/tendances': 'Voir mes tendances',
 };
 
 /**
- * Conseils des tranches 5 à 8 : un libellé plus précis et, pour le gros paiement à venir, une ouverture directe sur l'onglet
+ * Conseils des tranches 5 à 10 : un libellé plus précis et, pour le gros paiement à venir, une ouverture directe sur l'onglet
  * « Provisions ». Ils ne s'appliquent que si le serveur envoie bien le lien attendu (sinon on retombe sur le bouton générique).
  */
 const INSIGHT_ACTIONS: Record<string, { link: string; to: string; label: string }> = {
@@ -64,6 +65,7 @@ const INSIGHT_ACTIONS: Record<string, { link: string; to: string; label: string 
   'provision-suggestion': { link: '/plan', to: '/plan', label: 'Ajuster mon plan' },
   'projects-exceed-savings': { link: '/plan', to: '/plan', label: 'Ajuster mon plan' },
   'review-done': { link: '/revue', to: '/revue', label: 'Voir ma revue' },
+  'contribution-pending': { link: '/foyer', to: '/foyer?verser=1', label: 'Verser ma contribution' },
 };
 
 /** Seules les routes connues de l'application sont suivies ; « / » (l'accueil) n'a pas de bouton. */

@@ -16,6 +16,8 @@ import {
   InMemoryUserRepository,
 } from '../../testing/in-memory-repositories';
 import { AccountAssignmentService } from '../account/account-assignment.service';
+import { ContributionStatusService } from '../contribution/contribution-status.service';
+import { GetContributionUseCase } from '../contribution/get-contribution.use-case';
 import { ProjectViewsService } from '../project/project-views.service';
 import { DebtViewsService } from '../debt/debt-views.service';
 import { AccountViewsService } from '../account/account-views.service';
@@ -137,6 +139,11 @@ async function setup(today = '2026-11-12T09:00:00Z') {
       projectViews,
       new InMemoryMonthReviewRepository(),
       new DebtViewsService(new InMemoryDebtRepository(), access, clock),
+      new ContributionStatusService(
+        access,
+        new GetContributionUseCase(access, plans, users),
+        transactions,
+      ),
       clock,
     ),
     getSafetyNet: new GetSafetyNetUseCase(access, safetyNets, progress),

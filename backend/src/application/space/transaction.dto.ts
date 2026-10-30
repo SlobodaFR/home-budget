@@ -13,6 +13,10 @@ export interface TransactionDto {
   amountCents: number;
   date: string;
   accountId: string | null;
+  /** Membre qui a versé sa contribution (revenu du commun), null sinon. */
+  contributionUserId: string | null;
+  /** Mois AAAA-MM couvert par la contribution, null sinon. */
+  contributionMonth: string | null;
 }
 
 export function toTransactionDto(transaction: Transaction): TransactionDto {
@@ -25,5 +29,7 @@ export function toTransactionDto(transaction: Transaction): TransactionDto {
     amountCents: transaction.amount.toCents(),
     date: transaction.date.toISOString(),
     accountId: transaction.accountId,
+    contributionUserId: transaction.contributionUserId,
+    contributionMonth: transaction.contributionMonth,
   };
 }
