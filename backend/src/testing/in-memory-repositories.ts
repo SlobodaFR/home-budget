@@ -27,6 +27,8 @@ import { SafetyNet } from '../domain/safety-net/safety-net';
 import { SafetyNetRepository } from '../domain/safety-net/safety-net.repository';
 import { FiscalProfile } from '../domain/aid/fiscal-profile';
 import { FiscalProfileRepository } from '../domain/aid/fiscal-profile.repository';
+import { LifeEvent } from '../domain/life-event/life-event';
+import { LifeEventRepository } from '../domain/life-event/life-event.repository';
 import { User } from '../domain/user/user';
 import { UserRepository } from '../domain/user/user.repository';
 
@@ -318,6 +320,28 @@ export class InMemoryDebtRepository extends DebtRepository {
   }
   async save(debt: Debt): Promise<void> {
     this.items.set(debt.id, debt);
+  }
+  async delete(id: string): Promise<void> {
+    this.items.delete(id);
+  }
+}
+
+export class InMemoryLifeEventRepository extends LifeEventRepository {
+  items = new Map<string, LifeEvent>();
+  async findByHousehold(householdId: string): Promise<LifeEvent[]> {
+    return [...this.items.values()]
+      .filter((e) => e.householdId === householdId)
+      .sort(
+        (a, b) =>
+          b.eventDate.localeCompare(a.eventDate) ||
+          b.createdAt.getTime() - a.createdAt.getTime(),
+      );
+  }
+  async findById(id: string): Promise<LifeEvent | null> {
+    return this.items.get(id) ?? null;
+  }
+  async save(event: LifeEvent): Promise<void> {
+    this.items.set(event.id, event);
   }
   async delete(id: string): Promise<void> {
     this.items.delete(id);

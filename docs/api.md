@@ -285,10 +285,10 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 ```
 - `severity` : `WARNING | ACTION | INFO | GOOD`.
 - `lesson` : numéro de la leçon du cours qui explique la règle, ou `null`.
-- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/tendances`, `/`) ou `null`.
+- `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/tendances`, `/evenements`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `spending-riser`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `contribution-pending`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `spending-riser`, `life-event-overdue`, `life-event-due-soon`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `contribution-pending`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`, `contribution-pending`).
 
 ## Aides officielles (tranche 3)
@@ -723,6 +723,79 @@ courant (on ne verse que pour soi). `201` :
 ### Conseil
 Nouvel id `contribution-pending` (`ACTION`, espace commun, mois courant, à partir du 6 du mois) : MA contribution du mois
 est `PENDING` ou `PARTIAL` ; détail avec le reste à verser ; lien `/foyer`. Jamais de conseil sur la contribution des autres.
+
+## Événements de vie (tranche 11)
+
+Un événement de vie (naissance, déménagement…) déclenche une série de démarches datées (administratif, aides, santé,
+budget) que l'on oublie facilement. Cette tranche ne gère que `BIRTH` (naissance ou adoption d'un enfant) ; le catalogue
+est du code versionné, **chaque étape citant sa source officielle** et sa date de vérification. Ce sont des repères, pas
+un conseil juridique ou fiscal. Les événements sont ceux du **foyer** (visibles de tous ses membres) : n'y saisir aucune
+donnée sensible (pas de prénom obligatoire, pas de données de santé).
+
+### `GET /api/life-events/catalog`
+```json
+[{
+  "type": "BIRTH",
+  "label": "Naissance d'un enfant",
+  "description": "Les démarches et aides à prévoir autour d'une naissance.",
+  "steps": [{
+    "id": "birth-declaration",
+    "title": "Déclarer la naissance à la mairie",
+    "detail": "À faire dans les 5 jours qui suivent la naissance (jour de l'accouchement non compté)…",
+    "category": "ADMIN",
+    "dueOffsetDays": 5,
+    "dueLabel": "Dans les 5 jours après la naissance",
+    "sourceLabel": "service-public.fr",
+    "sourceUrl": "https://www.service-public.fr/…",
+    "verifiedOn": "2026-10-30",
+    "link": null
+  }]
+}]
+```
+- `category` : `ADMIN | AIDES | SANTE | TRAVAIL | BUDGET`.
+- `dueOffsetDays` : échéance en jours par rapport à la date de l'événement (négatif = avant) ou `null` (pas d'échéance
+  fixe) ; `dueLabel` : texte lisible ou `null`.
+- `link` : route de l'application utile à l'étape (`/aides`, `/plan`, `/previsionnel`, `/projets`, `/comptes`) ou `null`.
+- N'inclure **que des étapes vérifiées** sur des sources officielles (service-public.fr, caf.fr, ameli.fr,
+  impots.gouv.fr, travail-emploi.gouv.fr…) : une information non vérifiée ne doit pas figurer au catalogue.
+
+### `GET /api/household/life-events`
+Liste des événements du foyer, du plus récent au plus ancien.
+```json
+[{
+  "id": "…", "type": "BIRTH", "label": "Naissance d'un enfant", "eventDate": "2026-10-31",
+  "progressPercent": 25, "doneCount": 3, "totalCount": 12,
+  "steps": [{
+    "stepId": "birth-declaration", "title": "…", "detail": "…", "category": "ADMIN",
+    "dueDate": "2026-11-05", "dueLabel": "Dans les 5 jours après la naissance",
+    "status": "DUE_SOON", "doneAt": null, "note": "", "sourceLabel": "…", "sourceUrl": "…", "link": null
+  }]
+}]
+```
+- `dueDate` = `eventDate` + `dueOffsetDays` (`AAAA-MM-JJ`) ou `null`.
+- `status` : `DONE` | `OVERDUE` (échéance passée, non faite) | `DUE_SOON` (échéance dans les 14 jours, non faite) |
+  `UPCOMING` (échéance plus lointaine) | `NO_DATE`. Étapes triées : `OVERDUE`, `DUE_SOON`, `UPCOMING`, `NO_DATE`, `DONE`,
+  puis par échéance croissante.
+- `progressPercent` : `doneCount ÷ totalCount` arrondi inférieur, entier 0-100. Une étape du catalogue ajoutée plus tard
+  apparaît automatiquement (non faite) ; une étape retirée du catalogue disparaît.
+
+### `POST /api/household/life-events`
+Corps : `{ "type": "BIRTH", "eventDate": "2026-10-31", "label"?: "…" }` → `201` + l'objet complet. `eventDate` : date
+de naissance prévue ou réelle (de 24 mois dans le passé à 18 mois dans le futur). `label` ≤ 60 caractères (défaut : libellé
+du catalogue). `400` si type inconnu ou date invalide. Un foyer peut avoir plusieurs événements.
+
+### `PUT /api/household/life-events/:id` · `DELETE /api/household/life-events/:id`
+Corps du `PUT` : `{ "eventDate", "label" }` (`204`). Changer la date recalcule les échéances ; les étapes faites restent
+faites. `DELETE` : `204`. `404` si l'événement n'appartient pas au foyer de l'utilisateur.
+
+### `PUT /api/household/life-events/:id/steps/:stepId`
+Corps : `{ "done": true, "note"?: "…" }` → `204`. `note` ≤ 200 caractères. `done: true` fixe `doneAt` (conservé si déjà fait) ;
+`done: false` l'efface. `404` : événement ou étape inconnus.
+
+### Conseils
+Nouveaux ids d'insights (espace commun uniquement, mois courant) : `life-event-overdue` (`WARNING` : des étapes sont en
+retard ; détail : les 3 premières) et `life-event-due-soon` (`ACTION` : des étapes à faire dans les 14 jours) ; lien
+`/evenements`.
 
 ## Chiffrement de l'espace personnel (informatif)
 

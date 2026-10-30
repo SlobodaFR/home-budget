@@ -14,6 +14,7 @@ import { currentMonth } from './month';
 import { Forecast, Occurrence, monthPhase } from './forecast';
 import { DEBT_RATIO_THRESHOLD_PERCENT, DebtSummary } from '../debt/debt-view';
 import { Riser } from '../trend/trends';
+import { DUE_SOON_DAYS } from '../life-event/life-event-view';
 import { ContributionStatus } from '../contribution/contribution-tracking';
 import { ReviewStatus } from '../review/month-review';
 import { Provisions } from './provisions';
@@ -73,6 +74,19 @@ export interface MyContributionStatus {
   remainingCents: number | null;
 }
 
+/** Une étape d'événement de vie à faire (en retard ou bientôt due), pour les conseils. */
+export interface LifeEventStepAlert {
+  title: string;
+  /** AAAA-MM-JJ */
+  dueDate: string;
+}
+
+/** Étapes non faites des événements de vie du foyer, déjà classées par statut à la date du jour. */
+export interface LifeEventsInsightContext {
+  overdue: LifeEventStepAlert[];
+  dueSoon: LifeEventStepAlert[];
+}
+
 /** Données propres à l'espace commun (absentes pour un espace personnel). */
 export interface CommonInsightsContext {
   /** null = épargne de sécurité non renseignée. */
@@ -84,6 +98,8 @@ export interface CommonInsightsContext {
    * utilisée que pour le mois courant (cf. `contribution-pending`).
    */
   myContribution: MyContributionStatus | null;
+  /** Démarches des événements de vie du foyer (naissance…). */
+  lifeEvents: LifeEventsInsightContext;
 }
 
 /** Résumé des comptes de l'espace utile aux conseils (vide si l'espace n'a aucun compte). */
@@ -152,12 +168,14 @@ const PRIORITY = [
   'bloc-overrun',
   'project-behind',
   'debt-ratio-high',
+  'life-event-overdue',
   'recurring-missing',
   'debt-never-paid-off',
   'plan-missing',
   'plan-unassigned',
   'contribution-incomplete',
   'contribution-pending',
+  'life-event-due-soon',
   'projects-exceed-savings',
   'savings-behind',
   'no-recent-activity',
@@ -828,6 +846,76 @@ function pendingContribution(
   };
 }
 
+/**
+ * Événements de vie du foyer (mois courant seulement, comme les autres conseils liés à
+ * aujourd'hui) :
+ * - `life-event-overdue` (WARNING) : des démarches dont l'échéance est passée ;
+ * - `life-event-due-soon` (ACTION) : des démarches à faire dans les 14 jours (inclus).
+ * Le détail liste les 3 premières (échéance la plus ancienne d'abord). Lien `/evenements`.
+ * Classement : `life-event-overdue` juste après `debt-ratio-high` parmi les WARNING,
+ * `life-event-due-soon` juste après `contribution-pending` parmi les ACTION.
+ */
+function lifeEventInsights(
+  { month, today }: InsightsInput,
+  lifeEvents: LifeEventsInsightContext,
+): Insight[] {
+  if (monthPhase(month, today) !== 'CURRENT') {
+    return [];
+  }
+  const result: Insight[] = [];
+  const overdue = sortedAlerts(lifeEvents.overdue);
+  if (overdue.length > 0) {
+    result.push({
+      id: 'life-event-overdue',
+      severity: 'WARNING',
+      title:
+        overdue.length === 1
+          ? `Démarche en retard : ${overdue[0].title}`
+          : `${overdue.length} démarches en retard`,
+      detail: `${alertList(overdue)}. Faites-les, cochez-les dans vos événements de vie ou corrigez la date de l'événement.`,
+      lesson: null,
+      link: '/evenements',
+    });
+  }
+  const dueSoon = sortedAlerts(lifeEvents.dueSoon);
+  if (dueSoon.length > 0) {
+    result.push({
+      id: 'life-event-due-soon',
+      severity: 'ACTION',
+      title:
+        dueSoon.length === 1
+          ? `Démarche à faire sous ${DUE_SOON_DAYS} jours : ${dueSoon[0].title}`
+          : `${dueSoon.length} démarches à faire sous ${DUE_SOON_DAYS} jours`,
+      detail: `${alertList(dueSoon)}. Retrouvez le détail et les sources dans vos événements de vie.`,
+      lesson: null,
+      link: '/evenements',
+    });
+  }
+  return result;
+}
+
+function sortedAlerts(alerts: LifeEventStepAlert[]): LifeEventStepAlert[] {
+  return [...alerts].sort(
+    (a, b) =>
+      a.dueDate.localeCompare(b.dueDate) || a.title.localeCompare(b.title),
+  );
+}
+
+/** « A (échéance 5 nov.), B (…) et 2 autres » : les 3 premières démarches. */
+function alertList(alerts: LifeEventStepAlert[]): string {
+  const shown = alerts
+    .slice(0, MAX_LISTED)
+    .map(
+      (a) =>
+        `${a.title} (échéance ${formatShortDate(new Date(`${a.dueDate}T00:00:00Z`))})`,
+    );
+  const rest = alerts.length - MAX_LISTED;
+  if (rest > 0) {
+    shown.push(`${rest} ${plural(rest, 'autre', 'autres')}`);
+  }
+  return joinNames(shown);
+}
+
 function commonInsights(
   input: InsightsInput,
   common: CommonInsightsContext,
@@ -850,6 +938,8 @@ function commonInsights(
   if (pending) {
     result.push(pending);
   }
+
+  result.push(...lifeEventInsights(input, common.lifeEvents));
 
   if (common.safetyNet === null) {
     result.push({

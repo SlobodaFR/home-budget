@@ -473,6 +473,7 @@ describe('buildInsights', () => {
       safetyNet: null,
       contributionIncomplete: false,
       myContribution: null,
+      lifeEvents: { overdue: [], dueSoon: [] },
       ...over,
     });
 
@@ -587,6 +588,7 @@ describe('buildInsights', () => {
       safetyNet: status(700000, 6),
       contributionIncomplete: false,
       myContribution,
+      lifeEvents: { overdue: [], dueSoon: [] },
       ...over,
     });
     const pending = (insights: Insight[]) =>
@@ -702,6 +704,150 @@ describe('buildInsights', () => {
     });
   });
 
+  describe('life events', () => {
+    const withEvents = (
+      lifeEvents: CommonInsightsContext['lifeEvents'],
+    ): CommonInsightsContext => ({
+      safetyNet: status(700000, 6),
+      contributionIncomplete: false,
+      myContribution: null,
+      lifeEvents,
+    });
+    const found = (insights: Insight[], id: string) =>
+      insights.filter((i) => i.id === id);
+    const alert = (title: string, dueDate: string) => ({ title, dueDate });
+
+    it('warns about overdue steps, listing the first three by oldest deadline', () => {
+      const insights = run({
+        transactions: recent,
+        common: withEvents({
+          overdue: [
+            alert('Déclarer la naissance à la mairie', '2026-11-05'),
+            alert('Faire passer le premier examen médical', '2026-11-03'),
+            alert('Signaler la naissance aux impôts', '2026-11-18'),
+            alert('Autre démarche', '2026-11-10'),
+            alert('Encore une', '2026-11-11'),
+          ],
+          dueSoon: [],
+        }),
+      });
+      expect(found(insights, 'life-event-overdue')).toEqual([
+        {
+          id: 'life-event-overdue',
+          severity: 'WARNING',
+          title: '5 démarches en retard',
+          detail:
+            "Faire passer le premier examen médical (échéance 3 nov.), Déclarer la naissance à la mairie (échéance 5 nov.), Autre démarche (échéance 10 nov.) et 2 autres. Faites-les, cochez-les dans vos événements de vie ou corrigez la date de l'événement.",
+          lesson: null,
+          link: '/evenements',
+        },
+      ]);
+    });
+
+    it('names the step when a single one is overdue', () => {
+      const [insight] = found(
+        run({
+          transactions: recent,
+          common: withEvents({
+            overdue: [alert('Déclarer la naissance à la mairie', '2026-11-05')],
+            dueSoon: [],
+          }),
+        }),
+        'life-event-overdue',
+      );
+      expect(insight.title).toBe(
+        'Démarche en retard : Déclarer la naissance à la mairie',
+      );
+      expect(insight.detail).toContain('(échéance 5 nov.)');
+      expect(insight.detail).not.toContain(' autre');
+    });
+
+    it('suggests steps due within 14 days as an ACTION', () => {
+      const insights = run({
+        transactions: recent,
+        common: withEvents({
+          overdue: [],
+          dueSoon: [
+            alert('Signaler la naissance aux impôts', '2026-11-30'),
+            alert('Déclarer la naissance à la mairie', '2026-11-22'),
+          ],
+        }),
+      });
+      expect(found(insights, 'life-event-overdue')).toEqual([]);
+      expect(found(insights, 'life-event-due-soon')).toEqual([
+        {
+          id: 'life-event-due-soon',
+          severity: 'ACTION',
+          title: '2 démarches à faire sous 14 jours',
+          detail:
+            'Déclarer la naissance à la mairie (échéance 22 nov.) et Signaler la naissance aux impôts (échéance 30 nov.). Retrouvez le détail et les sources dans vos événements de vie.',
+          lesson: null,
+          link: '/evenements',
+        },
+      ]);
+    });
+
+    it('is silent without alerts, outside the current month and for a personal space', () => {
+      const alerts = {
+        overdue: [alert('Une démarche', '2026-11-05')],
+        dueSoon: [alert('Une autre', '2026-11-22')],
+      };
+      const quiet = (scenario: Parameters<typeof run>[0]) =>
+        ids(run(scenario)).filter((id) => id.startsWith('life-event'));
+      expect(
+        quiet({
+          transactions: recent,
+          common: withEvents({ overdue: [], dueSoon: [] }),
+        }),
+      ).toEqual([]);
+      for (const month of ['2026-10', '2026-12']) {
+        expect(
+          quiet({ month, transactions: recent, common: withEvents(alerts) }),
+        ).toEqual([]);
+      }
+      expect(quiet({ transactions: recent, common: null })).toEqual([]);
+      expect(
+        quiet({ transactions: recent, common: withEvents(alerts) }),
+      ).toEqual(['life-event-overdue', 'life-event-due-soon']);
+    });
+
+    it('ranks the overdue warning after debt-ratio-high and the due-soon action after contribution-pending', () => {
+      const insights = run({
+        transactions: recent,
+        plan: SpacePlan.empty(),
+        common: {
+          ...withEvents({
+            overdue: [alert('A', '2026-11-05')],
+            dueSoon: [alert('B', '2026-11-22')],
+          }),
+          myContribution: {
+            status: 'PENDING',
+            expectedCents: 100000,
+            paidCents: 0,
+            remainingCents: 100000,
+          },
+        },
+        debts: {
+          ...NO_DEBTS,
+          summary: { ...NO_DEBTS.summary, debtToIncomePercent: 50 },
+          monthlyIncomeCents: 200000,
+        },
+      });
+      const order = ids(insights);
+      expect(order.indexOf('debt-ratio-high')).toBeGreaterThanOrEqual(0);
+      expect(order.indexOf('debt-ratio-high')).toBeLessThan(
+        order.indexOf('life-event-overdue'),
+      );
+      expect(order.indexOf('contribution-pending')).toBeLessThan(
+        order.indexOf('life-event-due-soon'),
+      );
+      // Les WARNING passent avant les ACTION.
+      expect(order.indexOf('life-event-overdue')).toBeLessThan(
+        order.indexOf('life-event-due-soon'),
+      );
+    });
+  });
+
   describe('common space funded by contributions', () => {
     const COMMON_PLAN = SpacePlan.create({
       incomeCents: 0,
@@ -714,6 +860,7 @@ describe('buildInsights', () => {
       safetyNet: status(700000, 6),
       contributionIncomplete: false,
       myContribution: null,
+      lifeEvents: { overdue: [], dueSoon: [] },
     };
 
     it('raises no false deficit, overcommitment or unassigned income on an unfunded plan', () => {
@@ -1550,6 +1697,7 @@ describe('buildInsights', () => {
         safetyNet: null,
         contributionIncomplete: true,
         myContribution: null,
+        lifeEvents: { overdue: [], dueSoon: [] },
       },
     };
 
@@ -1577,7 +1725,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|contribution-pending|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|contribution-pending|life-event-overdue|life-event-due-soon|all-good)$',
       );
       const insights = [
         ...run(crowded),
