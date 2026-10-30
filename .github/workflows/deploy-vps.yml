@@ -41,6 +41,7 @@ jobs:
           MINIO_REGION: op://TECH/thomassloboda_home_secrets/MINIO_REGION
           MINIO_ACCESS_KEY_ID: op://TECH/thomassloboda_home_secrets/MINIO_ACCESS_KEY_ID
           MINIO_SECRET_ACCESS_KEY: op://TECH/thomassloboda_home_secrets/MINIO_SECRET_ACCESS_KEY
+          PERSONAL_DATA_KEY: op://TECH/thomassloboda_home_secrets/BUDGET_PERSONAL_DATA_KEY
           GHCR_PAT: op://TECH/thomassloboda_home_secrets/GITHUB_PAT_FULL_ACCESS
 
       - name: Normalize VPS_SSH_KEY
@@ -75,7 +76,7 @@ jobs:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
-          envs: AUTH_SERVICE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REPLICA_PATH,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY
+          envs: AUTH_SERVICE_URL,AUTH_CLIENT_ID,AUTH_CLIENT_SECRET,AUTH_WEBHOOK_SECRET,FRONTEND_URL,DATABASE_PATH,MINIO_ENDPOINT,MINIO_BUCKET,MINIO_REPLICA_PATH,MINIO_REGION,MINIO_ACCESS_KEY_ID,MINIO_SECRET_ACCESS_KEY,PERSONAL_DATA_KEY
           script: |
             mkdir -p /opt/budget/deploy
             cat > /opt/budget/deploy/.env <<EOF
@@ -93,6 +94,7 @@ jobs:
             MINIO_REGION=$MINIO_REGION
             MINIO_ACCESS_KEY_ID=$MINIO_ACCESS_KEY_ID
             MINIO_SECRET_ACCESS_KEY=$MINIO_SECRET_ACCESS_KEY
+            PERSONAL_DATA_KEY=$PERSONAL_DATA_KEY
             EOF
 
       - name: Sync deploy files

@@ -1,76 +1,140 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Bloc } from '../../../domain/shared/bloc';
+import { FieldCipher } from '../../../domain/shared/field-cipher';
 import { Money } from '../../../domain/shared/money';
-import { Transaction } from '../../../domain/transaction/transaction';
+import {
+  Transaction,
+  TransactionKind,
+} from '../../../domain/transaction/transaction';
 import { TransactionRepository } from '../../../domain/transaction/transaction.repository';
+import { SpaceOrmEntity } from '../entities/space.orm-entity';
 import { TransactionOrmEntity } from '../entities/transaction.orm-entity';
 
+interface SecretPayload {
+  label: string;
+  amountCents: number;
+}
+
+/**
+ * Espace commun : libelle et montant en clair. Espace personnel : ils sont
+ * chiffres (cle du proprietaire) ; date, bloc et type restent en clair pour
+ * permettre le filtrage par mois.
+ */
 @Injectable()
 export class TypeOrmTransactionRepository extends TransactionRepository {
   constructor(
     @InjectRepository(TransactionOrmEntity)
-    private readonly repository: Repository<TransactionOrmEntity>,
+    private readonly transactions: Repository<TransactionOrmEntity>,
+    @InjectRepository(SpaceOrmEntity)
+    private readonly spaces: Repository<SpaceOrmEntity>,
+    private readonly cipher: FieldCipher,
   ) {
     super();
   }
 
-  async findAll(limit?: number, userId?: string): Promise<Transaction[]> {
-    if (!userId) {
-      const rows = await this.repository.find({
-        order: { date: 'DESC' },
-        take: limit,
-      });
-      return rows.map(toDomain);
-    }
-
-    const query = this.repository
-      .createQueryBuilder('transaction')
-      .innerJoin('accounts', 'account', 'account.id = transaction.account_id')
-      .where('account.user_id = :userId', { userId })
-      .orderBy('transaction.date', 'DESC');
-
-    if (limit) {
-      query.take(limit);
-    }
-
-    const rows = await query.getMany();
-    return rows.map(toDomain);
-  }
-
-  async findByAccountId(accountId: string): Promise<Transaction[]> {
-    const rows = await this.repository.find({ where: { accountId } });
-    return rows.map(toDomain);
+  async findBySpaceAndPeriod(
+    spaceId: string,
+    from: Date,
+    to: Date,
+  ): Promise<Transaction[]> {
+    const space = await this.spaces.findOneByOrFail({ id: spaceId });
+    const rows = await this.transactions
+      .createQueryBuilder('t')
+      .where('t.space_id = :spaceId', { spaceId })
+      .andWhere('t.date >= :from AND t.date < :to', {
+        from: from.toISOString(),
+        to: to.toISOString(),
+      })
+      .orderBy('t.date', 'DESC')
+      .addOrderBy('t.id', 'DESC')
+      .getMany();
+    return rows.map((row) => this.toDomain(row, space.ownerUserId));
   }
 
   async findById(id: string): Promise<Transaction | null> {
-    const row = await this.repository.findOne({ where: { id } });
-    return row ? toDomain(row) : null;
+    const row = await this.transactions.findOne({ where: { id } });
+    if (!row) {
+      return null;
+    }
+    const space = await this.spaces.findOneByOrFail({ id: row.spaceId });
+    return this.toDomain(row, space.ownerUserId);
   }
 
   async save(transaction: Transaction): Promise<void> {
-    await this.repository.save({
+    const space = await this.spaces.findOneByOrFail({
+      id: transaction.spaceId,
+    });
+    const base = {
       id: transaction.id,
-      accountId: transaction.accountId,
+      spaceId: transaction.spaceId,
+      kind: transaction.kind,
+      bloc: transaction.bloc,
+      date: transaction.date.toISOString(),
+    };
+
+    if (space.ownerUserId) {
+      const secret: SecretPayload = {
+        label: transaction.label,
+        amountCents: transaction.amount.toCents(),
+      };
+      await this.transactions.save({
+        ...base,
+        label: null,
+        amountCents: null,
+        secretPayload: this.cipher.encrypt(
+          space.ownerUserId,
+          aad(transaction.id, transaction.spaceId),
+          JSON.stringify(secret),
+        ),
+      });
+      return;
+    }
+
+    await this.transactions.save({
+      ...base,
       label: transaction.label,
-      category: transaction.category,
       amountCents: transaction.amount.toCents(),
-      date: transaction.date,
+      secretPayload: null,
     });
   }
 
   async delete(id: string): Promise<void> {
-    await this.repository.delete({ id });
+    await this.transactions.delete({ id });
+  }
+
+  private toDomain(
+    row: TransactionOrmEntity,
+    ownerUserId: string | null,
+  ): Transaction {
+    let label = row.label ?? '';
+    let amountCents = row.amountCents ?? 0;
+
+    if (ownerUserId && row.secretPayload) {
+      const secret = JSON.parse(
+        this.cipher.decrypt(
+          ownerUserId,
+          aad(row.id, row.spaceId),
+          row.secretPayload,
+        ),
+      ) as SecretPayload;
+      label = secret.label;
+      amountCents = secret.amountCents;
+    }
+
+    return Transaction.create({
+      id: row.id,
+      spaceId: row.spaceId,
+      kind: row.kind as TransactionKind,
+      bloc: row.bloc as Bloc | null,
+      label,
+      amount: Money.fromCents(amountCents),
+      date: new Date(row.date),
+    });
   }
 }
 
-function toDomain(row: TransactionOrmEntity): Transaction {
-  return Transaction.create({
-    id: row.id,
-    accountId: row.accountId,
-    label: row.label,
-    category: row.category,
-    amount: Money.fromCents(row.amountCents),
-    date: new Date(row.date),
-  });
+function aad(id: string, spaceId: string): string {
+  return `tx:${spaceId}:${id}`;
 }

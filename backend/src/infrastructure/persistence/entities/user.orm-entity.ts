@@ -11,7 +11,7 @@ export class UserOrmEntity {
   @PrimaryColumn('text')
   id!: string;
 
-  @Index({ unique: true })
+  @Index('uq_users_email', { unique: true })
   @Column('text')
   email!: string;
 

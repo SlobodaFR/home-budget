@@ -1,11 +1,26 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AccountOrmEntity } from './entities/account.orm-entity';
-import { RecurringTransactionOrmEntity } from './entities/recurring-transaction.orm-entity';
+import { HouseholdOrmEntity } from './entities/household.orm-entity';
+import { InvitationOrmEntity } from './entities/invitation.orm-entity';
+import { MembershipOrmEntity } from './entities/membership.orm-entity';
 import { RevokedSessionOrmEntity } from './entities/revoked-session.orm-entity';
+import { SpacePlanOrmEntity } from './entities/space-plan.orm-entity';
+import { SpaceOrmEntity } from './entities/space.orm-entity';
 import { TransactionOrmEntity } from './entities/transaction.orm-entity';
 import { UserOrmEntity } from './entities/user.orm-entity';
+import { MIGRATIONS } from './migrations';
+
+export const ORM_ENTITIES = [
+  UserOrmEntity,
+  RevokedSessionOrmEntity,
+  HouseholdOrmEntity,
+  MembershipOrmEntity,
+  InvitationOrmEntity,
+  SpaceOrmEntity,
+  SpacePlanOrmEntity,
+  TransactionOrmEntity,
+];
 
 @Module({
   imports: [
@@ -13,19 +28,15 @@ import { UserOrmEntity } from './entities/user.orm-entity';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        type: 'better-sqlite3',
+        type: 'better-sqlite3' as const,
         database: config.get<string>('DATABASE_PATH', 'data/budget.sqlite'),
         // WAL mode is required for Litestream replication.
         enableWAL: true,
-        entities: [
-          AccountOrmEntity,
-          TransactionOrmEntity,
-          UserOrmEntity,
-          RecurringTransactionOrmEntity,
-          RevokedSessionOrmEntity,
-        ],
-        synchronize: true,
-        autoLoadEntities: true,
+        entities: ORM_ENTITIES,
+        // Le schema evolue par migrations uniquement : jamais de synchronize.
+        synchronize: false,
+        migrationsRun: true,
+        migrations: MIGRATIONS,
       }),
     }),
   ],
