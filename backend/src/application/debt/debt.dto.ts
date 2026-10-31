@@ -1,5 +1,10 @@
-import { DebtKind } from '../../domain/debt/debt';
-import { DebtView, WhatIf } from '../../domain/debt/debt-view';
+import {
+  DebtKind,
+  DebtRateType,
+  GuaranteeKind,
+  InsuranceMode,
+} from '../../domain/debt/debt';
+import { DebtView, PaymentCheck, WhatIf } from '../../domain/debt/debt-view';
 
 export interface DebtDto {
   id: string;
@@ -21,6 +26,22 @@ export interface DebtDto {
   recurringId: string | null;
   /** Présent (true) seulement si la dette ne diminue jamais. */
   neverPaidOff?: true;
+  lender: string;
+  contractReference: string;
+  initialTermMonths: number | null;
+  rateType: DebtRateType | null;
+  insuranceMode: InsuranceMode;
+  insuranceRatePercent: number | null;
+  insuranceQuotityPercent: number;
+  feesCents: number;
+  guaranteeKind: GuaranteeKind;
+  guaranteeCents: number;
+  notes: string;
+  monthlyInsuranceCents: number;
+  monthlyTotalCents: number;
+  remainingInsuranceCents: number | null;
+  remainingCostCents: number | null;
+  paymentCheck: PaymentCheck;
 }
 
 export function toDebtDto(view: DebtView): DebtDto {
@@ -45,6 +66,25 @@ export function toDebtDto(view: DebtView): DebtDto {
     archived: d.archived,
     recurringId: d.recurringId,
     ...(view.neverPaidOff ? { neverPaidOff: true as const } : {}),
+    lender: d.lender,
+    contractReference: d.contractReference,
+    initialTermMonths: d.initialTermMonths,
+    rateType: d.rateType,
+    insuranceMode: d.insuranceMode,
+    insuranceRatePercent:
+      d.insuranceRateHundredths === null
+        ? null
+        : d.insuranceRateHundredths / 100,
+    insuranceQuotityPercent: d.insuranceQuotityPercent,
+    feesCents: d.feesCents,
+    guaranteeKind: d.guaranteeKind,
+    guaranteeCents: d.guaranteeCents,
+    notes: d.notes,
+    monthlyInsuranceCents: view.monthlyInsuranceCents,
+    monthlyTotalCents: view.monthlyTotalCents,
+    remainingInsuranceCents: view.remainingInsuranceCents,
+    remainingCostCents: view.remainingCostCents,
+    paymentCheck: view.paymentCheck,
   };
 }
 

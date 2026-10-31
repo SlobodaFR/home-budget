@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../app.module';
 import { configureApp } from '../configure-app';
 import { Clock } from '../domain/shared/clock';
+import { FieldCipher } from '../domain/shared/field-cipher';
 import { FakeClock } from '../testing/fake-clock';
 
 type Agent = ReturnType<typeof request.agent>;
@@ -143,6 +144,23 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         paidSharePercent: 25,
         archived: false,
         recurringId: null,
+        // Tranche 12 : un crédit saisi comme avant prend les valeurs par défaut du contrat.
+        lender: '',
+        contractReference: '',
+        initialTermMonths: null,
+        rateType: null,
+        insuranceMode: 'FIXED',
+        insuranceRatePercent: null,
+        insuranceQuotityPercent: 100,
+        feesCents: 0,
+        guaranteeKind: 'NONE',
+        guaranteeCents: 0,
+        notes: '',
+        monthlyInsuranceCents: 1500,
+        monthlyTotalCents: 33500,
+        remainingInsuranceCents: 57000,
+        remainingCostCents: 70926 + 57000,
+        paymentCheck: { status: 'UNKNOWN' },
       });
       expect(await debtsOf(bob, common)).toHaveLength(1);
       mortgage = (
@@ -335,6 +353,17 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         activeCount: 2,
         totalRemainingCents: 10000000 + 1120000,
         totalMonthlyCents: 58000 + 3000 + 32000 + 1500,
+        totalMonthlyInsuranceCents: 3000 + 1500,
+        // Maison : 3 918 606 d'intérêts + 240 × 3 000 ; auto : 70 926 + 38 × 1 500.
+        totalRemainingCostCents: 3918606 + 240 * 3000 + 70926 + 38 * 1500,
+        byLender: [
+          {
+            lender: '',
+            activeCount: 2,
+            remainingCents: 10000000 + 1120000,
+            monthlyTotalCents: 94500,
+          },
+        ],
         debtToIncomePercent: 32, // 94 500 / 300 000 = 31,5 -> 32
       });
       await bob
@@ -388,6 +417,7 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         },
         interestSavedCents: 838211,
         monthsSaved: 47,
+        insuranceSavedCents: (240 - 193) * 3000,
         note: 'Vérifiez les indemnités de remboursement anticipé de votre contrat.',
       });
       const both = (
@@ -486,6 +516,7 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
       });
       expect(result.interestSavedCents).toBeNull();
       expect(result.monthsSaved).toBeNull();
+      expect(result.insuranceSavedCents).toBeNull();
       await alice.delete(`/api/spaces/${common}/debts/${stuck}`).expect(204);
     });
   });
@@ -747,6 +778,896 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         (await bob.get(`/api/spaces/${bobPersonal}/debts/summary`).expect(200))
           .body.debtToIncomePercent,
       ).toBeNull();
+    });
+  });
+
+  describe('enriched loans (tranche 12)', () => {
+    const full = (over: Record<string, unknown> = {}) =>
+      body({
+        name: 'Maison Crédit Agricole',
+        kind: 'MORTGAGE',
+        principalCents: 10000000,
+        remainingCents: 10000000,
+        annualRatePercent: 3.5,
+        monthlyPaymentCents: 57996,
+        insuranceMonthlyCents: 0,
+        lender: 'Crédit Agricole',
+        contractReference: 'PRET-12345',
+        initialTermMonths: 240,
+        rateType: 'FIXED',
+        insuranceMode: 'PERCENT_INITIAL',
+        insuranceRatePercent: 0.36,
+        insuranceQuotityPercent: 200,
+        feesCents: 90000,
+        guaranteeKind: 'SURETY',
+        guaranteeCents: 150000,
+        notes: 'Remboursement anticipé : 3 % max des sommes remboursées.',
+        ...over,
+      });
+    const post = (space: string, payload: Record<string, unknown>) =>
+      alice.post(`/api/spaces/${space}/debts`).send(payload);
+    const remove = (space: string, id: string) =>
+      alice.delete(`/api/spaces/${space}/debts/${id}`).expect(204);
+
+    it('creates a loan with every field and returns them with the computed indicators', async () => {
+      const created = await post(common, full()).expect(201);
+      expect(created.body).toEqual({
+        id: expect.any(String),
+        spaceId: common,
+        name: 'Maison Crédit Agricole',
+        kind: 'MORTGAGE',
+        principalCents: 10000000,
+        remainingCents: 10000000,
+        annualRatePercent: 3.5,
+        monthlyPaymentCents: 57996,
+        startDate: '2024-09-01',
+        paymentDay: 5,
+        insuranceMonthlyCents: 0,
+        monthsRemaining: 240,
+        payoffDate: '2046-10-05',
+        totalInterestRemainingCents: 3919029,
+        paidSharePercent: 0,
+        archived: false,
+        recurringId: null,
+        lender: 'Crédit Agricole',
+        contractReference: 'PRET-12345',
+        initialTermMonths: 240,
+        rateType: 'FIXED',
+        insuranceMode: 'PERCENT_INITIAL',
+        insuranceRatePercent: 0.36,
+        insuranceQuotityPercent: 200,
+        feesCents: 90000,
+        guaranteeKind: 'SURETY',
+        guaranteeCents: 150000,
+        notes: 'Remboursement anticipé : 3 % max des sommes remboursées.',
+        // 100 000 € × 0,36 % × 200 % / 12 = 60 €
+        monthlyInsuranceCents: 6000,
+        monthlyTotalCents: 63996,
+        remainingInsuranceCents: 240 * 6000,
+        remainingCostCents: 3919029 + 240 * 6000,
+        paymentCheck: {
+          status: 'OK',
+          expectedMonthlyPaymentCents: 57996,
+          differenceCents: 0,
+          differencePercent: 0,
+        },
+      });
+      const listed = (
+        await alice.get(`/api/spaces/${common}/debts`).expect(200)
+      ).body as { id: string }[];
+      expect(listed.find((d) => d.id === created.body.id)).toEqual(
+        created.body,
+      );
+      await remove(common, created.body.id);
+    });
+
+    it('computes the three insurance modes (integers, quotity applied to the percentage modes only)', async () => {
+      const make = async (over: Record<string, unknown>) => {
+        const response = await post(common, full(over)).expect(201);
+        await remove(common, response.body.id as string);
+        return response.body as Record<string, number>;
+      };
+      // FIXED : tel que saisi, la quotité est ignorée, le taux aussi.
+      const fixed = await make({
+        insuranceMode: 'FIXED',
+        insuranceMonthlyCents: 4500,
+        insuranceRatePercent: null,
+        insuranceQuotityPercent: 50,
+      });
+      expect(fixed).toMatchObject({
+        insuranceMode: 'FIXED',
+        insuranceRatePercent: null,
+        monthlyInsuranceCents: 4500,
+        monthlyTotalCents: 57996 + 4500,
+        remainingInsuranceCents: 240 * 4500,
+      });
+      // PERCENT_INITIAL : 100 000 € × 0,36 % / 12 = 30 € (quotité 100).
+      const initial = await make({ insuranceQuotityPercent: 100 });
+      expect(initial.monthlyInsuranceCents).toBe(3000);
+      expect(initial.remainingInsuranceCents).toBe(240 * 3000);
+      // PERCENT_REMAINING : 30 € le premier mois, puis moins à mesure que le capital baisse.
+      const remaining = await make({
+        insuranceMode: 'PERCENT_REMAINING',
+        insuranceQuotityPercent: 100,
+      });
+      expect(remaining.monthlyInsuranceCents).toBe(3000);
+      expect(remaining.remainingInsuranceCents).toBeLessThan(240 * 3000);
+      expect(remaining.remainingInsuranceCents).toBeGreaterThan(120 * 3000);
+      expect(remaining.remainingCostCents).toBe(
+        remaining.totalInterestRemainingCents +
+          remaining.remainingInsuranceCents,
+      );
+    });
+
+    it('checks the entered payment against the original loan: OK, GAP and UNKNOWN', async () => {
+      const check = async (over: Record<string, unknown>) => {
+        const response = await post(common, full(over)).expect(201);
+        await remove(common, response.body.id as string);
+        return response.body.paymentCheck as { status: string };
+      };
+      expect(await check({ monthlyPaymentCents: 58000 })).toEqual({
+        status: 'OK',
+        expectedMonthlyPaymentCents: 57996,
+        differenceCents: 4,
+        differencePercent: 0,
+      });
+      expect(await check({ monthlyPaymentCents: 40000 })).toEqual({
+        status: 'GAP',
+        expectedMonthlyPaymentCents: 57996,
+        differenceCents: -17996,
+        differencePercent: -31,
+      });
+      // Exactement 2 % de 579,96 € = 11,60 € : 11,59 € OK, 11,60 € (1 160 > 1 159,92) GAP.
+      expect((await check({ monthlyPaymentCents: 57996 + 1159 })).status).toBe(
+        'OK',
+      );
+      expect((await check({ monthlyPaymentCents: 57996 + 1160 })).status).toBe(
+        'GAP',
+      );
+      // Taux variable ou révisable, durée inconnue : pas de jugement.
+      for (const over of [
+        { rateType: 'VARIABLE' },
+        { rateType: 'ADJUSTABLE' },
+        { initialTermMonths: null },
+      ]) {
+        expect(await check({ ...over, monthlyPaymentCents: 1000 })).toEqual({
+          status: 'UNKNOWN',
+        });
+      }
+      // Taux 0 % : 100 000 € sur 240 mois = 416,67 € (arrondi au-dessus).
+      expect(
+        await check({
+          annualRatePercent: 0,
+          monthlyPaymentCents: 41667,
+        }),
+      ).toMatchObject({ status: 'OK', expectedMonthlyPaymentCents: 41667 });
+      // Durée de 1 mois : capital + intérêts du mois.
+      expect(
+        await check({
+          initialTermMonths: 1,
+          monthlyPaymentCents: 10029167,
+        }),
+      ).toMatchObject({ status: 'OK', expectedMonthlyPaymentCents: 10029167 });
+    });
+
+    it('never alters the entered amounts when flagging a gap', async () => {
+      const created = await post(
+        common,
+        full({ monthlyPaymentCents: 40000 }),
+      ).expect(201);
+      expect(created.body.paymentCheck.status).toBe('GAP');
+      const read = (await debtsOf(alice, common)).find(
+        (d) => d.id === created.body.id,
+      ) as unknown as Record<string, unknown>;
+      expect(read).toMatchObject({
+        monthlyPaymentCents: 40000,
+        principalCents: 10000000,
+        annualRatePercent: 3.5,
+        initialTermMonths: 240,
+      });
+      await remove(common, created.body.id);
+    });
+
+    it('replaces the whole loan on PUT: absent fields take their default', async () => {
+      const created = await post(common, full()).expect(201);
+      await alice
+        .put(`/api/spaces/${common}/debts/${created.body.id}`)
+        .send(body({ name: 'Maison Crédit Agricole' }))
+        .expect(204);
+      const after = (await debtsOf(alice, common)).find(
+        (d) => d.id === created.body.id,
+      );
+      expect(after).toMatchObject({
+        lender: '',
+        contractReference: '',
+        initialTermMonths: null,
+        rateType: null,
+        insuranceMode: 'FIXED',
+        insuranceRatePercent: null,
+        insuranceQuotityPercent: 100,
+        feesCents: 0,
+        guaranteeKind: 'NONE',
+        guaranteeCents: 0,
+        notes: '',
+        paymentCheck: { status: 'UNKNOWN' },
+      });
+      await remove(common, created.body.id);
+    });
+
+    it('rejects invalid values with a 400 and a French message, and leaves the data untouched', async () => {
+      const before = (await debtsOf(alice, common)).length;
+      const bad: [string, Record<string, unknown>, string][] = [
+        [
+          'percent mode without a rate',
+          full({ insuranceRatePercent: null }),
+          "Indiquez le taux d'assurance",
+        ],
+        [
+          'percent mode, rate absent',
+          full({ insuranceRatePercent: undefined }),
+          "Indiquez le taux d'assurance",
+        ],
+        [
+          'remaining mode without a rate',
+          full({
+            insuranceMode: 'PERCENT_REMAINING',
+            insuranceRatePercent: undefined,
+          }),
+          "Indiquez le taux d'assurance",
+        ],
+        [
+          '3 decimals on the insurance rate',
+          full({ insuranceRatePercent: 0.155 }),
+          "Le taux d'assurance accepte 2 décimales au plus",
+        ],
+        [
+          'rate above 20',
+          full({ insuranceRatePercent: 20.01 }),
+          'insuranceRatePercent doit être compris entre 0 et 20',
+        ],
+        [
+          'negative rate',
+          full({ insuranceRatePercent: -0.1 }),
+          'insuranceRatePercent doit être compris entre 0 et 20',
+        ],
+        [
+          'text rate',
+          full({ insuranceRatePercent: '0.3' }),
+          'insuranceRatePercent doit être un nombre',
+        ],
+        [
+          'quotity 0',
+          full({ insuranceQuotityPercent: 0 }),
+          'insuranceQuotityPercent doit être compris entre 1 et 200',
+        ],
+        [
+          'quotity 201',
+          full({ insuranceQuotityPercent: 201 }),
+          'insuranceQuotityPercent doit être compris entre 1 et 200',
+        ],
+        [
+          'fractional quotity',
+          full({ insuranceQuotityPercent: 99.5 }),
+          'insuranceQuotityPercent doit être un entier',
+        ],
+        [
+          'term 0',
+          full({ initialTermMonths: 0 }),
+          'initialTermMonths doit être compris entre 1 et 600',
+        ],
+        [
+          'term 601',
+          full({ initialTermMonths: 601 }),
+          'initialTermMonths doit être compris entre 1 et 600',
+        ],
+        [
+          'fractional term',
+          full({ initialTermMonths: 12.5 }),
+          'initialTermMonths doit être un nombre entier de mois',
+        ],
+        [
+          'negative fees',
+          full({ feesCents: -1 }),
+          'feesCents doit être positif ou nul',
+        ],
+        [
+          'fractional fees',
+          full({ feesCents: 10.5 }),
+          'feesCents doit être un entier',
+        ],
+        [
+          'negative guarantee',
+          full({ guaranteeCents: -1 }),
+          'guaranteeCents doit être positif ou nul',
+        ],
+        [
+          'guarantee amount without a kind',
+          full({ guaranteeKind: 'NONE', guaranteeCents: 100 }),
+          'Précisez le type de garantie',
+        ],
+        [
+          'guarantee amount, default kind',
+          full({ guaranteeKind: undefined, guaranteeCents: 100 }),
+          'Précisez le type de garantie',
+        ],
+        [
+          'unknown guarantee kind',
+          full({ guaranteeKind: 'PLEDGE' }),
+          'guaranteeKind doit être',
+        ],
+        [
+          'unknown rate type',
+          full({ rateType: 'WEIRD' }),
+          'rateType doit être',
+        ],
+        [
+          'unknown insurance mode',
+          full({ insuranceMode: 'MAGIC' }),
+          'insuranceMode doit être',
+        ],
+        [
+          'lender of 81 characters',
+          full({ lender: 'x'.repeat(81) }),
+          'Nom du prêteur trop long',
+        ],
+        [
+          'reference of 61 characters',
+          full({ contractReference: 'x'.repeat(61) }),
+          'Référence du contrat trop longue',
+        ],
+        [
+          'notes of 501 characters',
+          full({ notes: 'x'.repeat(501) }),
+          'Notes trop longues',
+        ],
+        ['numeric lender', full({ lender: 12 }), 'lender doit être un texte'],
+      ];
+      for (const [name, payload, message] of bad) {
+        const response = await post(common, payload);
+        expect({ name, status: response.status }).toEqual({
+          name,
+          status: 400,
+        });
+        expect({
+          name,
+          message: JSON.stringify(response.body.message),
+        }).toEqual({
+          name,
+          message: expect.stringContaining(message),
+        });
+      }
+      // PUT : mêmes contrôles.
+      const some = (await debtsOf(alice, common))[0];
+      await alice
+        .put(`/api/spaces/${common}/debts/${some.id}`)
+        .send(full({ insuranceRatePercent: null }))
+        .expect(400);
+      expect(await debtsOf(alice, common)).toHaveLength(before);
+    });
+
+    it('accepts the boundaries and trims the texts', async () => {
+      const created = await post(
+        common,
+        full({
+          lender: `  ${'b'.repeat(80)}  `,
+          contractReference: ` ${'r'.repeat(60)} `,
+          notes: ` ${'n'.repeat(500)} `,
+          initialTermMonths: 600,
+          insuranceRatePercent: 20,
+          insuranceQuotityPercent: 200,
+          feesCents: 0,
+          guaranteeKind: 'OTHER',
+          guaranteeCents: 0,
+        }),
+      ).expect(201);
+      expect(created.body).toMatchObject({
+        lender: 'b'.repeat(80),
+        contractReference: 'r'.repeat(60),
+        notes: 'n'.repeat(500),
+        initialTermMonths: 600,
+        insuranceRatePercent: 20,
+        insuranceQuotityPercent: 200,
+      });
+      await remove(common, created.body.id);
+      for (const over of [
+        { initialTermMonths: 1 },
+        { insuranceQuotityPercent: 1 },
+        { insuranceRatePercent: 0 },
+        { rateType: null, insuranceMode: null },
+      ]) {
+        const ok = await post(common, full(over)).expect(201);
+        await remove(common, ok.body.id);
+      }
+    });
+
+    it('groups the summary by lender (case and spaces ignored, largest remaining capital first)', async () => {
+      const ids: string[] = [];
+      const add = async (over: Record<string, unknown>) => {
+        const response = await post(
+          common,
+          full({
+            rateType: null,
+            initialTermMonths: null,
+            insuranceMode: 'FIXED',
+            insuranceRatePercent: null,
+            guaranteeKind: 'NONE',
+            guaranteeCents: 0,
+            ...over,
+          }),
+        ).expect(201);
+        ids.push(response.body.id);
+      };
+      await add({
+        name: 'CA 1',
+        lender: 'Crédit Agricole',
+        principalCents: 12000000,
+        remainingCents: 5000000,
+        monthlyPaymentCents: 30000,
+        insuranceMonthlyCents: 1000,
+      });
+      await add({
+        name: 'CA 2',
+        lender: '  crédit   AGRICOLE ',
+        principalCents: 12000000,
+        remainingCents: 3000000,
+        monthlyPaymentCents: 20000,
+        insuranceMonthlyCents: 500,
+      });
+      await add({
+        name: 'LCL',
+        lender: 'LCL',
+        principalCents: 12000000,
+        remainingCents: 12000000,
+        monthlyPaymentCents: 70000,
+        insuranceMonthlyCents: 0,
+      });
+      await add({
+        name: 'Archivé',
+        lender: 'LCL',
+        remainingCents: 9000000,
+        monthlyPaymentCents: 90000,
+      });
+      const summary = (
+        await alice.get(`/api/spaces/${common}/debts/summary`).expect(200)
+      ).body;
+      // Le prêt auto (32 000 + 15 €) et la maison (580 € + 30 €) n'ont pas de prêteur.
+      expect(summary.byLender).toEqual([
+        {
+          lender: 'LCL',
+          activeCount: 2,
+          remainingCents: 12000000 + 9000000,
+          monthlyTotalCents: 70000 + 90000,
+        },
+        {
+          lender: '',
+          activeCount: 2,
+          remainingCents: 10000000 + 1120000,
+          monthlyTotalCents: 94500,
+        },
+        {
+          lender: 'Crédit Agricole',
+          activeCount: 2,
+          remainingCents: 8000000,
+          monthlyTotalCents: 30000 + 1000 + 20000 + 500,
+        },
+      ]);
+      // Maison 30 € + auto 15 € + 10 € + 5 € ; les deux prêts LCL n'ont pas d'assurance.
+      expect(summary.totalMonthlyInsuranceCents).toBe(3000 + 1500 + 1000 + 500);
+      expect(summary.activeCount).toBe(6);
+      expect(summary.totalRemainingCostCents).toBeGreaterThan(0);
+      // Le taux d'endettement repose sur mensualités + assurance calculée.
+      expect(summary.totalMonthlyCents).toBe(
+        94500 + 31000 + 20500 + 70000 + 90000,
+      );
+      expect(summary.debtToIncomePercent).toBe(
+        Math.floor((summary.totalMonthlyCents * 100) / 300000 + 0.5),
+      );
+      // Archiver retire le crédit du regroupement.
+      const archived = ids[3];
+      await alice
+        .put(`/api/spaces/${common}/debts/${archived}`)
+        .send(
+          full({
+            name: 'Archivé',
+            lender: 'LCL',
+            archived: true,
+            rateType: null,
+            initialTermMonths: null,
+            insuranceMode: 'FIXED',
+            insuranceRatePercent: null,
+            guaranteeKind: 'NONE',
+            guaranteeCents: 0,
+            remainingCents: 9000000,
+            monthlyPaymentCents: 90000,
+          }),
+        )
+        .expect(204);
+      const after = (
+        await alice.get(`/api/spaces/${common}/debts/summary`).expect(200)
+      ).body;
+      expect(after.byLender[0]).toMatchObject({
+        lender: 'LCL',
+        activeCount: 1,
+        remainingCents: 12000000,
+      });
+      for (const id of ids) {
+        await remove(common, id);
+      }
+      expect(
+        (await alice.get(`/api/spaces/${common}/debts/summary`).expect(200))
+          .body.byLender,
+      ).toEqual([
+        {
+          lender: '',
+          activeCount: 2,
+          remainingCents: 11120000,
+          monthlyTotalCents: 94500,
+        },
+      ]);
+    });
+
+    it('what-if reports the insurance saved (percent of the remaining capital falls with a lump sum)', async () => {
+      const created = await post(
+        common,
+        full({
+          insuranceMode: 'PERCENT_REMAINING',
+          insuranceQuotityPercent: 100,
+        }),
+      ).expect(201);
+      const url = (query: string) =>
+        `/api/spaces/${common}/debts/${created.body.id}/what-if?${query}`;
+      const extra = (
+        await alice.get(url('extraMonthlyCents=20000')).expect(200)
+      ).body;
+      expect(extra.insuranceSavedCents).toBeGreaterThan(0);
+      const lump = (await alice.get(url('lumpSumCents=5000000')).expect(200))
+        .body;
+      // Rembourser la moitié du capital divise à peu près par deux l'assurance restante.
+      expect(lump.insuranceSavedCents).toBeGreaterThan(
+        created.body.remainingInsuranceCents / 2 - 1,
+      );
+      const all = (await alice.get(url('lumpSumCents=99999999999')).expect(200))
+        .body;
+      expect(all.insuranceSavedCents).toBe(
+        created.body.remainingInsuranceCents,
+      );
+      expect(all.interestSavedCents).toBe(
+        created.body.totalInterestRemainingCents,
+      );
+      // Crédit à assurance fixe : économie = mois gagnés × assurance mensuelle.
+      const fixed = await post(
+        common,
+        full({
+          insuranceMode: 'FIXED',
+          insuranceRatePercent: null,
+          insuranceMonthlyCents: 2500,
+        }),
+      ).expect(201);
+      const saved = (
+        await alice
+          .get(
+            `/api/spaces/${common}/debts/${fixed.body.id}/what-if?extraMonthlyCents=10000`,
+          )
+          .expect(200)
+      ).body;
+      expect(saved.insuranceSavedCents).toBe(saved.monthsSaved * 2500);
+      expect(saved.monthsSaved).toBeGreaterThan(0);
+      await remove(common, fixed.body.id);
+      await remove(common, created.body.id);
+    });
+
+    describe('debt-payment-gap insight', () => {
+      type Insight = {
+        id: string;
+        severity: string;
+        title: string;
+        detail: string;
+        link: string;
+      };
+      const insightsOf = async (agent: Agent, space: string, month: string) =>
+        (
+          await agent
+            .get(`/api/spaces/${space}/insights?month=${month}`)
+            .expect(200)
+        ).body.insights as Insight[];
+
+      it('is raised for an active loan whose payment is far from the original one, for the current month only', async () => {
+        const created = await post(
+          common,
+          full({ name: 'Maison à revérifier', monthlyPaymentCents: 40000 }),
+        ).expect(201);
+        const gap = (await insightsOf(bob, common, '2026-10')).find(
+          (i) => i.id === 'debt-payment-gap',
+        )!;
+        expect(gap).toMatchObject({
+          severity: 'INFO',
+          title: 'Mensualité du crédit « Maison à revérifier » à revérifier',
+          link: '/dettes',
+        });
+        expect(gap.detail).toContain(`400${NBSP}€`);
+        expect(gap.detail).toContain(`579,96${NBSP}€`);
+        expect(gap.detail).toContain('Revérifiez');
+        for (const word of ['rachat', 'renégoci', 'refinanc']) {
+          expect(JSON.stringify(gap).toLowerCase()).not.toContain(word);
+        }
+        for (const month of ['2026-09', '2026-11']) {
+          expect(
+            (await insightsOf(bob, common, month)).map((i) => i.id),
+          ).not.toContain('debt-payment-gap');
+        }
+
+        // Corrigé : plus de conseil.
+        await alice
+          .put(`/api/spaces/${common}/debts/${created.body.id}`)
+          .send(
+            full({ name: 'Maison à revérifier', monthlyPaymentCents: 57996 }),
+          )
+          .expect(204);
+        expect(
+          (await insightsOf(bob, common, '2026-10')).map((i) => i.id),
+        ).not.toContain('debt-payment-gap');
+        // Variable : jamais de jugement. Archivé ou soldé : aucun conseil.
+        for (const over of [
+          { rateType: 'VARIABLE' },
+          { archived: true },
+          { remainingCents: 0 },
+        ]) {
+          await alice
+            .put(`/api/spaces/${common}/debts/${created.body.id}`)
+            .send(
+              full({
+                name: 'Maison à revérifier',
+                monthlyPaymentCents: 40000,
+                ...over,
+              }),
+            )
+            .expect(204);
+          expect(
+            (await insightsOf(bob, common, '2026-10')).map((i) => i.id),
+          ).not.toContain('debt-payment-gap');
+        }
+        await remove(common, created.body.id);
+      });
+    });
+
+    describe('legacy credits', () => {
+      it('reads a common credit stored before the migration with the contract defaults', async () => {
+        await dataSource.query(
+          `INSERT INTO "debts" ("id","space_id","kind","start_date","payment_day","archived","name","principal_cents","remaining_cents","annual_rate_hundredths","monthly_payment_cents","insurance_monthly_cents") VALUES ('legacy-common',?, 'CAR','2024-09-01',5,0,'Ancien prêt',1500000,1120000,390,32000,1500)`,
+          [common],
+        );
+        const legacy = (await debtsOf(alice, common)).find(
+          (d) => d.id === 'legacy-common',
+        );
+        expect(legacy).toMatchObject({
+          name: 'Ancien prêt',
+          lender: '',
+          contractReference: '',
+          initialTermMonths: null,
+          rateType: null,
+          insuranceMode: 'FIXED',
+          insuranceRatePercent: null,
+          insuranceQuotityPercent: 100,
+          feesCents: 0,
+          guaranteeKind: 'NONE',
+          guaranteeCents: 0,
+          notes: '',
+          monthlyInsuranceCents: 1500,
+          monthlyTotalCents: 33500,
+          paymentCheck: { status: 'UNKNOWN' },
+        });
+        await remove(common, 'legacy-common');
+      });
+
+      it('reads a personal credit whose encrypted payload predates the migration', async () => {
+        const created = await post(
+          alicePersonal,
+          full({ name: 'Perso ancien' }),
+        ).expect(201);
+        const id = created.body.id as string;
+        const cipher = app.get(FieldCipher, { strict: false });
+        const [owner]: { id: string }[] = await dataSource.query(
+          `SELECT owner_user_id AS id FROM spaces WHERE id = ?`,
+          [alicePersonal],
+        );
+        const aad = `debt:${alicePersonal}:${id}`;
+        const [row]: { payload: string }[] = await dataSource.query(
+          `SELECT secret_payload AS payload FROM debts WHERE id = ?`,
+          [id],
+        );
+        const payload = JSON.parse(cipher.decrypt(owner.id, aad, row.payload));
+        const legacyPayload = {
+          name: payload.name,
+          principalCents: payload.principalCents,
+          remainingCents: payload.remainingCents,
+          annualRateHundredths: payload.annualRateHundredths,
+          monthlyPaymentCents: payload.monthlyPaymentCents,
+          insuranceMonthlyCents: payload.insuranceMonthlyCents,
+        };
+        await dataSource.query(
+          `UPDATE debts SET secret_payload = ?, rate_type = NULL, insurance_mode = NULL, guarantee_kind = NULL WHERE id = ?`,
+          [cipher.encrypt(owner.id, aad, JSON.stringify(legacyPayload)), id],
+        );
+        const legacy = (await debtsOf(alice, alicePersonal)).find(
+          (d) => d.id === id,
+        );
+        expect(legacy).toMatchObject({
+          name: 'Perso ancien',
+          principalCents: 10000000,
+          monthlyPaymentCents: 57996,
+          lender: '',
+          initialTermMonths: null,
+          rateType: null,
+          insuranceMode: 'FIXED',
+          insuranceQuotityPercent: 100,
+          feesCents: 0,
+          guaranteeKind: 'NONE',
+          notes: '',
+          paymentCheck: { status: 'UNKNOWN' },
+        });
+        await remove(alicePersonal, id);
+      });
+    });
+
+    describe('personal space: encryption and isolation', () => {
+      let secretId: string;
+      const secret = () =>
+        full({
+          name: 'Prêt perso chiffré',
+          lender: 'Banque Secrète Dupont',
+          contractReference: 'REF-SECRET-4242',
+          notes: 'note très confidentielle',
+          principalCents: 8765432,
+          remainingCents: 7654321,
+          monthlyPaymentCents: 45678,
+          initialTermMonths: 237,
+          insuranceRatePercent: 0.37,
+          insuranceQuotityPercent: 87,
+          feesCents: 123457,
+          guaranteeCents: 765431,
+          guaranteeKind: 'MORTGAGE',
+        });
+
+      it('encrypts the lender, reference, notes, term, fees, guarantee and insurance at rest', async () => {
+        const created = await post(alicePersonal, secret()).expect(201);
+        secretId = created.body.id;
+        expect(created.body).toMatchObject({
+          lender: 'Banque Secrète Dupont',
+          contractReference: 'REF-SECRET-4242',
+          notes: 'note très confidentielle',
+          initialTermMonths: 237,
+          insuranceRatePercent: 0.37,
+          insuranceQuotityPercent: 87,
+          feesCents: 123457,
+          guaranteeCents: 765431,
+          guaranteeKind: 'MORTGAGE',
+          rateType: 'FIXED',
+          insuranceMode: 'PERCENT_INITIAL',
+        });
+        const rows: Record<string, unknown>[] = await dataSource.query(
+          `SELECT * FROM debts WHERE id = ?`,
+          [secretId],
+        );
+        const row = rows[0];
+        for (const column of [
+          'name',
+          'principal_cents',
+          'remaining_cents',
+          'annual_rate_hundredths',
+          'monthly_payment_cents',
+          'insurance_monthly_cents',
+          'lender',
+          'contract_reference',
+          'initial_term_months',
+          'insurance_rate_hundredths',
+          'insurance_quotity_percent',
+          'fees_cents',
+          'guarantee_cents',
+          'notes',
+        ]) {
+          expect({ column, value: row[column] }).toEqual({
+            column,
+            value: null,
+          });
+        }
+        expect(String(row.secret_payload).startsWith('v1.')).toBe(true);
+        // Seuls restent en clair les types (comme `kind`) : taux, mode d'assurance, garantie.
+        expect(row).toMatchObject({
+          kind: 'MORTGAGE',
+          rate_type: 'FIXED',
+          insurance_mode: 'PERCENT_INITIAL',
+          guarantee_kind: 'MORTGAGE',
+        });
+        const raw = JSON.stringify(row);
+        for (const leaked of [
+          'Banque',
+          'Dupont',
+          'REF-SECRET',
+          'confidentielle',
+          'chiffré',
+          '8765432',
+          '7654321',
+          '45678',
+          '123457',
+          '765431',
+        ]) {
+          expect({ leaked, found: raw.includes(leaked) }).toEqual({
+            leaked,
+            found: false,
+          });
+        }
+        // Le commun, lui, reste en clair (lecture de l'infrastructure).
+        const common_ = await post(
+          common,
+          full({ lender: 'Banque Commune' }),
+        ).expect(201);
+        const [commonRow]: Record<string, unknown>[] = await dataSource.query(
+          `SELECT lender, contract_reference, initial_term_months, insurance_rate_hundredths, insurance_quotity_percent, fees_cents, guarantee_cents, notes, rate_type, insurance_mode, guarantee_kind FROM debts WHERE id = ?`,
+          [common_.body.id],
+        );
+        expect(commonRow).toEqual({
+          lender: 'Banque Commune',
+          contract_reference: 'PRET-12345',
+          initial_term_months: 240,
+          insurance_rate_hundredths: 36,
+          insurance_quotity_percent: 200,
+          fees_cents: 90000,
+          guarantee_cents: 150000,
+          notes: 'Remboursement anticipé : 3 % max des sommes remboursées.',
+          rate_type: 'FIXED',
+          insurance_mode: 'PERCENT_INITIAL',
+          guarantee_kind: 'SURETY',
+        });
+        await remove(common, common_.body.id);
+      });
+
+      it('shows the owner every field back, and the summary groups the personal lenders', async () => {
+        const mine = (await debtsOf(alice, alicePersonal)).find(
+          (d) => d.id === secretId,
+        );
+        expect(mine).toMatchObject({
+          id: secretId,
+          lender: 'Banque Secrète Dupont',
+          notes: 'note très confidentielle',
+        });
+        const summary = (
+          await alice
+            .get(`/api/spaces/${alicePersonal}/debts/summary`)
+            .expect(200)
+        ).body;
+        // Le crédit personnel du test précédent n'a pas de prêteur : groupe '' en plus.
+        expect(summary.byLender).toEqual([
+          {
+            lender: 'Banque Secrète Dupont',
+            activeCount: 1,
+            remainingCents: 7654321,
+            monthlyTotalCents: expect.any(Number),
+          },
+          {
+            lender: '',
+            activeCount: 1,
+            remainingCents: 555555,
+            monthlyTotalCents: 12345 + 987,
+          },
+        ]);
+      });
+
+      it('keeps the other member out (404) and the common space free of the personal lender', async () => {
+        const base = `/api/spaces/${alicePersonal}/debts`;
+        await bob.get(base).expect(404);
+        await bob.get(`${base}/summary`).expect(404);
+        await bob.post(base).send(full()).expect(404);
+        await bob.put(`${base}/${secretId}`).send(full()).expect(404);
+        await bob
+          .get(`${base}/${secretId}/what-if?extraMonthlyCents=100`)
+          .expect(404);
+        expect(JSON.stringify(await debtsOf(bob, common))).not.toContain(
+          'Secrète',
+        );
+        const anonymous = request(app.getHttpServer());
+        await anonymous.get(base).expect(401);
+        await remove(alicePersonal, secretId);
+      });
     });
   });
 });

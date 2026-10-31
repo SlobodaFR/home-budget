@@ -8,6 +8,7 @@ import { RevuesMensuelles1762300800000 } from './1762300800000-RevuesMensuelles'
 import { CreditsDettes1762387200000 } from './1762387200000-CreditsDettes';
 import { SuiviContributions1762473600000 } from './1762473600000-SuiviContributions';
 import { EvenementsDeVie1762560000000 } from './1762560000000-EvenementsDeVie';
+import { PretsEnrichis1762646400000 } from './1762646400000-PretsEnrichis';
 
 /** Liste explicite et ordonnée : toute nouvelle migration s'ajoute ici. */
 export const MIGRATIONS = [
@@ -21,4 +22,5 @@ export const MIGRATIONS = [
   CreditsDettes1762387200000,
   SuiviContributions1762473600000,
   EvenementsDeVie1762560000000,
+  PretsEnrichis1762646400000,
 ];

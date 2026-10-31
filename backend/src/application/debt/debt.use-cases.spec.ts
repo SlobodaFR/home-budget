@@ -113,6 +113,23 @@ describe('debt use cases', () => {
       paidSharePercent: 25,
       archived: false,
       recurringId: null,
+      // Tranche 12 : valeurs par défaut du contrat et indicateurs calculés.
+      lender: '',
+      contractReference: '',
+      initialTermMonths: null,
+      rateType: null,
+      insuranceMode: 'FIXED',
+      insuranceRatePercent: null,
+      insuranceQuotityPercent: 100,
+      feesCents: 0,
+      guaranteeKind: 'NONE',
+      guaranteeCents: 0,
+      notes: '',
+      monthlyInsuranceCents: 1500,
+      monthlyTotalCents: 33500,
+      remainingInsuranceCents: 57000,
+      remainingCostCents: 127926,
+      paymentCheck: { status: 'UNKNOWN' },
     });
     expect('neverPaidOff' in created).toBe(false);
     expect(await s.list.execute('bob', s.commonId)).toEqual([created]);
@@ -271,6 +288,219 @@ describe('debt use cases', () => {
   });
 });
 
+describe('enriched loans (tranche 12)', () => {
+  const full: SaveDebtCommand = {
+    ...auto,
+    name: 'Maison',
+    kind: 'MORTGAGE',
+    principalCents: 10000000,
+    remainingCents: 10000000,
+    annualRatePercent: 3.5,
+    monthlyPaymentCents: 57996,
+    insuranceMonthlyCents: 0,
+    lender: ' Crédit Agricole ',
+    contractReference: ' PRET-12345 ',
+    initialTermMonths: 240,
+    rateType: 'FIXED',
+    insuranceMode: 'PERCENT_INITIAL',
+    insuranceRatePercent: 0.36,
+    insuranceQuotityPercent: 200,
+    feesCents: 90000,
+    guaranteeKind: 'SURETY',
+    guaranteeCents: 150000,
+    notes: ' Remboursement anticipé : 3 % max. ',
+  };
+
+  it('stores and returns every field, with the computed indicators', async () => {
+    const s = await setup();
+    const created = await s.create.execute('alice', s.commonId, full);
+    expect(created).toMatchObject({
+      lender: 'Crédit Agricole',
+      contractReference: 'PRET-12345',
+      initialTermMonths: 240,
+      rateType: 'FIXED',
+      insuranceMode: 'PERCENT_INITIAL',
+      insuranceRatePercent: 0.36,
+      insuranceQuotityPercent: 200,
+      feesCents: 90000,
+      guaranteeKind: 'SURETY',
+      guaranteeCents: 150000,
+      notes: 'Remboursement anticipé : 3 % max.',
+      // 100 000 € × 0,36 % × 200 % / 12 = 60 €
+      monthlyInsuranceCents: 6000,
+      monthlyTotalCents: 57996 + 6000,
+      remainingInsuranceCents: 240 * 6000,
+      paymentCheck: {
+        status: 'OK',
+        expectedMonthlyPaymentCents: 57996,
+        differenceCents: 0,
+        differencePercent: 0,
+      },
+    });
+    expect(created.remainingCostCents).toBe(3919029 + 240 * 6000);
+    expect(await s.list.execute('bob', s.commonId)).toEqual([created]);
+  });
+
+  it('flags a payment far from the original loan and does not touch the entered amounts', async () => {
+    const s = await setup();
+    const created = await s.create.execute('alice', s.commonId, {
+      ...full,
+      monthlyPaymentCents: 40000,
+    });
+    expect(created.paymentCheck).toEqual({
+      status: 'GAP',
+      expectedMonthlyPaymentCents: 57996,
+      differenceCents: -17996,
+      differencePercent: -31,
+    });
+    expect(created.monthlyPaymentCents).toBe(40000);
+    expect(created.principalCents).toBe(10000000);
+    expect(created.initialTermMonths).toBe(240);
+  });
+
+  it('ignores the insurance rate in FIXED mode and requires it in the percentage modes', async () => {
+    const s = await setup();
+    const ignored = await s.create.execute('alice', s.commonId, {
+      ...auto,
+      insuranceRatePercent: 0.5,
+    });
+    expect(ignored.insuranceRatePercent).toBeNull();
+    expect(ignored.monthlyInsuranceCents).toBe(1500);
+    for (const insuranceMode of [
+      'PERCENT_INITIAL',
+      'PERCENT_REMAINING',
+    ] as const) {
+      for (const insuranceRatePercent of [undefined, null]) {
+        await expect(
+          s.create.execute('alice', s.commonId, {
+            ...auto,
+            insuranceMode,
+            insuranceRatePercent,
+          }),
+        ).rejects.toThrow("Indiquez le taux d'assurance");
+      }
+    }
+  });
+
+  it('validates the new fields with French messages', async () => {
+    const s = await setup();
+    const cases: [Partial<SaveDebtCommand>, string][] = [
+      [
+        { insuranceMode: 'PERCENT_REMAINING', insuranceRatePercent: 0.155 },
+        "Le taux d'assurance accepte 2 décimales au plus",
+      ],
+      [
+        { insuranceMode: 'PERCENT_REMAINING', insuranceRatePercent: 20.01 },
+        "Le taux d'assurance doit être compris entre 0 et 20 %",
+      ],
+      [
+        { insuranceMode: 'PERCENT_REMAINING', insuranceRatePercent: -1 },
+        "Le taux d'assurance doit être compris",
+      ],
+      [
+        { insuranceQuotityPercent: 0 },
+        "La quotité d'assurance doit être un entier compris entre 1 et 200 %",
+      ],
+      [{ insuranceQuotityPercent: 201 }, 'quotité'],
+      [{ initialTermMonths: 601 }, 'La durée initiale'],
+      [{ initialTermMonths: 0 }, 'La durée initiale'],
+      [{ initialTermMonths: 12.5 }, 'La durée initiale'],
+      [{ feesCents: -1 }, 'Les frais de dossier'],
+      [{ feesCents: 1.5 }, 'Les frais de dossier'],
+      [
+        { guaranteeKind: 'SURETY', guaranteeCents: -1 },
+        'Les frais de garantie',
+      ],
+      [{ guaranteeCents: 100 }, 'Précisez le type de garantie'],
+      [
+        { guaranteeKind: 'NONE', guaranteeCents: 100 },
+        'Précisez le type de garantie',
+      ],
+      [{ lender: 'x'.repeat(81) }, 'Nom du prêteur trop long'],
+      [
+        { contractReference: 'x'.repeat(61) },
+        'Référence du contrat trop longue',
+      ],
+      [{ notes: 'x'.repeat(501) }, 'Notes trop longues'],
+    ];
+    for (const [over, message] of cases) {
+      await expect(
+        s.create.execute('alice', s.commonId, { ...auto, ...over }),
+      ).rejects.toThrow(message);
+    }
+    expect(await s.list.execute('alice', s.commonId)).toEqual([]);
+  });
+
+  it('replaces the whole record on update: an absent field takes its default', async () => {
+    const s = await setup();
+    const created = await s.create.execute('alice', s.commonId, full);
+    await s.update.execute('alice', s.commonId, created.id, auto);
+    const [after] = await s.list.execute('alice', s.commonId);
+    expect(after).toMatchObject({
+      lender: '',
+      contractReference: '',
+      initialTermMonths: null,
+      rateType: null,
+      insuranceMode: 'FIXED',
+      insuranceRatePercent: null,
+      insuranceQuotityPercent: 100,
+      feesCents: 0,
+      guaranteeKind: 'NONE',
+      guaranteeCents: 0,
+      notes: '',
+      paymentCheck: { status: 'UNKNOWN' },
+    });
+  });
+
+  it('what-if reports the insurance saved', async () => {
+    const s = await setup();
+    const created = await s.create.execute('alice', s.commonId, {
+      ...auto,
+      insuranceMode: 'PERCENT_REMAINING',
+      insuranceRatePercent: 0.36,
+    });
+    const result = await s.whatIf.execute(
+      'alice',
+      s.commonId,
+      created.id,
+      0,
+      500000,
+    );
+    expect(result.insuranceSavedCents).toBeGreaterThan(0);
+  });
+
+  it('summary groups by lender, ignoring case and spaces', async () => {
+    const s = await setup();
+    await s.create.execute('alice', s.commonId, {
+      ...full,
+      name: 'A',
+      lender: 'Crédit Agricole',
+    });
+    await s.create.execute('alice', s.commonId, {
+      ...auto,
+      name: 'B',
+      lender: 'crédit  agricole',
+    });
+    await s.create.execute('alice', s.commonId, { ...auto, name: 'C' });
+    const summary = await s.summary.execute('alice', s.commonId);
+    expect(summary.byLender).toEqual([
+      {
+        lender: 'Crédit Agricole',
+        activeCount: 2,
+        remainingCents: 10000000 + 1120000,
+        monthlyTotalCents: 57996 + 6000 + 32000 + 1500,
+      },
+      {
+        lender: '',
+        activeCount: 1,
+        remainingCents: 1120000,
+        monthlyTotalCents: 33500,
+      },
+    ]);
+    expect(summary.totalMonthlyInsuranceCents).toBe(6000 + 1500 + 1500);
+  });
+});
+
 describe('what-if use case', () => {
   it('simulates and validates the amounts', async () => {
     const s = await setup();
@@ -353,6 +583,16 @@ describe('summary use case', () => {
       activeCount: 2,
       totalRemainingCents: 1120000 + 20000000,
       totalMonthlyCents: 138500,
+      totalMonthlyInsuranceCents: 6500,
+      totalRemainingCostCents: 11692788,
+      byLender: [
+        {
+          lender: '',
+          activeCount: 2,
+          remainingCents: 1120000 + 20000000,
+          monthlyTotalCents: 138500,
+        },
+      ],
       debtToIncomePercent: 46, // 138 500 / 300 000 = 46,17
     });
     await s.setIncome.execute('bob', 150000);
@@ -389,6 +629,9 @@ describe('summary use case', () => {
       activeCount: 0,
       totalRemainingCents: 0,
       totalMonthlyCents: 0,
+      totalMonthlyInsuranceCents: 0,
+      totalRemainingCostCents: 0,
+      byLender: [],
       debtToIncomePercent: 0,
     });
   });

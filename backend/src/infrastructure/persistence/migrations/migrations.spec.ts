@@ -62,6 +62,7 @@ describe('FoyerSchema migration', () => {
     await ds.undoLastMigration();
     await ds.undoLastMigration();
     await ds.undoLastMigration();
+    await ds.undoLastMigration();
     const restored: { name: string }[] = await ds.query(
       `SELECT name FROM pragma_table_info('transactions')`,
     );
@@ -91,6 +92,8 @@ describe('FoyerSchema migration', () => {
     expect(columns.map((c) => c.name)).toEqual(
       expect.arrayContaining(['label', 'amount_cents', 'secret_payload']),
     );
+
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
 
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
@@ -141,6 +144,7 @@ describe('FoyerSchema migration', () => {
     await ds.query(
       `INSERT INTO "transactions" ("id","space_id","kind","date","account_id") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','a1')`,
     );
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
@@ -165,6 +169,7 @@ describe('FoyerSchema migration', () => {
   it('adds frequency (default MONTHLY) and month_of_year without touching existing rows, and undoes them', async () => {
     const ds = await dataSource().initialize();
     await ds.runMigrations();
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
@@ -191,6 +196,8 @@ describe('FoyerSchema migration', () => {
     ]);
     const drift = await ds.driver.createSchemaBuilder().log();
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);
+
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
 
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
@@ -259,6 +266,8 @@ describe('FoyerSchema migration', () => {
       `INSERT INTO "recurring_items" ("id","space_id","kind","start_date","active","label","amount_cents") VALUES ('r1','s1','EXPENSE','2026-01-01',1,'Loyer',100)`,
     );
 
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
+
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
@@ -308,6 +317,8 @@ describe('FoyerSchema migration', () => {
     await ds.query(
       `INSERT INTO "month_reviews" ("space_id","month") VALUES ('s1','2026-11'), ('s2','2026-10')`,
     );
+
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
 
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
@@ -359,6 +370,8 @@ describe('FoyerSchema migration', () => {
       `INSERT INTO "month_reviews" ("space_id","month") VALUES ('s1','2026-10')`,
     );
 
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
+
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
     await ds.undoLastMigration(); // tranche 8
@@ -400,6 +413,8 @@ describe('FoyerSchema migration', () => {
       'contribution_month',
       'contribution_user_id',
     ]);
+
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
 
     await ds.undoLastMigration(); // tranche 10
     await ds.undoLastMigration(); // tranche 9
@@ -484,6 +499,7 @@ describe('FoyerSchema migration', () => {
     await ds.query(
       `INSERT INTO "transactions" ("id","space_id","kind","date","label","amount_cents","contribution_user_id","contribution_month") VALUES ('t1','s1','INCOME','2026-11-01T00:00:00.000Z','Contribution',100,'u1','2026-11')`,
     );
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
     await ds.undoLastMigration(); // tranche 10
     for (const table of ['life_events', 'life_event_steps']) {
       expect(
@@ -499,6 +515,80 @@ describe('FoyerSchema migration', () => {
     expect(await ds.query(`SELECT COUNT(*) AS n FROM life_events`)).toEqual([
       { n: 0 },
     ]);
+    const drift = await ds.driver.createSchemaBuilder().log();
+    expect(drift.upQueries.map((q) => q.query)).toEqual([]);
+    await ds.destroy();
+  });
+
+  it('adds the tranche 12 loan columns as nullable, keeps existing credits and undoes them', async () => {
+    const NEW_COLUMNS = [
+      'lender',
+      'contract_reference',
+      'initial_term_months',
+      'rate_type',
+      'insurance_mode',
+      'insurance_rate_hundredths',
+      'insurance_quotity_percent',
+      'fees_cents',
+      'guarantee_kind',
+      'guarantee_cents',
+      'notes',
+    ];
+    const ds = await dataSource().initialize();
+    await ds.runMigrations();
+    const columnsOf = async () => {
+      const rows: { name: string; notnull: number }[] = await ds.query(
+        `SELECT name, "notnull" FROM pragma_table_info('debts')`,
+      );
+      return rows;
+    };
+    for (const name of NEW_COLUMNS) {
+      expect(await columnsOf()).toContainEqual(
+        expect.objectContaining({ name, notnull: 0 }),
+      );
+    }
+
+    // Annulée : les colonnes disparaissent, les crédits de la tranche 8 survivent.
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
+    const remaining = (await columnsOf()).map((c) => c.name);
+    for (const name of NEW_COLUMNS) {
+      expect(remaining).not.toContain(name);
+    }
+    expect(remaining).toEqual(
+      expect.arrayContaining([
+        'name',
+        'secret_payload',
+        'insurance_monthly_cents',
+      ]),
+    );
+    await ds.query(
+      `INSERT INTO "debts" ("id","space_id","kind","start_date","payment_day","archived","name","principal_cents","remaining_cents","annual_rate_hundredths","monthly_payment_cents","insurance_monthly_cents") VALUES ('d1','s1','CAR','2024-09-01',5,0,'Prêt auto',1500000,1120000,390,32000,1500)`,
+    );
+
+    // Rejouée : la ligne existante garde ses données, les nouvelles colonnes valent NULL.
+    await ds.runMigrations();
+    const rows: Record<string, unknown>[] = await ds.query(
+      `SELECT * FROM debts WHERE id = 'd1'`,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      name: 'Prêt auto',
+      principal_cents: 1500000,
+      remaining_cents: 1120000,
+      annual_rate_hundredths: 390,
+      monthly_payment_cents: 32000,
+      insurance_monthly_cents: 1500,
+    });
+    for (const name of NEW_COLUMNS) {
+      expect(rows[0][name]).toBeNull();
+    }
+    // Annulée de nouveau avec des données : la ligne reste lisible.
+    await ds.query(`UPDATE debts SET lender = 'Banque', fees_cents = 900`);
+    await ds.undoLastMigration(); // migration 11 (tranche 12)
+    expect(
+      await ds.query(`SELECT name, insurance_monthly_cents FROM debts`),
+    ).toEqual([{ name: 'Prêt auto', insurance_monthly_cents: 1500 }]);
+    await ds.runMigrations();
     const drift = await ds.driver.createSchemaBuilder().log();
     expect(drift.upQueries.map((q) => q.query)).toEqual([]);
     await ds.destroy();

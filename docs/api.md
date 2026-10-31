@@ -288,7 +288,7 @@ conseil de placement : uniquement budget, épargne de sécurité, suivi mensuel.
 - `link` : route de l'application où agir (`/plan`, `/import`, `/foyer`, `/previsionnel`, `/aides`, `/comptes`, `/projets`, `/revue`, `/dettes`, `/tendances`, `/evenements`, `/`) ou `null`.
 - Les `id` sont stables : `plan-missing`, `plan-overcommitted`, `plan-unassigned`, `month-deficit`, `bloc-overrun-<bloc>`,
   `recurring-missing`, `upcoming-payments`, `no-recent-activity`, `monthly-review`, `savings-behind`,
-  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `spending-riser`, `life-event-overdue`, `life-event-due-soon`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `contribution-pending`, `all-good`.
+  `savings-on-track`, `account-negative-projected`, `accounts-unassigned`, `upcoming-big-payment`, `provision-suggestion`, `project-behind`, `projects-exceed-savings`, `project-reached`, `review-done`, `debt-ratio-high`, `debt-never-paid-off`, `debt-payment-gap`, `spending-riser`, `life-event-overdue`, `life-event-due-soon`, `safety-net-unset`, `safety-net-progress`, `contribution-incomplete`, `contribution-pending`, `all-good`.
 - Certains conseils n'existent que pour l'espace commun (`safety-net-*`, `contribution-incomplete`, `contribution-pending`).
 
 ## Aides officielles (tranche 3)
@@ -638,6 +638,64 @@ mensualités + assurances des dettes actives ÷ revenus mensuels (somme des reve
 membre pour le perso ; `null` si inconnu). Au-dessus de 35 %, l'insight `debt-ratio-high` (`WARNING`, lien `/dettes`)
 est émis (seuil de 35 % : repère du cours, pas une règle de droit) ; `debt-never-paid-off` (`ACTION`) si
 `neverPaidOff`.
+
+### Extension : prêteur, durée, type de taux, assurance détaillée, frais (tranche 12)
+Les objets crédit gagnent les champs ci-dessous (tous **optionnels** en écriture, valeurs par défaut indiquées ; les
+crédits existants prennent ces défauts). Ils sont chiffrés comme le reste du crédit dans un espace personnel.
+```json
+{
+  "lender": "Crédit Agricole", "contractReference": "PRET-12345",
+  "initialTermMonths": 240, "rateType": "FIXED",
+  "insuranceMode": "FIXED", "insuranceMonthlyCents": 1500, "insuranceRatePercent": null, "insuranceQuotityPercent": 100,
+  "feesCents": 90000, "guaranteeKind": "SURETY", "guaranteeCents": 150000,
+  "notes": "Remboursement anticipé : 3 % max des sommes remboursées (voir offre de prêt).",
+  "monthlyInsuranceCents": 1500, "monthlyTotalCents": 33500,
+  "remainingInsuranceCents": 57000, "remainingCostCents": 153000,
+  "paymentCheck": { "status": "OK", "expectedMonthlyPaymentCents": 31950, "differenceCents": 50, "differencePercent": 0 }
+}
+```
+- `lender` : texte ≤ 80 caractères (défaut `""`) ; `contractReference` ≤ 60 ; `notes` ≤ 500.
+- `initialTermMonths` : entier 1-600 ou `null` (durée du prêt à l'origine, en mois).
+- `rateType` : `FIXED` | `VARIABLE` | `ADJUSTABLE` | `null` (défaut `null`). Les calculs supposent un taux **fixe** :
+  pour `VARIABLE`/`ADJUSTABLE`, ils restent des estimations (l'interface doit le dire).
+- `insuranceMode` : `FIXED` (défaut : `insuranceMonthlyCents` par mois) | `PERCENT_INITIAL` (assurance annuelle =
+  `insuranceRatePercent` % du capital **emprunté**, payée en 12 mensualités égales) | `PERCENT_REMAINING` (assurance
+  annuelle = `insuranceRatePercent` % du capital **restant dû**, recalculée chaque mois). `insuranceRatePercent` :
+  nombre 0-20, 2 décimales au plus, **obligatoire** pour les deux modes en pourcentage (en mode `FIXED`, ignoré et renvoyé à `null`).
+  `insuranceQuotityPercent` : entier 1-200 (défaut 100) : part assurée ; elle multiplie l'assurance en pourcentage (deux
+  emprunteurs assurés chacun à 100 % → 200). En mode `FIXED`, `insuranceMonthlyCents` est le montant mensuel total
+  tel que saisi (la quotité est ignorée).
+- `feesCents` (frais de dossier) et `guaranteeCents` (frais de garantie) : entiers ≥ 0 (défaut 0) ; `guaranteeKind` :
+  `NONE` (défaut) | `SURETY` (caution) | `MORTGAGE` (hypothèque, privilège de prêteur de deniers) | `OTHER`.
+- Calculés en lecture, tout en entiers (arrondis au plus proche, moitié vers le haut) :
+  - `monthlyInsuranceCents` : assurance du mois courant (`FIXED` : tel que saisi ; `PERCENT_INITIAL` :
+    `principalCents × taux × quotité ÷ 12` ; `PERCENT_REMAINING` : même formule sur `remainingCents`).
+  - `monthlyTotalCents` = `monthlyPaymentCents` + `monthlyInsuranceCents`.
+  - `remainingInsuranceCents` : somme des assurances des mensualités restantes (simulation mois par mois, ce qui tient
+    compte de la baisse du capital en `PERCENT_REMAINING`) ; `null` si `neverPaidOff`.
+  - `remainingCostCents` = `totalInterestRemainingCents` + `remainingInsuranceCents` ; `null` si `neverPaidOff`.
+  - `paymentCheck` : cohérence entre la mensualité saisie et le prêt d'origine. Calculé seulement si `rateType` ∈
+    {`null`, `FIXED`} et `initialTermMonths` et `principalCents` et le taux sont connus ; sinon
+    `{ "status": "UNKNOWN" }`. `expectedMonthlyPaymentCents` = mensualité constante qui amortit
+    `principalCents` à `annualRatePercent` en `initialTermMonths` mois (recherche par dichotomie sur la simulation
+    entière existante ; la dernière mensualité peut différer). `differenceCents` = saisie − attendue ;
+    `differencePercent` = entier signé, arrondi au plus proche ; `status` : `OK` (|écart| ≤ 2 %), `GAP` (|écart| > 2 %).
+    Le serveur ne corrige **jamais** les montants saisis : il signale seulement l'écart.
+
+`POST`/`PUT` acceptent ces champs en plus de ceux déjà décrits (`PUT` : remplacement complet, un champ absent reprend sa
+valeur par défaut). `400` (message en français) : mode en pourcentage sans `insuranceRatePercent`, valeurs hors bornes,
+`initialTermMonths` non entier, `guaranteeCents` > 0 avec `guaranteeKind` = `NONE`.
+
+`GET …/debts/:id/what-if` ajoute `insuranceSavedCents` (économie d'assurance du scénario, ≥ 0, `null` si une des deux
+simulations ne finit jamais) et `monthlyTotalAfterCents` n'est pas fourni (non demandé). `GET …/debts/summary` ajoute :
+`"totalMonthlyInsuranceCents"`, `"totalRemainingCostCents"` (somme des `remainingCostCents` des crédits actifs qui
+finissent) et `"byLender": [{ "lender": "Crédit Agricole", "activeCount": 2, "remainingCents": 21800000,
+"monthlyTotalCents": 112000 }]` (prêteurs vides regroupés sous `""`, triés par capital restant décroissant). Le taux
+d'endettement utilise désormais `monthlyTotalCents` (mensualité + assurance calculée).
+
+Nouvel insight : `debt-payment-gap` (`INFO`, espace de l'utilisateur, mois courant) : au moins un crédit actif a un
+`paymentCheck.status` = `GAP` ; détail : nom, mensualité saisie vs attendue, invitation à revérifier la saisie ou
+la durée (jamais un conseil de renégociation ni de rachat) ; lien `/dettes`.
 
 ## Tendances (tranche 9)
 

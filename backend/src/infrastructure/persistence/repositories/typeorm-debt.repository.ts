@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Debt, DebtKind } from '../../../domain/debt/debt';
+import {
+  DEBT_EXTENSION_DEFAULTS,
+  Debt,
+  DebtKind,
+  DebtRateType,
+  GuaranteeKind,
+  InsuranceMode,
+} from '../../../domain/debt/debt';
 import { DebtRepository } from '../../../domain/debt/debt.repository';
 import { FieldCipher } from '../../../domain/shared/field-cipher';
 import { DebtOrmEntity } from '../entities/debt.orm-entity';
@@ -14,11 +21,21 @@ interface DebtSecret {
   annualRateHundredths: number;
   monthlyPaymentCents: number;
   insuranceMonthlyCents: number;
+  // Tranche 12 : absents des charges utiles chiffrées avant cette tranche (défauts à la lecture).
+  lender?: string;
+  contractReference?: string;
+  initialTermMonths?: number | null;
+  insuranceRateHundredths?: number | null;
+  insuranceQuotityPercent?: number;
+  feesCents?: number;
+  guaranteeCents?: number;
+  notes?: string;
 }
 
 /**
- * Espace commun : tout en clair. Espace personnel : nom, montants et taux sont
- * chiffrés ensemble (clé du propriétaire, AAD lié à la ligne).
+ * Espace commun : tout en clair. Espace personnel : nom, prêteur, référence, notes, durée,
+ * montants, taux et quotité sont chiffrés ensemble (clé du propriétaire, AAD lié à la ligne) ;
+ * le type de taux, le mode d'assurance et le type de garantie restent en clair, comme `kind`.
  */
 @Injectable()
 export class TypeOrmDebtRepository extends DebtRepository {
@@ -60,14 +77,25 @@ export class TypeOrmDebtRepository extends DebtRepository {
       paymentDay: debt.paymentDay,
       archived: debt.archived,
       recurringId: debt.recurringId,
+      rateType: debt.rateType,
+      insuranceMode: debt.insuranceMode,
+      guaranteeKind: debt.guaranteeKind,
     };
-    const secret: DebtSecret = {
+    const secret: Required<DebtSecret> = {
       name: debt.name,
       principalCents: debt.principalCents,
       remainingCents: debt.remainingCents,
       annualRateHundredths: debt.annualRateHundredths,
       monthlyPaymentCents: debt.monthlyPaymentCents,
       insuranceMonthlyCents: debt.insuranceMonthlyCents,
+      lender: debt.lender,
+      contractReference: debt.contractReference,
+      initialTermMonths: debt.initialTermMonths,
+      insuranceRateHundredths: debt.insuranceRateHundredths,
+      insuranceQuotityPercent: debt.insuranceQuotityPercent,
+      feesCents: debt.feesCents,
+      guaranteeCents: debt.guaranteeCents,
+      notes: debt.notes,
     };
     if (space.ownerUserId) {
       await this.debts.save({
@@ -78,6 +106,14 @@ export class TypeOrmDebtRepository extends DebtRepository {
         annualRateHundredths: null,
         monthlyPaymentCents: null,
         insuranceMonthlyCents: null,
+        lender: null,
+        contractReference: null,
+        initialTermMonths: null,
+        insuranceRateHundredths: null,
+        insuranceQuotityPercent: null,
+        feesCents: null,
+        guaranteeCents: null,
+        notes: null,
         secretPayload: this.cipher.encrypt(
           space.ownerUserId,
           aad(debt.id, debt.spaceId),
@@ -101,6 +137,14 @@ export class TypeOrmDebtRepository extends DebtRepository {
       annualRateHundredths: row.annualRateHundredths ?? 0,
       monthlyPaymentCents: row.monthlyPaymentCents ?? 0,
       insuranceMonthlyCents: row.insuranceMonthlyCents ?? 0,
+      lender: row.lender ?? undefined,
+      contractReference: row.contractReference ?? undefined,
+      initialTermMonths: row.initialTermMonths,
+      insuranceRateHundredths: row.insuranceRateHundredths,
+      insuranceQuotityPercent: row.insuranceQuotityPercent ?? undefined,
+      feesCents: row.feesCents ?? undefined,
+      guaranteeCents: row.guaranteeCents ?? undefined,
+      notes: row.notes ?? undefined,
     };
     if (ownerUserId && row.secretPayload) {
       values = JSON.parse(
@@ -111,6 +155,7 @@ export class TypeOrmDebtRepository extends DebtRepository {
         ),
       ) as DebtSecret;
     }
+    const defaults = DEBT_EXTENSION_DEFAULTS;
     return Debt.create({
       id: row.id,
       spaceId: row.spaceId,
@@ -119,7 +164,27 @@ export class TypeOrmDebtRepository extends DebtRepository {
       paymentDay: row.paymentDay,
       archived: Boolean(row.archived),
       recurringId: row.recurringId,
-      ...values,
+      name: values.name,
+      principalCents: values.principalCents,
+      remainingCents: values.remainingCents,
+      annualRateHundredths: values.annualRateHundredths,
+      monthlyPaymentCents: values.monthlyPaymentCents,
+      insuranceMonthlyCents: values.insuranceMonthlyCents,
+      lender: values.lender ?? defaults.lender,
+      contractReference: values.contractReference ?? defaults.contractReference,
+      initialTermMonths: values.initialTermMonths ?? defaults.initialTermMonths,
+      rateType: (row.rateType as DebtRateType | null) ?? defaults.rateType,
+      insuranceMode:
+        (row.insuranceMode as InsuranceMode | null) ?? defaults.insuranceMode,
+      insuranceRateHundredths:
+        values.insuranceRateHundredths ?? defaults.insuranceRateHundredths,
+      insuranceQuotityPercent:
+        values.insuranceQuotityPercent ?? defaults.insuranceQuotityPercent,
+      feesCents: values.feesCents ?? defaults.feesCents,
+      guaranteeKind:
+        (row.guaranteeKind as GuaranteeKind | null) ?? defaults.guaranteeKind,
+      guaranteeCents: values.guaranteeCents ?? defaults.guaranteeCents,
+      notes: values.notes ?? defaults.notes,
     });
   }
 }

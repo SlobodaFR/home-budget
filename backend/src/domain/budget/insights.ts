@@ -123,6 +123,12 @@ export interface DebtsInsightContext {
     monthlyPaymentCents: number;
     nextMonthInterestCents: number;
   }[];
+  /** Crédits actifs dont la mensualité saisie s'écarte de plus de 2 % de celle du prêt d'origine. */
+  paymentGaps: {
+    name: string;
+    monthlyPaymentCents: number;
+    expectedMonthlyPaymentCents: number;
+  }[];
 }
 
 export interface InsightsInput {
@@ -171,6 +177,7 @@ const PRIORITY = [
   'life-event-overdue',
   'recurring-missing',
   'debt-never-paid-off',
+  'debt-payment-gap',
   'plan-missing',
   'plan-unassigned',
   'contribution-incomplete',
@@ -560,7 +567,10 @@ function projectInsights({
  * - `debt-ratio-high` : taux d'endettement (mensualités + assurances ÷ revenus
  *   mensuels connus, entier arrondi) au-dessus de 35 % ; repère du cours ;
  * - `debt-never-paid-off` : un crédit actif dont la mensualité ne fait pas
- *   diminuer la dette (ou qui dépasserait 100 ans).
+ *   diminuer la dette (ou qui dépasserait 100 ans) ;
+ * - `debt-payment-gap` (INFO) : un crédit actif dont la mensualité saisie s'écarte de
+ *   plus de 2 % de celle du prêt d'origine (capital, taux, durée) : invite à revérifier
+ *   la saisie, sans jamais suggérer de renégociation ni de rachat.
  * Leçon 5 du cours (crédit). Aucun conseil de placement ni de rachat de crédit.
  */
 function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
@@ -568,7 +578,7 @@ function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
     return [];
   }
   const result: Insight[] = [];
-  const { summary, monthlyIncomeCents, neverPaidOff } = debts;
+  const { summary, monthlyIncomeCents, neverPaidOff, paymentGaps } = debts;
 
   if (
     summary.debtToIncomePercent !== null &&
@@ -604,6 +614,36 @@ function debtInsights({ month, today, debts }: InsightsInput): Insight[] {
                   ]
                 : []),
             ])} : les mensualités ne couvrent pas les intérêts. Vérifiez les mensualités et les taux saisis.`,
+      lesson: LESSON_DEBT,
+      link: '/dettes',
+    });
+  }
+
+  if (paymentGaps.length > 0) {
+    const one = paymentGaps[0];
+    result.push({
+      id: 'debt-payment-gap',
+      severity: 'INFO',
+      title:
+        paymentGaps.length === 1
+          ? `Mensualité du crédit « ${one.name} » à revérifier`
+          : `${paymentGaps.length} mensualités de crédit à revérifier`,
+      detail:
+        paymentGaps.length === 1
+          ? `Vous avez saisi ${formatEuros(one.monthlyPaymentCents)} par mois, alors que le capital, le taux et la durée d'origine donnent environ ${formatEuros(one.expectedMonthlyPaymentCents)}. Revérifiez la mensualité, le taux ou la durée saisis.`
+          : `${joinNames([
+              ...paymentGaps
+                .slice(0, MAX_LISTED)
+                .map(
+                  (d) =>
+                    `${d.name} (saisi ${formatEuros(d.monthlyPaymentCents)}, attendu ${formatEuros(d.expectedMonthlyPaymentCents)})`,
+                ),
+              ...(paymentGaps.length > MAX_LISTED
+                ? [
+                    `${paymentGaps.length - MAX_LISTED} ${plural(paymentGaps.length - MAX_LISTED, 'autre', 'autres')}`,
+                  ]
+                : []),
+            ])}. Revérifiez les mensualités, les taux ou les durées saisis.`,
       lesson: LESSON_DEBT,
       link: '/dettes',
     });
