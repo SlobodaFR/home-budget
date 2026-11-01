@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DebtsSummary } from '../../domain/debt';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
-import { debt } from '../../test/fixtures';
+import { debt, debtPayload, debtsSummary } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
@@ -47,7 +47,7 @@ const stuck = debt({
 });
 const old = debt({ id: 'd3', name: 'Ancien prêt', kind: 'STUDENT', archived: true, remainingCents: 0, paidSharePercent: 100, monthsRemaining: 0, payoffDate: null, totalInterestRemainingCents: 0 });
 
-const summary: DebtsSummary = { activeCount: 2, totalRemainingCents: 2120000, totalMonthlyCents: 38500, debtToIncomePercent: 31 };
+const summary: DebtsSummary = debtsSummary();
 
 const whatIf = {
   baseline: { monthsRemaining: 38, totalInterestRemainingCents: 96000, payoffDate: '2029-12-05' },
@@ -153,7 +153,7 @@ describe('DettesPage', () => {
 
     it('explains an empty space and offers to add the first debt, without a summary', async () => {
       api.fetchDebts.mockResolvedValue([]);
-      api.fetchDebtsSummary.mockResolvedValue({ activeCount: 0, totalRemainingCents: 0, totalMonthlyCents: 0, debtToIncomePercent: null });
+      api.fetchDebtsSummary.mockResolvedValue(debtsSummary({ activeCount: 0, totalRemainingCents: 0, totalMonthlyCents: 0, debtToIncomePercent: null }));
       const user = renderPage();
       expect(await screen.findByText('À quoi sert le suivi des crédits ?')).toBeInTheDocument();
       expect(screen.getByText(/tableau d’amortissement ou le relevé de la banque/)).toBeInTheDocument();
@@ -217,7 +217,7 @@ describe('DettesPage', () => {
     });
 
     it('is absent without any active debt, and when the summary cannot be read', async () => {
-      api.fetchDebtsSummary.mockResolvedValue({ activeCount: 0, totalRemainingCents: 0, totalMonthlyCents: 0, debtToIncomePercent: null });
+      api.fetchDebtsSummary.mockResolvedValue(debtsSummary({ activeCount: 0, totalRemainingCents: 0, totalMonthlyCents: 0, debtToIncomePercent: null }));
       renderPage();
       await screen.findByRole('list', { name: 'Crédits en cours' });
       expect(screen.queryByRole('region', { name: 'Synthèse des crédits' })).not.toBeInTheDocument();
@@ -264,18 +264,20 @@ describe('DettesPage', () => {
       await fillValid(user, dialog);
       await user.click(within(dialog).getByRole('button', { name: 'Ajouter le crédit' }));
       await waitFor(() =>
-        expect(api.createDebt).toHaveBeenCalledWith('s-common', {
-          name: 'Prêt travaux',
-          kind: 'MORTGAGE',
-          principalCents: 2000000,
-          remainingCents: 1850050,
-          annualRatePercent: 2.45,
-          monthlyPaymentCents: 25000,
-          startDate: '2025-03-01',
-          paymentDay: 10,
-          insuranceMonthlyCents: 1250,
-          recurringId: null,
-        }),
+        expect(api.createDebt).toHaveBeenCalledWith(
+          's-common',
+          debtPayload({
+            name: 'Prêt travaux',
+            kind: 'MORTGAGE',
+            principalCents: 2000000,
+            remainingCents: 1850050,
+            annualRatePercent: 2.45,
+            monthlyPaymentCents: 25000,
+            startDate: '2025-03-01',
+            paymentDay: 10,
+            insuranceMonthlyCents: 1250,
+          }),
+        ),
       );
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       await waitFor(() => expect(api.fetchDebts).toHaveBeenCalledTimes(2));

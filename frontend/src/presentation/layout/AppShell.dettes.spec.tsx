@@ -6,7 +6,7 @@ import { HouseholdContext, HouseholdContextValue } from '../../application/use-h
 import { OfflineQueueProvider } from '../../application/use-offline-queue';
 import { SelectedMonthProvider } from '../../application/use-selected-month';
 import { SpaceProvider } from '../../application/use-space';
-import { debt } from '../../test/fixtures';
+import { debt, debtsSummary } from '../../test/fixtures';
 import { testHousehold } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({ fetchAccounts: vi.fn(), fetchDebts: vi.fn(), fetchDebtsSummary: vi.fn(), fetchRecurring: vi.fn() }));
@@ -27,7 +27,7 @@ describe('AppShell on the credits page', () => {
   beforeEach(() => {
     api.fetchAccounts.mockResolvedValue([]);
     api.fetchDebts.mockResolvedValue([debt()]);
-    api.fetchDebtsSummary.mockResolvedValue({ activeCount: 1, totalRemainingCents: 1120000, totalMonthlyCents: 33500, debtToIncomePercent: 31 });
+    api.fetchDebtsSummary.mockResolvedValue(debtsSummary({ activeCount: 1, totalRemainingCents: 1120000, totalMonthlyCents: 33500 }));
     api.fetchRecurring.mockResolvedValue([]);
   });
 

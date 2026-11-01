@@ -6,6 +6,7 @@ import {
   DebtRatioLevel,
   DebtsSummary,
   describeDebtRatio,
+  lenderLabel,
   ratioGaugePercent,
 } from '../../../domain/debt';
 import { formatCentsShort } from '../../../domain/money';
@@ -28,6 +29,8 @@ export function DebtsSummaryCard({ summary }: { summary: DebtsSummary }) {
   const level = debtRatioLevel(percent);
   const style = LEVEL_STYLE[level];
   const Icon = style.icon;
+  // Un seul groupe « Prêteur non précisé » n'apprend rien : on n'affiche le bloc que s'il y a au moins un prêteur nommé.
+  const showLenders = summary.byLender.some((entry) => entry.lender !== '');
   const referencePosition = ratioGaugePercent(DEBT_RATIO_REFERENCE_PERCENT);
 
   return (
@@ -47,7 +50,42 @@ export function DebtsSummaryCard({ summary }: { summary: DebtsSummary }) {
             {formatCentsShort(summary.totalMonthlyCents)} <span className="font-body-sm text-body-sm font-normal text-mute">par mois, assurances comprises</span>
           </dd>
         </div>
+        {summary.totalMonthlyInsuranceCents > 0 && (
+          <div>
+            <dt className="font-label-caps text-label-caps uppercase text-mute">Dont assurances</dt>
+            <dd className="tabular font-heading-lg text-heading-lg" data-testid="summary-insurance">
+              {formatCentsShort(summary.totalMonthlyInsuranceCents)}
+            </dd>
+            <dd className="font-body-sm text-body-sm text-mute">par mois</dd>
+          </div>
+        )}
+        {summary.totalRemainingCostCents !== null && (
+          <div className={summary.totalMonthlyInsuranceCents > 0 ? '' : 'col-span-2'}>
+            <dt className="font-label-caps text-label-caps uppercase text-mute">Coût restant total</dt>
+            <dd className="tabular font-heading-lg text-heading-lg" data-testid="summary-remaining-cost">
+              {formatCentsShort(summary.totalRemainingCostCents)}
+            </dd>
+            <dd className="font-body-sm text-body-sm text-mute">intérêts et assurances à payer d’ici la fin</dd>
+          </div>
+        )}
       </dl>
+
+      {showLenders && (
+        <div className="border-t border-hairline-soft pt-md">
+          <h3 className="font-label-caps text-label-caps uppercase text-mute">Par prêteur</h3>
+          <ul aria-label="Crédits par prêteur" className="mt-sm flex flex-col divide-y divide-hairline-soft">
+            {summary.byLender.map((entry) => (
+              <li key={entry.lender || 'none'} className="flex flex-col gap-0.5 py-sm first:pt-0 last:pb-0" data-testid="lender-row">
+                <p className="break-words font-body-md text-body-md font-semibold">{lenderLabel(entry.lender)}</p>
+                <p className="tabular font-body-sm text-body-sm">
+                  {entry.activeCount > 1 ? `${entry.activeCount} crédits en cours` : `${entry.activeCount} crédit en cours`} · Capital restant {formatCentsShort(entry.remainingCents)} ·{' '}
+                  {formatCentsShort(entry.monthlyTotalCents)} par mois
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="border-t border-hairline-soft pt-md">
         <div className="flex flex-wrap items-center justify-between gap-sm">

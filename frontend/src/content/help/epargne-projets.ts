@@ -73,11 +73,28 @@ export const epargneProjets: HelpSection = {
         },
         {
           type: 'paragraph',
-          text: 'Un repère s’affiche aussi : la part des revenus consacrée aux mensualités, à comparer au seuil de 35 %. C’est un repère, pas une règle. Tous ces chiffres sont des estimations.',
+          text: 'Pour chaque crédit, vous pouvez aussi noter le prêteur (la banque), la durée prévue à l’origine, le type de taux, l’assurance emprunteur, les frais de dossier et de garantie, et quelques notes. Tout cela est facultatif : ce qui est vide reste simplement non précisé.',
+        },
+        {
+          type: 'list',
+          items: [
+            'L’assurance peut être un montant fixe par mois, ou un pourcentage du capital emprunté ou du capital restant dû. La quotité est la part du prêt couverte : deux emprunteurs assurés chacun à 100 % font 200 %.',
+            'Le montant prélevé chaque mois est la mensualité plus l’assurance. L’application affiche aussi le coût restant : les intérêts et l’assurance qu’il reste à payer jusqu’à la fin du crédit.',
+            'Si vous indiquez la durée initiale, l’application compare votre mensualité à ce que donneraient le capital, le taux et la durée d’origine. En cas d’écart, un message vous invite à revérifier votre saisie ou la durée : ce n’est qu’un repère, jamais une correction automatique.',
+            'Plusieurs crédits chez le même prêteur sont regroupés dans le bloc « Par prêteur » de la synthèse.',
+          ],
+        },
+        {
+          type: 'paragraph',
+          text: 'Un repère s’affiche aussi : la part des revenus consacrée aux mensualités et aux assurances, à comparer au seuil de 35 %. C’est un repère, pas une règle.',
+        },
+        {
+          type: 'paragraph',
+          text: 'Tous ces chiffres sont des estimations. Les calculs supposent un taux fixe : avec un taux variable ou révisable, ils restent des estimations. N’écrivez jamais de numéro de compte dans les notes.',
         },
       ],
       links: [{ kind: 'internal', label: 'Ouvrir les crédits', to: '/dettes' }],
-      keywords: ['prêt', 'emprunt', 'remboursement', 'endettement', 'intérêts', 'simulateur', '35'],
+      keywords: ['prêt', 'emprunt', 'remboursement', 'endettement', 'intérêts', 'simulateur', '35', 'prêteur', 'banque', 'assurance', 'quotité', 'frais', 'garantie', 'taux fixe', 'taux variable', 'écart de mensualité', 'coût restant'],
     },
   ],
 };

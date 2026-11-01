@@ -126,6 +126,26 @@ describe('InsightsCard', () => {
     expect(within(items[1]).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
   });
 
+  it('sends the payment gap insight to /dettes with « Voir mes crédits », as a simple piece of information', () => {
+    renderCard({
+      status: 'ready',
+      insights: [
+        insight({
+          id: 'debt-payment-gap',
+          severity: 'INFO',
+          title: 'La mensualité de « Prêt travaux » semble différente du prêt d’origine',
+          detail: 'Saisie : 320 € ; attendue : 285 €. Revérifiez la saisie ou la durée.',
+          lesson: null,
+          link: '/dettes',
+        }),
+      ],
+    });
+    const item = screen.getByRole('listitem');
+    expect(within(item).getByText(/Bon à savoir/)).toBeInTheDocument();
+    expect(within(item).getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
+    expect(within(item).getByText(/Revérifiez la saisie ou la durée/)).toBeInTheDocument();
+  });
+
   it('sends the life event insights to /evenements with « Voir mes démarches », each with the right severity', () => {
     renderCard({
       status: 'ready',

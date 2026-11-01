@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../infrastructure/api-client';
-import { debt } from '../test/fixtures';
+import { debt, debtPayload, debtsSummary } from '../test/fixtures';
 import { useDebtActions } from './use-debt-actions';
 import { useDebtWhatIf } from './use-debt-what-if';
 import { useDebts, useDebtsSummary } from './use-debts';
@@ -33,7 +33,7 @@ const whatIf = {
 beforeEach(() => {
   Object.values(api).forEach((mock) => mock.mockReset());
   api.fetchDebts.mockResolvedValue([debt()]);
-  api.fetchDebtsSummary.mockResolvedValue({ activeCount: 1, totalRemainingCents: 1120000, totalMonthlyCents: 33500, debtToIncomePercent: 31 });
+  api.fetchDebtsSummary.mockResolvedValue(debtsSummary({ activeCount: 1, totalRemainingCents: 1120000, totalMonthlyCents: 33500 }));
   api.createDebt.mockResolvedValue(debt());
   api.updateDebt.mockResolvedValue(undefined);
   api.deleteDebt.mockResolvedValue(undefined);
@@ -76,7 +76,7 @@ describe('useDebtActions', () => {
   it('creates, then tells the page to refresh', async () => {
     const onChanged = vi.fn();
     const { result } = renderHook(() => useDebtActions('s-common', onChanged));
-    const payload = { name: 'x', kind: 'CAR' as const, principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0, recurringId: null };
+    const payload = debtPayload({ name: 'x', principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0 });
     await act(async () => {
       await result.current.create(payload);
     });
@@ -89,7 +89,7 @@ describe('useDebtActions', () => {
     const { result } = renderHook(() => useDebtActions('s-common', vi.fn()));
     const archived = debt({ archived: true });
     await act(async () => {
-      await result.current.update(archived, { name: 'Autre', kind: 'CAR', principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0, recurringId: null });
+      await result.current.update(archived, debtPayload({ name: 'Autre', principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0 }));
     });
     expect(api.updateDebt).toHaveBeenCalledWith('s-common', 'd1', expect.objectContaining({ name: 'Autre', archived: true }));
   });
@@ -102,6 +102,44 @@ describe('useDebtActions', () => {
     });
     expect(api.updateDebt).toHaveBeenCalledWith('s-common', 'd1', expect.objectContaining({ name: 'Prêt auto', monthlyPaymentCents: 32000, archived: true }));
     expect(api.deleteDebt).toHaveBeenCalledWith('s-common', 'd1');
+  });
+
+  it('sends every contract field again when archiving (a PUT replaces the whole debt)', async () => {
+    const detailed = debt({
+      lender: 'Crédit Agricole',
+      contractReference: 'PRET-12345',
+      initialTermMonths: 240,
+      rateType: 'ADJUSTABLE',
+      insuranceMode: 'PERCENT_REMAINING',
+      insuranceRatePercent: 0.3,
+      insuranceQuotityPercent: 200,
+      feesCents: 90000,
+      guaranteeKind: 'SURETY',
+      guaranteeCents: 150000,
+      notes: 'Remboursement anticipé : 3 % max.',
+    });
+    const { result } = renderHook(() => useDebtActions('s-common', vi.fn()));
+    await act(async () => {
+      await result.current.setArchived(detailed, true);
+    });
+    expect(api.updateDebt).toHaveBeenCalledWith(
+      's-common',
+      'd1',
+      expect.objectContaining({
+        lender: 'Crédit Agricole',
+        contractReference: 'PRET-12345',
+        initialTermMonths: 240,
+        rateType: 'ADJUSTABLE',
+        insuranceMode: 'PERCENT_REMAINING',
+        insuranceRatePercent: 0.3,
+        insuranceQuotityPercent: 200,
+        feesCents: 90000,
+        guaranteeKind: 'SURETY',
+        guaranteeCents: 150000,
+        notes: 'Remboursement anticipé : 3 % max.',
+        archived: true,
+      }),
+    );
   });
 
   it('rejects and does not refresh when the request fails', async () => {

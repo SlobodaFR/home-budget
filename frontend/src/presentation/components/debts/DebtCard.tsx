@@ -2,17 +2,21 @@ import {
   DEBT_KIND_LABEL,
   Debt,
   describeMonthly,
+  describeMonthlyTotal,
   describeNeverPaidOff,
   describePaidProgress,
   describePayoff,
   formatRate,
   isRepaid,
   NEVER_PAID_OFF_LABEL,
+  RATE_TYPE_LABEL,
+  rateTypeWarning,
 } from '../../../domain/debt';
 import { formatCentsShort } from '../../../domain/money';
-import { AlertIcon, CheckIcon, PencilIcon } from '../Icons';
+import { AlertIcon, CheckIcon, InfoIcon, PencilIcon } from '../Icons';
 import { cardClass } from '../ui';
 import { DEBT_KIND_ICON } from './debt-style';
+import { PaymentCheckNotice } from './PaymentCheckNotice';
 
 interface Props {
   debt: Debt;
@@ -28,6 +32,9 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
   const payoff = describePayoff(debt);
   const repaid = isRepaid(debt);
   const progressText = describePaidProgress(debt);
+  const monthlyTotal = describeMonthlyTotal(debt);
+  const warning = rateTypeWarning(debt.rateType);
+  const showInsuranceCost = !debt.neverPaidOff && !repaid && debt.remainingInsuranceCents !== null && debt.remainingInsuranceCents > 0 && debt.remainingCostCents !== null;
 
   return (
     <li
@@ -42,8 +49,14 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
         </span>
         <div className="min-w-0 flex-1">
           <h4 className="break-words font-body-md text-body-md font-semibold">{debt.name}</h4>
+          {debt.lender !== '' && (
+            <p className="break-words font-body-sm text-body-sm" data-testid="debt-lender">
+              {debt.lender}
+            </p>
+          )}
           <p className="font-body-sm text-body-sm text-mute">
             {DEBT_KIND_LABEL[debt.kind]} · Taux {formatRate(debt.annualRatePercent)}
+            {debt.rateType ? ` (${RATE_TYPE_LABEL[debt.rateType].toLowerCase()})` : ''}
           </p>
         </div>
       </div>
@@ -87,13 +100,29 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
       </div>
 
       <div className="font-body-sm text-body-sm">
-        <p className="font-semibold">{describeMonthly(debt)}</p>
+        {monthlyTotal && <p className="font-semibold">{monthlyTotal}</p>}
+        <p className={monthlyTotal ? 'text-mute' : 'font-semibold'}>{monthlyTotal ? `(${describeMonthly(debt)})` : describeMonthly(debt)}</p>
         {!debt.neverPaidOff && payoff && <p className="text-mute">{payoff}</p>}
         {!debt.neverPaidOff && !repaid && debt.totalInterestRemainingCents !== null && (
           <p className="text-mute">Intérêts restant à payer : {formatCentsShort(debt.totalInterestRemainingCents)}</p>
         )}
+        {showInsuranceCost && (
+          <>
+            <p className="text-mute">Assurance restant à payer : {formatCentsShort(debt.remainingInsuranceCents ?? 0)}</p>
+            <p className="font-semibold">Coût restant (intérêts + assurance) : {formatCentsShort(debt.remainingCostCents ?? 0)}</p>
+          </>
+        )}
         {repaid && <p className="text-mute">Il ne reste plus rien à rembourser.</p>}
       </div>
+
+      {warning && (
+        <p className="flex items-start gap-sm font-body-sm text-body-sm text-mute" data-testid="rate-type-warning">
+          <InfoIcon width={16} height={16} className="mt-0.5 shrink-0" />
+          {warning}
+        </p>
+      )}
+
+      {!repaid && !debt.archived && <PaymentCheckNotice debt={debt} compact />}
 
       {debt.neverPaidOff && (
         <p role="alert" className="flex items-start gap-sm rounded border border-error/40 bg-error/5 p-md font-body-sm text-body-sm font-semibold text-error">
