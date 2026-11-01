@@ -9,14 +9,18 @@ cd "$DEPLOY_DIR/deploy"
 export IMAGE
 export IMAGE_TAG
 
-# Nombre de versions de l'image à garder après un déploiement :
-# la version courante + les 2 précédentes (rollback possible).
-KEEP_VERSIONS="${KEEP_VERSIONS:-3}"
+# Nombre de versions de l'image à garder après un déploiement : la version courante + la précédente.
+# Garder plus n'apporte presque rien : l'image de chaque version reste disponible sur GHCR, et revenir plus
+# d'une version en arrière est de toute façon risqué (les migrations de base ne se défont pas toutes seules).
+KEEP_VERSIONS="${KEEP_VERSIONS:-2}"
+
+# Projet docker compose de cette application (cf. `name:` dans docker-compose.yml). Sert à ne nettoyer QUE ce
+# projet : ce VPS héberge d'autres services dont on ne doit toucher ni les conteneurs, ni les images, ni les volumes.
+COMPOSE_PROJECT="${COMPOSE_PROJECT:-budget}"
 
 # Supprime les anciennes versions de $IMAGE au-delà des $1 plus récentes.
-# Ne touche jamais : à une image utilisée par un conteneur (même arrêté),
-# au tag qui va être déployé, ni aux images des autres applications du VPS.
-# Les volumes nommés (dont budget-data, la base SQLite) ne sont JAMAIS supprimés.
+# Ne touche jamais : à une image utilisée par un conteneur (même arrêté), au tag qui va être déployé, ni aux
+# images des autres applications du VPS.
 cleanup_old_images() {
   keep="$1"
   in_use=$(docker ps -a --format '{{.Image}}')
@@ -34,17 +38,19 @@ cleanup_old_images() {
       done
 }
 
+# Nettoyage volontairement prudent, limité à cette application :
+# - conteneurs arrêtés : seulement ceux du projet compose ci-dessus (jamais ceux des autres services) ;
+# - images : anciennes versions de $IMAGE uniquement, plus les images orphelines (sans nom ni conteneur) de plus
+#   de 24 h, qui ne servent à personne ;
+# - cache de build : seulement s'il a plus de 7 jours ;
+# - VOLUMES : jamais supprimés (ni nommés, ni anonymes) : la base SQLite (budget-data) et les données des autres
+#   services ne doivent dépendre d'aucun nettoyage automatique.
 cleanup_docker() {
   keep="$1"
-  docker container prune -f
+  docker container prune -f --filter "label=com.docker.compose.project=$COMPOSE_PROJECT"
   cleanup_old_images "$keep"
-  docker image prune -f
-  docker builder prune -f || true
-  # Volumes anonymes orphelins uniquement (nom = 64 caractères hexadécimaux).
-  # Les volumes nommés comme budget-data sont volontairement ignorés.
-  docker volume ls -q -f dangling=true \
-    | grep -E '^[0-9a-f]{64}$' \
-    | xargs -r docker volume rm || true
+  docker image prune -f --filter "until=24h"
+  docker builder prune -f --filter "until=168h" || true
 }
 
 echo "Espace disque avant nettoyage :"

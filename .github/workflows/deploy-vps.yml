@@ -73,7 +73,8 @@ jobs:
       # Le disque du VPS peut être plein AVANT que update-vps.sh ne tourne
       # (l'écriture du .env échoue alors avec "No space left on device").
       # On libère donc de la place en tout premier, sans dépendre d'aucun
-      # fichier à synchroniser. Les volumes nommés (budget-data) sont préservés.
+      # fichier à synchroniser. Nettoyage volontairement limité à cette application
+      # (le VPS héberge d'autres services) ; aucun volume n'est jamais supprimé.
       - name: Free disk space on VPS
         uses: appleboy/ssh-action@v1
         with:
@@ -83,17 +84,16 @@ jobs:
           envs: IMAGE,IMAGE_TAG
           script: |
             echo "Espace disque avant nettoyage :"; df -h / | tail -n 1
-            docker container prune -f || true
+            docker container prune -f --filter "label=com.docker.compose.project=budget" || true
             in_use=$(docker ps -a --format '{{.Image}}')
-            docker image ls "$IMAGE" --format '{{.Tag}}' | grep -v '^<none>$' | tail -n +3 | while read -r tag; do
+            docker image ls "$IMAGE" --format '{{.Tag}}' | grep -v '^<none>$' | tail -n +2 | while read -r tag; do
               [ "$tag" = "$IMAGE_TAG" ] && continue
               printf '%s\n' "$in_use" | grep -qxF "$IMAGE:$tag" && continue
               docker image rm "$IMAGE:$tag" || true
             done
-            docker image prune -f || true
-            docker builder prune -f || true
-            docker volume ls -q -f dangling=true | grep -E '^[0-9a-f]{64}$' | xargs -r docker volume rm || true
-            sudo journalctl --vacuum-size=200M || true
+            docker image prune -f --filter "until=24h" || true
+            docker builder prune -f --filter "until=168h" || true
+            sudo journalctl --vacuum-size=500M || true
             sudo apt-get clean || true
             echo "Espace disque après nettoyage :"; df -h / | tail -n 1
         env:
