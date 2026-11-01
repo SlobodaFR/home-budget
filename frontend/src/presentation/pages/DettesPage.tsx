@@ -157,7 +157,7 @@ export function DettesPage() {
         <LoadingScreen />
       )}
 
-      {sheet?.type === 'form' && <DebtForm key={sheet.editing?.id ?? 'new'} editing={sheet.editing} recurring={recurring} lenders={knownLenders(list)} onClose={closeSheet} onSubmit={handleSubmit} />}
+      {sheet?.type === 'form' && <DebtForm key={sheet.editing?.id ?? 'new'} editing={sheet.editing} spaceId={space.id} recurring={recurring} lenders={knownLenders(list)} onClose={closeSheet} onSubmit={handleSubmit} />}
       {detailDebt && (
         <DebtDetail
           key={detailDebt.id}

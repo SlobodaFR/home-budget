@@ -136,4 +136,19 @@ describe('help content', () => {
     expect(text).not.toMatch(/renégoci|rachat de cr/i);
     expect(credits?.links).toContainEqual({ kind: 'internal', label: 'Ouvrir les crédits', to: '/dettes' });
   });
+
+  it('explains the contract import: how it works, deletion, validation and limits', () => {
+    const credits = allEntries.find((entry) => entry.id === 'credits-et-dettes');
+    const text = (credits?.blocks ?? []).flatMap(textOf).join(' ');
+    expect(text).toContain('Importer un contrat');
+    expect(text).toContain('Importer depuis un contrat (PDF ou photo)');
+    expect(text).toContain('lu sur le serveur de l’application, puis supprimé immédiatement');
+    expect(text).toContain('Il n’est pas conservé');
+    expect(text).toContain('Rien n’est enregistré sans votre validation');
+    expect(text).toContain('Ce qui n’a pas été trouvé reste vide');
+    for (const word of ['Sûr', 'À vérifier', 'Douteux', 'qualité du document', 'Vérifiez toujours le taux']) {
+      expect(text, word).toContain(word);
+    }
+    expect(credits?.keywords).toEqual(expect.arrayContaining(['importer un contrat', 'ocr', 'pdf']));
+  });
 });

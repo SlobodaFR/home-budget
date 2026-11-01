@@ -86,6 +86,20 @@ export const epargneProjets: HelpSection = {
         },
         {
           type: 'paragraph',
+          text: 'Importer un contrat. Si vous avez votre contrat ou votre offre de prêt en PDF ou en photo, le bouton « Importer depuis un contrat (PDF ou photo) » du formulaire « Nouveau crédit » lit le document et vous propose des valeurs : prêteur, capital emprunté, taux, durée, mensualité, assurance, garantie… Ce bouton n’apparaît que si votre serveur sait lire les contrats.',
+        },
+        {
+          type: 'list',
+          items: [
+            'Le contrat est lu sur le serveur de l’application, puis supprimé immédiatement. Il n’est pas conservé, et rien n’en est gardé sur votre appareil. L’application vous le rappelle avant chaque envoi : c’est vous qui lancez la lecture.',
+            'Rien n’est enregistré sans votre validation. Vous relisez chaque proposition et vous cochez celles à reprendre (seules les valeurs « Sûr » le sont d’office). Le formulaire est alors prérempli : vous le relisez, vous le corrigez, puis vous l’enregistrez vous-même. Ce qui n’a pas été trouvé reste vide.',
+            'Chaque proposition indique sa fiabilité (« Sûr », « À vérifier » ou « Douteux ») et l’extrait du contrat qui la justifie. Même une valeur « Sûr » se relit.',
+            'Les limites : la lecture dépend de la qualité du document. Un scan flou ou penché, ou une photo mal éclairée, peut donner de mauvais chiffres, et plusieurs taux (taux du prêt, taux global) peuvent être confondus. Vérifiez toujours le taux, la mensualité et la durée. Le nom du crédit, le capital restant dû et le jour de prélèvement ne se lisent pas dans un contrat : vous les saisissez.',
+            'Le fichier doit être un PDF, une image PNG ou une photo JPEG, de taille limitée. Une seule lecture à la fois, et un nombre limité de lectures par heure.',
+          ],
+        },
+        {
+          type: 'paragraph',
           text: 'Un repère s’affiche aussi : la part des revenus consacrée aux mensualités et aux assurances, à comparer au seuil de 35 %. C’est un repère, pas une règle.',
         },
         {
@@ -94,7 +108,7 @@ export const epargneProjets: HelpSection = {
         },
       ],
       links: [{ kind: 'internal', label: 'Ouvrir les crédits', to: '/dettes' }],
-      keywords: ['prêt', 'emprunt', 'remboursement', 'endettement', 'intérêts', 'simulateur', '35', 'prêteur', 'banque', 'assurance', 'quotité', 'frais', 'garantie', 'taux fixe', 'taux variable', 'écart de mensualité', 'coût restant'],
+      keywords: ['prêt', 'emprunt', 'remboursement', 'endettement', 'intérêts', 'simulateur', '35', 'prêteur', 'banque', 'assurance', 'quotité', 'frais', 'garantie', 'taux fixe', 'taux variable', 'écart de mensualité', 'coût restant', 'importer un contrat', 'contrat', 'offre de prêt', 'pdf', 'photo', 'scan', 'ocr', 'lecture', 'préremplir'],
     },
   ],
 };

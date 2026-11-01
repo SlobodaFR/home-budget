@@ -13,6 +13,14 @@ import {
   WhatIfQuery,
   WhatIfResult,
 } from '../domain/debt';
+import {
+  ExtractionCapabilities,
+  ExtractionJob,
+  ExtractionStart,
+  parseExtractionCapabilities,
+  parseExtractionJob,
+  parseExtractionStart,
+} from '../domain/debt-extraction';
 import { parseTrends, Trends } from '../domain/trends';
 import { Forecast } from '../domain/forecast';
 import { Insight, parseInsights } from '../domain/insights';
@@ -92,15 +100,22 @@ export function onUnauthorized(listener: UnauthorizedListener | null): void {
   unauthorizedListener = listener;
 }
 
-/** Envoie la requête et renvoie la réponse si elle est réussie ; sinon lève `NetworkError` ou `ApiError`. */
-async function send(path: string, method = 'GET', body?: unknown): Promise<Response> {
+const isFormData = (body: unknown): body is FormData => typeof FormData !== 'undefined' && body instanceof FormData;
+
+/**
+ * Envoie la requête et renvoie la réponse si elle est réussie ; sinon lève `NetworkError` ou `ApiError`.
+ * Un `FormData` part tel quel, SANS `Content-Type` fixé à la main : le navigateur y met la bonne frontière (`boundary`).
+ * `noStore` : la réponse ne doit jamais être gardée dans un cache (résultat d'un contrat lu).
+ */
+async function send(path: string, method = 'GET', body?: unknown, noStore = false): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       credentials: 'include',
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      ...(noStore ? { cache: 'no-store' as RequestCache } : {}),
+      headers: body === undefined || isFormData(body) ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : isFormData(body) ? body : JSON.stringify(body),
     });
   } catch {
     throw new NetworkError();
@@ -117,8 +132,8 @@ async function send(path: string, method = 'GET', body?: unknown): Promise<Respo
   return response;
 }
 
-async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-  const response = await send(path, method, body);
+async function request<T>(path: string, method = 'GET', body?: unknown, noStore = false): Promise<T> {
+  const response = await send(path, method, body, noStore);
   if (response.status === 204) {
     return undefined as T;
   }
@@ -296,6 +311,31 @@ export const apiClient = {
       throw new ApiError(502, 'Réponse illisible');
     }
     return result;
+  },
+  /** L'import de contrat est-il disponible sur ce serveur (outils de lecture installés) ? */
+  async fetchDebtExtractionCapabilities(): Promise<ExtractionCapabilities> {
+    return parseExtractionCapabilities(await request<unknown>('/debt-extractions/capabilities', 'GET', undefined, true));
+  },
+  /** Envoie le contrat (multipart, champ `file`). Le fichier n'est gardé nulle part côté client. */
+  async startDebtExtraction(spaceId: string, file: File): Promise<ExtractionStart> {
+    const form = new FormData();
+    form.append('file', file);
+    const start = parseExtractionStart(await request<unknown>(`${spacePath(spaceId)}/debts/extract`, 'POST', form, true));
+    if (!start) {
+      throw new ApiError(502, 'Réponse illisible');
+    }
+    return start;
+  },
+  async fetchDebtExtraction(jobId: string): Promise<ExtractionJob> {
+    const job = parseExtractionJob(await request<unknown>(`/debt-extractions/${encodeURIComponent(jobId)}`, 'GET', undefined, true));
+    if (!job) {
+      throw new ApiError(502, 'Réponse illisible');
+    }
+    return job;
+  },
+  /** Efface le résultat côté serveur : à appeler dès qu'il n'est plus utile. */
+  deleteDebtExtraction(jobId: string): Promise<void> {
+    return request<void>(`/debt-extractions/${encodeURIComponent(jobId)}`, 'DELETE');
   },
 
   /** `to` : dernier mois inclus (défaut côté serveur : le mois courant). */

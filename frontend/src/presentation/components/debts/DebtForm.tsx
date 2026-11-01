@@ -1,4 +1,5 @@
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useCallback, useRef, useState } from 'react';
+import { useExtractionCapabilities } from '../../../application/use-debt-extraction';
 import {
   buildDebtPayload,
   DEBT_KIND_LABEL,
@@ -30,16 +31,34 @@ import {
   REMAINING_HELP,
   TermUnit,
 } from '../../../domain/debt';
+import {
+  applyExtractedFields,
+  clearPrefillMark,
+  describePrefill,
+  ExtractedField,
+  isFormUntouched,
+  PrefillMarks,
+  SkippedField,
+} from '../../../domain/debt-extraction';
 import { formatCentsShort } from '../../../domain/money';
 import { RecurringPayment } from '../../../domain/recurring';
 import { BottomSheet } from '../BottomSheet';
-import { ChevronRightIcon, InfoIcon } from '../Icons';
-import { buttonPrimary, inputClass, labelClass } from '../ui';
+import { ChevronRightIcon, InfoIcon, UploadIcon } from '../Icons';
+import { buttonPrimary, buttonSecondary, inputClass, labelClass } from '../ui';
+import { ContractImport } from './contract/ContractImport';
+import { PrefillMark } from './contract/PrefillMark';
 import { DEBT_KIND_ICON } from './debt-style';
 import { FieldError, NumberInput } from './fields';
 
+interface PrefillReport {
+  message: string;
+  skipped: SkippedField[];
+}
+
 interface Props {
   editing: Debt | null;
+  /** L'espace où le crédit sera créé : sans lui (ou en modification), l'import d'un contrat n'est pas proposé. */
+  spaceId?: string;
   /** Les paiements récurrents de l'espace (la liste proposée est filtrée ici). */
   recurring?: RecurringPayment[];
   /** Les prêteurs déjà saisis dans l'espace, proposés en suggestion. */
@@ -49,14 +68,37 @@ interface Props {
   now?: () => Date;
 }
 
-export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSubmit, now = () => new Date() }: Props) {
+export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClose, onSubmit, now = () => new Date() }: Props) {
   const [values, setValues] = useState(() => (editing ? debtToForm(editing) : emptyDebtForm(now())));
+  const initialValues = useRef(values);
+  const [view, setView] = useState<'form' | 'import'>('form');
+  const [marks, setMarks] = useState<PrefillMarks>({});
+  const [prefillReport, setPrefillReport] = useState<PrefillReport | null>(null);
+  const capabilities = useExtractionCapabilities(Boolean(spaceId) && !editing);
+  // Le bouton d'import n'apparaît que sur un formulaire encore vierge : il n'écrase jamais ce qui a été saisi.
+  const canImport = capabilities !== null && spaceId !== undefined && isFormUntouched(values, initialValues.current);
   const [errors, setErrors] = useState<DebtFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => setValues((previous) => ({ ...previous, [key]: value }));
+  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => {
+    setValues((previous) => ({ ...previous, [key]: value }));
+    // Modifier un champ prérempli efface son repère « à vérifier » : la personne l'a relu.
+    setMarks((previous) => clearPrefillMark(previous, key));
+  };
+  const leaveImport = useCallback(() => setView('form'), []);
+  const applyExtraction = (fields: ExtractedField[]) => {
+    const result = applyExtractedFields(values, fields);
+    setValues(result.values);
+    setMarks(result.marks);
+    setErrors({});
+    setPrefillReport({ message: describePrefill(result), skipped: result.skipped });
+    if (result.applied.some((field) => field === 'contractReference' || field === 'feesCents' || field === 'guaranteeKind' || field === 'guaranteeCents')) {
+      setDetailsOpen(true);
+    }
+    setView('form');
+  };
   const linkable = linkableRecurring(recurring, values.recurringId || null);
   const [detailsOpen, setDetailsOpen] = useState(() => hasContractDetails(values));
   const percentInsurance = values.insuranceMode !== 'FIXED';
@@ -91,9 +133,42 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
     </p>
   );
 
+  if (view === 'import' && capabilities && spaceId) {
+    return (
+      <BottomSheet title="Importer un contrat" onClose={leaveImport}>
+        <ContractImport spaceId={spaceId} capabilities={capabilities} onApply={applyExtraction} onBack={leaveImport} />
+      </BottomSheet>
+    );
+  }
+
   return (
     <BottomSheet title={editing ? 'Modifier le crédit' : 'Nouveau crédit'} onClose={onClose}>
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+        {prefillReport && (
+          <section role="status" aria-label="Résultat de l’import du contrat" className="flex flex-col gap-sm rounded border border-plaisir/60 bg-plaisir/10 p-md font-body-sm text-body-sm">
+            <p>{prefillReport.message}</p>
+            <p>À compléter vous-même : le nom du crédit, son type, le capital restant dû et le jour de prélèvement.</p>
+            {prefillReport.skipped.length > 0 && (
+              <p>
+                Non repris : {prefillReport.skipped.map((item) => `${item.label} (${item.reason})`).join(' ; ')}.
+              </p>
+            )}
+            <button type="button" onClick={() => setPrefillReport(null)} className={`${buttonSecondary} min-h-[44px] self-start bg-white`}>
+              Masquer ce message
+            </button>
+          </section>
+        )}
+
+        {canImport && (
+          <section aria-label="Importer un contrat" className="flex flex-col gap-sm rounded bg-soft-cloud p-md">
+            <p className="font-body-sm text-body-sm">Vous avez votre contrat ou votre offre de prêt sous la main ? Les informations lisibles vous sont proposées, et vous vérifiez tout avant d’enregistrer.</p>
+            <button type="button" onClick={() => setView('import')} className={`${buttonSecondary} w-full bg-white`}>
+              <UploadIcon width={20} height={20} />
+              Importer depuis un contrat (PDF ou photo)
+            </button>
+          </section>
+        )}
+
         <div>
           <label htmlFor="debt-name" className={labelClass}>
             Nom du crédit
@@ -139,6 +214,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
           )}
           {hint('debt-lender-hint', 'La banque ou l’organisme qui vous a prêté l’argent. Cela permet de regrouper vos crédits par prêteur.')}
           <FieldError id="debt-lender-error" message={errors.lender} />
+          <PrefillMark confidence={marks.lender} />
         </div>
 
         <div role="group" aria-label="Type de crédit">
@@ -178,6 +254,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
           />
           {hint('debt-principal-hint', 'La somme prêtée au départ par la banque.')}
           <FieldError id="debt-principal-error" message={errors.principal} />
+          <PrefillMark confidence={marks.principal} />
         </div>
 
         <div>
@@ -211,6 +288,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
           />
           {hint('debt-rate-hint', 'Le taux indiqué dans votre contrat, hors assurance (ex. 3,9). Mettez 0 pour un crédit sans intérêts.')}
           <FieldError id="debt-rate-error" message={errors.rate} />
+          <PrefillMark confidence={marks.rate} />
         </div>
 
         <div role="group" aria-label="Type de taux" aria-describedby="debt-rate-type-hint">
@@ -231,6 +309,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
             ))}
           </div>
           {hint('debt-rate-type-hint', RATE_TYPE_HELP)}
+          <PrefillMark confidence={marks.rateType} />
           {warning && (
             <p role="status" className="mt-sm flex items-start gap-sm rounded border border-plaisir/50 bg-plaisir/10 p-md font-body-sm text-body-sm">
               <InfoIcon width={18} height={18} className="mt-0.5 shrink-0" />
@@ -253,6 +332,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
           />
           {hint('debt-monthly-hint', 'Ce que vous remboursez chaque mois, sans l’assurance.')}
           <FieldError id="debt-monthly-error" message={errors.monthlyPayment} />
+          <PrefillMark confidence={marks.monthlyPayment} />
         </div>
 
         <div role="group" aria-label="Durée initiale du prêt">
@@ -324,6 +404,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
           )}
           {hint('debt-term-hint', 'La durée prévue à la signature du prêt (elle figure sur l’offre de prêt). Elle sert à vérifier que la mensualité est cohérente.')}
           <FieldError id="debt-term-error" message={errors.term} />
+          <PrefillMark confidence={marks.term} />
         </div>
 
         <fieldset className="flex flex-col gap-lg rounded border border-hairline p-md">
@@ -339,6 +420,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
                 </option>
               ))}
             </select>
+            <PrefillMark confidence={marks.insuranceMode} />
           </div>
 
           {percentInsurance ? (
@@ -363,6 +445,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
                     : 'Appliqué au capital restant dû : l’assurance baisse au fil des remboursements.',
                 )}
                 <FieldError id="debt-insurance-rate-error" message={errors.insuranceRate} />
+                <PrefillMark confidence={marks.insuranceRate} />
               </div>
               <div>
                 <label htmlFor="debt-insurance-quotity" className={labelClass}>
@@ -397,6 +480,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
               />
               {hint('debt-insurance-hint', 'L’assurance emprunteur, si elle est prélevée en plus. Laissez vide sinon.')}
               <FieldError id="debt-insurance-error" message={errors.insurance} />
+              <PrefillMark confidence={marks.insurance} />
             </div>
           )}
         </fieldset>
@@ -415,6 +499,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
             className={inputClass}
           />
           <FieldError id="debt-start-date-error" message={errors.startDate} />
+          <PrefillMark confidence={marks.startDate} />
         </div>
 
         <div>
@@ -482,6 +567,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
                 className={inputClass}
               />
               <FieldError id="debt-reference-error" message={errors.contractReference} />
+              <PrefillMark confidence={marks.contractReference} />
             </div>
 
             <div>
@@ -497,6 +583,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
                 placeholder="900"
               />
               <FieldError id="debt-fees-error" message={errors.fees} />
+              <PrefillMark confidence={marks.fees} />
             </div>
 
             <div>
@@ -510,6 +597,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
                   </option>
                 ))}
               </select>
+              <PrefillMark confidence={marks.guaranteeKind} />
             </div>
 
             <div>
@@ -526,6 +614,7 @@ export function DebtForm({ editing, recurring = [], lenders = [], onClose, onSub
               />
               {hint('debt-guarantee-hint', 'Le coût de la caution ou de l’hypothèque, s’il y en a un. Choisissez d’abord le type de garantie.')}
               <FieldError id="debt-guarantee-error" message={errors.guarantee} />
+              <PrefillMark confidence={marks.guarantee} />
             </div>
 
             <div>
