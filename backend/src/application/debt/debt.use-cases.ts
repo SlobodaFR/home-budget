@@ -1,8 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
+  DEBT_EXTENSION_DEFAULTS,
   Debt,
   DebtKind,
+  DebtRateType,
+  GuaranteeKind,
+  InsuranceMode,
+  insuranceRatePercentToHundredths,
   ratePercentToHundredths,
 } from '../../domain/debt/debt';
 import { DebtRepository } from '../../domain/debt/debt.repository';
@@ -34,6 +39,19 @@ export interface SaveDebtCommand {
   recurringId?: string | null;
   /** Pris en compte à la modification seulement ; absent = inchangé. */
   archived?: boolean;
+  // Tranche 12 : tous optionnels, un champ absent (ou null) prend sa valeur par défaut.
+  lender?: string | null;
+  contractReference?: string | null;
+  initialTermMonths?: number | null;
+  rateType?: DebtRateType | null;
+  insuranceMode?: InsuranceMode | null;
+  /** Pourcent avec 2 décimales au plus (0,36) ; obligatoire pour les modes en pourcentage. */
+  insuranceRatePercent?: number | null;
+  insuranceQuotityPercent?: number | null;
+  feesCents?: number | null;
+  guaranteeKind?: GuaranteeKind | null;
+  guaranteeCents?: number | null;
+  notes?: string | null;
 }
 
 async function requireDebt(
@@ -71,6 +89,18 @@ function build(
   recurringId: string | null,
   archived: boolean,
 ): Debt {
+  const defaults = DEBT_EXTENSION_DEFAULTS;
+  const insuranceMode = command.insuranceMode ?? defaults.insuranceMode;
+  const percentMode = insuranceMode !== 'FIXED';
+  if (
+    percentMode &&
+    (command.insuranceRatePercent === undefined ||
+      command.insuranceRatePercent === null)
+  ) {
+    throw new DomainError(
+      "Indiquez le taux d'assurance (en %) pour ce mode de calcul de l'assurance",
+    );
+  }
   return Debt.create({
     id,
     spaceId,
@@ -85,6 +115,21 @@ function build(
     insuranceMonthlyCents: command.insuranceMonthlyCents,
     archived,
     recurringId,
+    lender: command.lender ?? defaults.lender,
+    contractReference: command.contractReference ?? defaults.contractReference,
+    initialTermMonths: command.initialTermMonths ?? defaults.initialTermMonths,
+    rateType: command.rateType ?? defaults.rateType,
+    insuranceMode,
+    // En mode FIXED le taux d'assurance n'a pas d'objet : il est ignoré (null).
+    insuranceRateHundredths: percentMode
+      ? insuranceRatePercentToHundredths(command.insuranceRatePercent!)
+      : null,
+    insuranceQuotityPercent:
+      command.insuranceQuotityPercent ?? defaults.insuranceQuotityPercent,
+    feesCents: command.feesCents ?? defaults.feesCents,
+    guaranteeKind: command.guaranteeKind ?? defaults.guaranteeKind,
+    guaranteeCents: command.guaranteeCents ?? defaults.guaranteeCents,
+    notes: command.notes ?? defaults.notes,
   });
 }
 

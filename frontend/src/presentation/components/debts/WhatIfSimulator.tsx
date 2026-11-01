@@ -25,15 +25,15 @@ function Scenario({ title, scenario, highlight }: { title: string; scenario: Wha
       <h4 className="font-body-sm text-body-sm font-semibold">{title}</h4>
       <dl className="mt-sm flex flex-col gap-sm font-body-sm text-body-sm">
         <div>
-          <dt className="text-mute">Durée restante</dt>
+          <dt className={highlight ? 'text-ink' : 'text-mute'}>Durée restante</dt>
           <dd className="break-words font-semibold">{describeScenarioDuration(scenario)}</dd>
         </div>
         <div>
-          <dt className="text-mute">Fin prévue</dt>
+          <dt className={highlight ? 'text-ink' : 'text-mute'}>Fin prévue</dt>
           <dd className="font-semibold">{describeScenarioEnd(scenario)}</dd>
         </div>
         <div>
-          <dt className="text-mute">Intérêts restants</dt>
+          <dt className={highlight ? 'text-ink' : 'text-mute'}>Intérêts restants</dt>
           <dd className="tabular font-semibold">{describeScenarioInterest(scenario)}</dd>
         </div>
       </dl>
@@ -48,8 +48,8 @@ function Result({ result }: { result: WhatIfResult }) {
         <Scenario title="Aujourd’hui" scenario={result.baseline} />
         <Scenario title="Avec ce remboursement" scenario={result.scenario} highlight />
       </div>
-      <p role="status" className="flex items-start gap-sm rounded bg-success/10 p-md font-body-md text-body-md font-semibold text-success">
-        <CheckIcon width={20} height={20} className="mt-0.5 shrink-0" />
+      <p role="status" className="flex items-start gap-sm rounded bg-success/10 p-md font-body-md text-body-md font-semibold text-ink">
+        <CheckIcon width={20} height={20} className="mt-0.5 shrink-0 text-success" />
         {describeWhatIfSavings(result)}
       </p>
       <p role="note" aria-label="Indemnités de remboursement anticipé" className="flex items-start gap-sm rounded border border-plaisir/50 bg-plaisir/10 p-md font-body-sm text-body-sm">

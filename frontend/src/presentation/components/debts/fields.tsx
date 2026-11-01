@@ -17,6 +17,7 @@ export function NumberInput({
   describedBy,
   placeholder,
   unit = '€',
+  inputMode = 'decimal',
 }: {
   id: string;
   value: string;
@@ -25,20 +26,21 @@ export function NumberInput({
   describedBy?: string;
   placeholder: string;
   unit?: string;
+  inputMode?: 'decimal' | 'numeric';
 }) {
   return (
     <div className="relative">
       <input
         id={id}
         type="text"
-        inputMode="decimal"
+        inputMode={inputMode}
         autoComplete="off"
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={invalid ? true : undefined}
         aria-describedby={describedBy}
-        className={`${inputClass} tabular pr-10 text-right`}
+        className={`${inputClass} tabular ${unit.length > 1 ? 'pr-16' : 'pr-10'} text-right`}
       />
       <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">{unit}</span>
     </div>

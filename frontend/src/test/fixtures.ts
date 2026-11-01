@@ -1,5 +1,5 @@
 import { Account } from '../domain/account';
-import { Debt } from '../domain/debt';
+import { Debt, DebtPayload, DebtsSummary } from '../domain/debt';
 import { LifeEvent, LifeEventDefinition, LifeEventStep, withCounts } from '../domain/life-event';
 import { Project } from '../domain/project';
 import { MonthlyReview, ReviewHistoryItem, ReviewSnapshot } from '../domain/review';
@@ -111,6 +111,22 @@ export function debt(overrides: Partial<Debt> = {}): Debt {
     startDate: '2024-09-01',
     paymentDay: 5,
     insuranceMonthlyCents: 1500,
+    lender: '',
+    contractReference: '',
+    initialTermMonths: null,
+    rateType: null,
+    insuranceMode: 'FIXED',
+    insuranceRatePercent: null,
+    insuranceQuotityPercent: 100,
+    feesCents: 0,
+    guaranteeKind: 'NONE',
+    guaranteeCents: 0,
+    notes: '',
+    monthlyInsuranceCents: 1500,
+    monthlyTotalCents: 33500,
+    remainingInsuranceCents: null,
+    remainingCostCents: null,
+    paymentCheck: { status: 'UNKNOWN', expectedMonthlyPaymentCents: null, differenceCents: null, differencePercent: null },
     monthsRemaining: 38,
     payoffDate: '2029-12-05',
     totalInterestRemainingCents: 96000,
@@ -120,6 +136,38 @@ export function debt(overrides: Partial<Debt> = {}): Debt {
     recurringId: null,
     ...overrides,
   };
+}
+
+/** Le corps d'une création de crédit avec toutes les valeurs par défaut du contrat (tranche 12). */
+export function debtPayload(overrides: Partial<DebtPayload> = {}): DebtPayload {
+  return {
+    name: 'Prêt auto',
+    kind: 'CAR',
+    principalCents: 1500000,
+    remainingCents: 1120000,
+    annualRatePercent: 3.9,
+    monthlyPaymentCents: 32000,
+    startDate: '2024-09-01',
+    paymentDay: 5,
+    insuranceMonthlyCents: 1500,
+    recurringId: null,
+    lender: '',
+    contractReference: '',
+    initialTermMonths: null,
+    rateType: null,
+    insuranceMode: 'FIXED',
+    insuranceRatePercent: null,
+    insuranceQuotityPercent: 100,
+    feesCents: 0,
+    guaranteeKind: 'NONE',
+    guaranteeCents: 0,
+    notes: '',
+    ...overrides,
+  };
+}
+
+export function debtsSummary(overrides: Partial<DebtsSummary> = {}): DebtsSummary {
+  return { activeCount: 2, totalRemainingCents: 2120000, totalMonthlyCents: 38500, debtToIncomePercent: 31, totalMonthlyInsuranceCents: 0, totalRemainingCostCents: null, byLender: [], ...overrides };
 }
 
 /** Par défaut : la déclaration en mairie d'une naissance prévue le 31 octobre 2026, « bientôt due » au 30 octobre 2026. */

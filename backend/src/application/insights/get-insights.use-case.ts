@@ -165,6 +165,18 @@ export class GetInsightsUseCase {
               monthlyPaymentCents: v.debt.monthlyPaymentCents,
               nextMonthInterestCents: v.nextMonthInterestCents,
             })),
+          paymentGaps: debts.flatMap((v) =>
+            isActiveDebt(v) && v.paymentCheck.status === 'GAP'
+              ? [
+                  {
+                    name: v.debt.name,
+                    monthlyPaymentCents: v.debt.monthlyPaymentCents,
+                    expectedMonthlyPaymentCents:
+                      v.paymentCheck.expectedMonthlyPaymentCents,
+                  },
+                ]
+              : [],
+          ),
         },
         previousReview: previousReview
           ? {

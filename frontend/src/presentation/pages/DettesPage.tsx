@@ -5,7 +5,7 @@ import { useDebtActions } from '../../application/use-debt-actions';
 import { useDebts, useDebtsSummary } from '../../application/use-debts';
 import { useRecurringOptions } from '../../application/use-recurring-options';
 import { useSpace } from '../../application/use-space';
-import { activeDebts, archivedDebts, Debt, DebtPayload, sortDebts } from '../../domain/debt';
+import { activeDebts, archivedDebts, Debt, DebtPayload, knownLenders, sortDebts } from '../../domain/debt';
 import { DebtCard } from '../components/debts/DebtCard';
 import { DebtDetail } from '../components/debts/DebtDetail';
 import { DebtForm } from '../components/debts/DebtForm';
@@ -157,7 +157,7 @@ export function DettesPage() {
         <LoadingScreen />
       )}
 
-      {sheet?.type === 'form' && <DebtForm key={sheet.editing?.id ?? 'new'} editing={sheet.editing} recurring={recurring} onClose={closeSheet} onSubmit={handleSubmit} />}
+      {sheet?.type === 'form' && <DebtForm key={sheet.editing?.id ?? 'new'} editing={sheet.editing} recurring={recurring} lenders={knownLenders(list)} onClose={closeSheet} onSubmit={handleSubmit} />}
       {detailDebt && (
         <DebtDetail
           key={detailDebt.id}

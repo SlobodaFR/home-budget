@@ -122,4 +122,18 @@ describe('help content', () => {
       expect(text).not.toMatch(/\*\*|<\/?[a-z]+>|\[[^\]]+\]\(/);
     });
   });
+
+  it('describes the extended credits: lender, insurance, fees, payment gap and the fixed-rate limit', () => {
+    const credits = allEntries.find((entry) => entry.id === 'credits-et-dettes');
+    expect(credits).toBeDefined();
+    const text = (credits?.blocks ?? []).flatMap(textOf).join(' ');
+    for (const word of ['prêteur', 'assurance', 'quotité', 'frais de dossier', 'écart', 'durée', 'Par prêteur', 'coût restant']) {
+      expect(text.toLowerCase(), word).toContain(word.toLowerCase());
+    }
+    expect(text).toContain('Les calculs supposent un taux fixe');
+    expect(text).toContain('variable ou révisable');
+    expect(text).toContain('numéro de compte');
+    expect(text).not.toMatch(/renégoci|rachat de cr/i);
+    expect(credits?.links).toContainEqual({ kind: 'internal', label: 'Ouvrir les crédits', to: '/dettes' });
+  });
 });

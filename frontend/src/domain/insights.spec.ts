@@ -145,3 +145,16 @@ describe('insightAction for the pending contribution insight', () => {
     expect(insightAction('/plan', 'contribution-pending')).toEqual({ to: '/plan', label: 'Ouvrir le plan' });
   });
 });
+
+describe('insightAction for the debt insights', () => {
+  it('offers « Voir mes crédits » for every debt insight, including the payment gap', () => {
+    for (const id of ['debt-ratio-high', 'debt-never-paid-off', 'debt-payment-gap']) {
+      expect(insightAction('/dettes', id)).toEqual({ to: '/dettes', label: 'Voir mes crédits' });
+    }
+  });
+
+  it('reads the payment gap insight as a simple piece of information', () => {
+    const [insight] = parseInsights({ insights: [{ id: 'debt-payment-gap', severity: 'INFO', title: 'Mensualité à revérifier', detail: 'Saisie : 320 €.', lesson: null, link: '/dettes' }] });
+    expect(insight).toMatchObject({ id: 'debt-payment-gap', severity: 'INFO', link: '/dettes' });
+  });
+});

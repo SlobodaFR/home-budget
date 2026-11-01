@@ -41,10 +41,14 @@ const NO_DEBTS: DebtsInsightContext = {
     activeCount: 0,
     totalRemainingCents: 0,
     totalMonthlyCents: 0,
+    totalMonthlyInsuranceCents: 0,
+    totalRemainingCostCents: 0,
+    byLender: [],
     debtToIncomePercent: null,
   },
   monthlyIncomeCents: null,
   neverPaidOff: [],
+  paymentGaps: [],
 };
 
 interface Scenario {
@@ -1521,6 +1525,9 @@ describe('buildInsights', () => {
       activeCount: 2,
       totalRemainingCents: 21000000,
       totalMonthlyCents: monthly,
+      totalMonthlyInsuranceCents: 0,
+      totalRemainingCostCents: 0,
+      byLender: [],
       debtToIncomePercent: percent,
     });
     const ctx = (
@@ -1529,6 +1536,7 @@ describe('buildInsights', () => {
       summary: summary(36),
       monthlyIncomeCents: 400000,
       neverPaidOff: [],
+      paymentGaps: [],
       ...over,
     });
     const stuck = (name: string, payment = 30000, interest = 30000) => ({
@@ -1619,6 +1627,140 @@ describe('buildInsights', () => {
         order.indexOf('debt-never-paid-off'),
       );
       expect(order).not.toContain('all-good');
+    });
+
+    describe('debt-payment-gap', () => {
+      const gap = (name: string, entered = 32000, expected = 27558) => ({
+        name,
+        monthlyPaymentCents: entered,
+        expectedMonthlyPaymentCents: expected,
+      });
+
+      it('is an INFO that quotes the entered and the expected payment and invites to check the entry', () => {
+        const insight = byId(
+          run({
+            transactions: recent,
+            debts: ctx({
+              summary: summary(10),
+              paymentGaps: [gap('Prêt auto')],
+            }),
+          }),
+          'debt-payment-gap',
+        );
+        expect(insight).toEqual({
+          id: 'debt-payment-gap',
+          severity: 'INFO',
+          title: 'Mensualité du crédit « Prêt auto » à revérifier',
+          detail: `Vous avez saisi 320${nbsp}€ par mois, alors que le capital, le taux et la durée d'origine donnent environ 275,58${nbsp}€. Revérifiez la mensualité, le taux ou la durée saisis.`,
+          lesson: 5,
+          link: '/dettes',
+        });
+      });
+
+      it('groups several credits, listing the first three', () => {
+        const many = byId(
+          run({
+            transactions: recent,
+            debts: ctx({
+              summary: summary(10),
+              paymentGaps: [gap('A'), gap('B'), gap('C'), gap('D')],
+            }),
+          }),
+          'debt-payment-gap',
+        );
+        expect(many.title).toBe('4 mensualités de crédit à revérifier');
+        expect(many.detail).toContain(
+          `A (saisi 320${nbsp}€, attendu 275,58${nbsp}€)`,
+        );
+        expect(many.detail).toContain('et 1 autre');
+        expect(many.detail).not.toContain('D (');
+      });
+
+      it('is silent without a gap and outside the current month', () => {
+        const has = (over: Parameters<typeof run>[0]) =>
+          ids(run({ transactions: recent, ...over })).includes(
+            'debt-payment-gap',
+          );
+        expect(has({ debts: ctx({ summary: summary(10) }) })).toBe(false);
+        for (const month of ['2026-10', '2026-12']) {
+          expect(
+            has({
+              month,
+              debts: ctx({ summary: summary(10), paymentGaps: [gap('A')] }),
+            }),
+          ).toBe(false);
+        }
+      });
+
+      it('ranks right after debt-never-paid-off (its severity being INFO, after the ACTION)', () => {
+        const insights = run({
+          transactions: recent,
+          debts: ctx({
+            neverPaidOff: [stuck('Bloqué')],
+            paymentGaps: [gap('Prêt auto')],
+          }),
+        });
+        const order = ids(insights);
+        expect(order.indexOf('debt-ratio-high')).toBeLessThan(
+          order.indexOf('debt-never-paid-off'),
+        );
+        expect(order.indexOf('debt-never-paid-off')).toBeLessThan(
+          order.indexOf('debt-payment-gap'),
+        );
+        expect(order).not.toContain('all-good');
+      });
+
+      it('comes before the lower-priority INFO insights', () => {
+        const order = ids(
+          run({
+            transactions: recent,
+            spendingRiser: {
+              label: 'Restaurant',
+              recentAverageCents: 9000,
+              previousAverageCents: 4000,
+              deltaCents: 5000,
+            },
+            debts: ctx({
+              summary: summary(10),
+              paymentGaps: [gap('Prêt auto')],
+            }),
+          }),
+        );
+        expect(order).toContain('spending-riser');
+        expect(order.indexOf('debt-payment-gap')).toBeGreaterThanOrEqual(0);
+        expect(order.indexOf('debt-payment-gap')).toBeLessThan(
+          order.indexOf('spending-riser'),
+        );
+      });
+
+      it('never suggests renegotiating or buying back the loan', () => {
+        const text = JSON.stringify(
+          run({
+            transactions: recent,
+            debts: ctx({
+              summary: summary(10),
+              paymentGaps: [
+                gap('Prêt auto'),
+                gap('B'),
+                gap('C'),
+                gap('D'),
+                gap('E'),
+              ],
+            }),
+          }),
+        ).toLowerCase();
+        for (const word of [
+          'rachat',
+          'racheter',
+          'renégoci',
+          'renegoci',
+          'refinanc',
+          'investir',
+          'placement',
+        ]) {
+          expect(text).not.toContain(word);
+        }
+      });
     });
 
     it('gives no investment advice or loan buy-back suggestion', () => {
@@ -1725,7 +1867,7 @@ describe('buildInsights', () => {
 
     it('only uses known ids, links and lessons', () => {
       const known = new RegExp(
-        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|contribution-pending|life-event-overdue|life-event-due-soon|all-good)$',
+        '^(plan-missing|plan-overcommitted|plan-unassigned|month-deficit|bloc-overrun-(FIXE|COURANT|PLAISIR)|recurring-missing|upcoming-payments|no-recent-activity|monthly-review|savings-behind|savings-on-track|account-negative-projected|accounts-unassigned|upcoming-big-payment|provision-suggestion|project-behind|projects-exceed-savings|project-reached|review-done|debt-ratio-high|debt-never-paid-off|debt-payment-gap|spending-riser|safety-net-unset|safety-net-progress|contribution-incomplete|contribution-pending|life-event-overdue|life-event-due-soon|all-good)$',
       );
       const insights = [
         ...run(crowded),
