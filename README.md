@@ -82,6 +82,8 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 | `DATABASE_PATH` | non | - | Chemin du fichier SQLite. |
 | `NODE_ENV` | non | - | `production` active le flag `secure` sur le cookie de session. |
 | `PORT` | non | `3000` | Port d'ecoute du serveur. |
+| `OCR_ENGINE` | non | `tesseract` | Moteur d'OCR de l'import de contrat de pret (seul `tesseract` est disponible ; toute autre valeur est ignoree avec un avertissement). |
+| `OCR_LANG` | non | `fra` | Langue(s) tesseract de l'OCR (`fra`, ou `fra+eng`). Sans le binaire `tesseract`, `pdftotext` ou cette langue, l'import est desactive (`GET /api/debt-extractions/capabilities` renvoie `available: false`). |
 | `MINIO_ENDPOINT` | non | - | URL du serveur MinIO (S3-compatible). |
 | `MINIO_BUCKET` | non | - | Bucket de destination. Si defini, active la replication Litestream de la DB SQLite. |
 | `MINIO_REPLICA_PATH` | non | `foyer-budget` | Prefixe du chemin de replication dans le bucket. |

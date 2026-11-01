@@ -715,12 +715,24 @@ export function emptyDebtForm(now: Date = new Date()): DebtFormValues {
   };
 }
 
-const percentToInput = (percent: number): string => String(percent).replace('.', ',');
+/** 3.9 → « 3,9 » (la virgule française attendue par le formulaire). */
+export const percentToInput = (percent: number): string => String(percent).replace('.', ',');
 const optionalCentsToInput = (cents: number): string => (cents === 0 ? '' : centsToInputValue(cents));
 
-export function debtToForm(debt: Debt): DebtFormValues {
-  const term = debt.initialTermMonths;
+type TermFormValues = Pick<DebtFormValues, 'termUnit' | 'termMonths' | 'termYears' | 'termExtraMonths'>;
+
+/** Une durée en mois → les champs de saisie du formulaire (en années et mois à partir d'un an). `null` : tout vide. */
+export function termToForm(term: number | null): TermFormValues {
   const inYears = term !== null && term >= 12;
+  return {
+    termUnit: inYears ? 'YEARS' : 'MONTHS',
+    termMonths: term !== null && !inYears ? String(term) : '',
+    termYears: term !== null && inYears ? String(Math.floor(term / 12)) : '',
+    termExtraMonths: term !== null && inYears && term % 12 !== 0 ? String(term % 12) : '',
+  };
+}
+
+export function debtToForm(debt: Debt): DebtFormValues {
   return {
     name: debt.name,
     kind: debt.kind,
@@ -733,10 +745,7 @@ export function debtToForm(debt: Debt): DebtFormValues {
     recurringId: debt.recurringId ?? '',
     lender: debt.lender,
     contractReference: debt.contractReference,
-    termUnit: inYears ? 'YEARS' : 'MONTHS',
-    termMonths: term !== null && !inYears ? String(term) : '',
-    termYears: term !== null && inYears ? String(Math.floor(term / 12)) : '',
-    termExtraMonths: term !== null && inYears && term % 12 !== 0 ? String(term % 12) : '',
+    ...termToForm(debt.initialTermMonths),
     rateType: debt.rateType ?? '',
     insuranceMode: debt.insuranceMode,
     insurance: debt.insuranceMode === 'FIXED' ? optionalCentsToInput(debt.insuranceMonthlyCents) : '',

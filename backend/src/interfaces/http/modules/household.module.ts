@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { GetContributionUseCase } from '../../../application/contribution/get-contribution.use-case';
@@ -104,6 +105,16 @@ import { DebtRepository } from '../../../domain/debt/debt.repository';
 import { DebtOrmEntity } from '../../../infrastructure/persistence/entities/debt.orm-entity';
 import { TypeOrmDebtRepository } from '../../../infrastructure/persistence/repositories/typeorm-debt.repository';
 import { DebtsController } from '../controllers/debts.controller';
+import { DebtExtractionJobs } from '../../../application/debt-extraction/debt-extraction.jobs';
+import {
+  DeleteDebtExtractionUseCase,
+  GetDebtExtractionUseCase,
+  GetExtractionCapabilitiesUseCase,
+  StartDebtExtractionUseCase,
+} from '../../../application/debt-extraction/debt-extraction.use-cases';
+import { DocumentTextExtractor } from '../../../domain/contract-extraction/document-text-extractor';
+import { createSystemDocumentTextExtractor } from '../../../infrastructure/document-text/document-text-extractor.factory';
+import { DebtExtractionsController } from '../controllers/debt-extractions.controller';
 import { ProjectViewsService } from '../../../application/project/project-views.service';
 import {
   AddDepositUseCase,
@@ -198,6 +209,7 @@ import { AuthModule } from './auth.module';
     ReviewsController,
     ExportController,
     DebtsController,
+    DebtExtractionsController,
     TrendsController,
     LifeEventCatalogController,
     HouseholdLifeEventsController,
@@ -209,6 +221,15 @@ import { AuthModule } from './auth.module';
     { provide: SpaceRulesRepository, useClass: TypeOrmSpaceRulesRepository },
     { provide: TransactionRepository, useClass: TypeOrmTransactionRepository },
     { provide: Clock, useClass: SystemClock },
+    {
+      provide: DocumentTextExtractor,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        createSystemDocumentTextExtractor({
+          OCR_ENGINE: config.get<string>('OCR_ENGINE'),
+          OCR_LANG: config.get<string>('OCR_LANG'),
+        }),
+    },
     { provide: AccountRepository, useClass: TypeOrmAccountRepository },
     { provide: ProjectRepository, useClass: TypeOrmProjectRepository },
     { provide: DebtRepository, useClass: TypeOrmDebtRepository },
@@ -280,6 +301,11 @@ import { AuthModule } from './auth.module';
     UpdateDebtUseCase,
     DeleteDebtUseCase,
     DebtWhatIfUseCase,
+    DebtExtractionJobs,
+    GetExtractionCapabilitiesUseCase,
+    StartDebtExtractionUseCase,
+    GetDebtExtractionUseCase,
+    DeleteDebtExtractionUseCase,
     GetReviewUseCase,
     SaveReviewUseCase,
     ListReviewsUseCase,

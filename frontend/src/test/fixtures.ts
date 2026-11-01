@@ -268,3 +268,30 @@ export function lifeEventCatalog(): LifeEventDefinition[] {
     },
   ];
 }
+
+/** Un champ extrait, tel que le serveur de la tranche 13 le renvoie (JSON brut, avant lecture tolérante). */
+export function rawExtractedField(field: string, value: unknown, confidence = 'HIGH', overrides: Record<string, unknown> = {}) {
+  return { field, value, confidence, snippet: `Extrait pour ${field}`, page: 1, ...overrides };
+}
+
+/** Un résultat d'extraction : confiance variée, un avertissement, des champs absents (donc non trouvés). */
+export function rawExtractionResult(overrides: Record<string, unknown> = {}) {
+  return {
+    source: 'OCR',
+    pages: 12,
+    engine: 'tesseract',
+    fields: [
+      rawExtractedField('lender', 'Banque Exemple', 'HIGH', { snippet: 'Établissement prêteur : Banque Exemple SA', page: 1 }),
+      rawExtractedField('principalCents', 15000000, 'HIGH', { snippet: 'Montant du crédit : 150 000,00 €', page: 2 }),
+      rawExtractedField('annualRatePercent', 3.45, 'MEDIUM', { snippet: 'Taux débiteur fixe : 3,45 %', page: 2 }),
+      rawExtractedField('initialTermMonths', 240, 'HIGH', { snippet: 'Durée : 240 mois', page: 2 }),
+      rawExtractedField('monthlyPaymentCents', 85400, 'LOW', { snippet: 'Échéance : 854,0O €', page: 3 }),
+    ],
+    warnings: ['Plusieurs taux trouvés (3,45 % et 3,85 %) : vérifiez lequel est le taux débiteur.'],
+    ...overrides,
+  };
+}
+
+export function rawExtractionJob(overrides: Record<string, unknown> = {}) {
+  return { status: 'RUNNING', stage: 'OCR', progressPercent: 40, ...overrides };
+}
