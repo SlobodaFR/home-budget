@@ -855,6 +855,57 @@ Nouveaux ids d'insights (espace commun uniquement, mois courant) : `life-event-o
 retard ; détail : les 3 premières) et `life-event-due-soon` (`ACTION` : des étapes à faire dans les 14 jours) ; lien
 `/evenements`.
 
+## Import d'un contrat de prêt par OCR (tranche 13)
+
+Lit un contrat ou une offre de prêt (PDF ou image) **sur le serveur** et **propose** des valeurs pour le formulaire de
+crédit. Aucune IA : lecture du texte du PDF (`pdftotext`) ou OCR (`tesseract`, français), puis règles de lecture. Rien
+n'est jamais enregistré automatiquement : l'utilisateur valide chaque champ dans le formulaire. Le document n'est **jamais
+conservé** (dossier temporaire supprimé dans tous les cas) et n'est pas journalisé ; seul le résultat de l'extraction
+reste en mémoire, au plus 15 minutes.
+
+### `GET /api/debt-extractions/capabilities`
+`{ "available": true, "engines": ["tesseract"], "maxFileBytes": 10485760, "maxPages": 40 }` : `available` vaut `false`
+si les outils système sont absents (développement local) : l'interface masque alors le bouton d'import.
+
+### `POST /api/spaces/:spaceId/debts/extract`
+`multipart/form-data`, champ `file` (PDF, PNG ou JPEG ; le type est vérifié sur les premiers octets, pas sur
+l'extension ; ≤ 10 Mo ; ≤ 40 pages). Mêmes droits d'accès à l'espace que la création d'un crédit (`404` sinon).
+`202 { "jobId": "…", "expiresAt": "…" }`. `400` : fichier absent, type ou taille invalides, PDF protégé ou
+illisible. `429` : une extraction de cet utilisateur est déjà en cours, ou plus de 5 en une heure.
+`503 { "code": "OCR_UNAVAILABLE" }` : outils absents.
+
+### `GET /api/debt-extractions/:jobId` · `DELETE /api/debt-extractions/:jobId`
+Réservé à l'utilisateur qui a lancé l'extraction (`404` pour tout autre). `DELETE` → `204` (efface le résultat ; à appeler
+dès que le formulaire est prérempli).
+```json
+{
+  "status": "DONE", "stage": null, "progressPercent": 100,
+  "result": {
+    "source": "OCR", "pages": 12, "engine": "tesseract",
+    "fields": [
+      { "field": "lender", "value": "Banque Exemple", "confidence": "HIGH", "snippet": "Établissement prêteur : Banque Exemple SA", "page": 1 },
+      { "field": "principalCents", "value": 15000000, "confidence": "HIGH", "snippet": "Montant du crédit : 150 000,00 €", "page": 2 }
+    ],
+    "warnings": ["Plusieurs taux trouvés (3,45 % et 3,85 %) : vérifiez lequel est le taux débiteur."]
+  }
+}
+```
+- `status` : `PENDING | RUNNING | DONE | FAILED` ; `stage` : `TEXT | OCR | PARSING | null` ; `progressPercent` entier 0-100 ;
+  `FAILED` ajoute `error: { "message": "…" }` (message français, jamais d'extrait du document) ; `result` seulement si `DONE`.
+- `source` : `TEXT_LAYER` (texte du PDF, sans OCR) ou `OCR` ; `engine` : `tesseract` | `ocrs` | `null`.
+- `fields[].field` ∈ `lender` (texte), `contractReference` (texte), `principalCents` (entier), `annualRatePercent` (nombre, 2 décimales
+  au plus), `initialTermMonths` (entier), `monthlyPaymentCents` (entier, hors assurance), `rateType` (`FIXED|VARIABLE|ADJUSTABLE`),
+  `insuranceMonthlyCents` (entier), `insuranceRatePercent` (nombre), `insuranceMode` (`FIXED|PERCENT_INITIAL|PERCENT_REMAINING`),
+  `feesCents`, `guaranteeKind` (`SURETY|MORTGAGE|OTHER`), `guaranteeCents`, `startDate` (`AAAA-MM-JJ`). Un champ absent du
+  document est **absent** de la liste (jamais deviné) ; au plus une valeur par champ, la plus fiable.
+- `confidence` : `HIGH` (libellé explicite et valeur nette), `MEDIUM` (libellé proche ou valeur corrigée), `LOW` (déduit ou
+  valeur d'OCR douteuse : l'interface doit le signaler). `snippet` : extrait du texte lu (≤ 140 caractères, espaces
+  normalisés) qui justifie la valeur ; `page` : numéro de page (≥ 1) ou `null`.
+- `warnings` : textes français (ambiguïtés : plusieurs taux, TAEG confondu avec taux débiteur, texte OCR de mauvaise qualité,
+  document apparemment sans offre de prêt…). Les valeurs lues dans des chiffres corrigés (O→0, l→1, S→5…) passent en
+  `MEDIUM` au mieux.
+- Le taux effectif global (TAEG) **n'est pas** un champ : il sert seulement à éviter de le confondre avec le taux débiteur.
+
 ## Chiffrement de l'espace personnel (informatif)
 
 Les libellés et montants des opérations de l'espace personnel, ainsi que son plan, sont chiffrés au repos
