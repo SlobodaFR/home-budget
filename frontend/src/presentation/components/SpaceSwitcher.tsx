@@ -21,8 +21,8 @@ export function SpaceSwitcher() {
             aria-pressed={kind === option.kind}
             disabled={option.kind === 'PERSONAL' && !hasPersonalSpace}
             onClick={() => setKind(option.kind)}
-            className={`flex min-h-[44px] items-center justify-center gap-sm rounded-full font-button-md text-body-md font-semibold transition-colors ${
-              kind === option.kind ? 'bg-ink text-surface' : 'text-ink'
+            className={`flex min-h-[44px] items-center justify-center gap-sm rounded-full font-button-md text-body-md font-semibold transition-colors enabled:cursor-pointer ${
+              kind === option.kind ? 'bg-ink text-surface' : 'text-ink enabled:hover:bg-white'
             }`}
           >
             {option.kind === 'COMMON' ? <UsersIcon width={18} height={18} /> : <LockIcon width={18} height={18} />}

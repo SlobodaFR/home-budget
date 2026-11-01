@@ -4,9 +4,10 @@ import { useYearForecast } from '../../../application/use-year-forecast';
 import { ChevronLeftIcon, ChevronRightIcon } from '../Icons';
 import { ErrorNotice, OfflineNotice } from '../ErrorNotice';
 import { LoadingScreen } from '../LoadingScreen';
+import { stepButtonClass } from '../ui';
 import { YearView } from './YearView';
 
-const stepButton = 'flex h-11 w-11 items-center justify-center rounded-full border border-hairline-soft bg-white hover:bg-soft-cloud';
+const stepButton = stepButtonClass;
 
 interface Props {
   spaceId: string;
@@ -20,11 +21,11 @@ export function YearPanel({ spaceId, initialYear, refreshToken }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between lg:justify-start lg:gap-md">
         <button type="button" aria-label="Année précédente" className={stepButton} onClick={() => setYear((value) => value - 1)}>
           <ChevronLeftIcon />
         </button>
-        <h3 className="font-heading-lg text-heading-lg" aria-live="polite">
+        <h3 className="font-heading-lg text-heading-lg lg:min-w-[6rem] lg:text-center" aria-live="polite">
           {year}
         </h3>
         <button type="button" aria-label="Année suivante" className={stepButton} onClick={() => setYear((value) => value + 1)}>

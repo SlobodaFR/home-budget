@@ -27,7 +27,7 @@ export function TargetChips({ label, value, onChange }: Props) {
   };
 
   return (
-    <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="grid grid-cols-3 gap-sm">
+    <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="grid grid-cols-3 gap-sm lg:grid-cols-6">
       {IMPORT_TARGETS.map((target) => {
         const checked = value === target;
         const style = TARGET_STYLE[target];
@@ -39,7 +39,7 @@ export function TargetChips({ label, value, onChange }: Props) {
             aria-checked={checked}
             tabIndex={target === tabStop ? 0 : -1}
             onClick={() => onChange(target)}
-            className={`min-h-[44px] rounded-full border-2 px-sm font-button-md text-body-sm font-semibold ${
+            className={`min-h-[44px] cursor-pointer rounded-full border-2 px-sm font-button-md text-body-sm font-semibold ${
               checked ? style.chipOn : style.chipOff
             }`}
           >

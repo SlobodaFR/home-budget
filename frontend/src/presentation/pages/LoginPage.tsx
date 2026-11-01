@@ -21,7 +21,8 @@ export function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col justify-center gap-xl px-margin-mobile pb-[calc(env(safe-area-inset-bottom)+24px)] pt-[calc(env(safe-area-inset-top)+24px)]">
+    <main className="flex min-h-dvh w-full items-center justify-center md:bg-soft-cloud md:px-8 md:py-12">
+      <div className="flex w-full max-w-[420px] flex-col justify-center gap-xl px-margin-mobile pb-[calc(env(safe-area-inset-bottom)+24px)] pt-[calc(env(safe-area-inset-top)+24px)] md:max-w-[520px] md:rounded-lg md:bg-surface md:p-12 md:shadow-[0_0_0_1px_#E5E5E5] lg:max-w-[560px] lg:p-14">
       <div className="text-center">
         <h1 className="font-heading-xl text-heading-xl tracking-tight">Foyer Budget</h1>
         <p className="mt-sm font-body-md text-body-md text-mute">
@@ -49,6 +50,7 @@ export function LoginPage() {
           ))}
         </section>
       )}
+      </div>
     </main>
   );
 }

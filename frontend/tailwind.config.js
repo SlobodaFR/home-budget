@@ -58,10 +58,12 @@ export default {
       keyframes: {
         'sheet-up': { from: { transform: 'translateY(24px)', opacity: '0' }, to: { transform: 'translateY(0)', opacity: '1' } },
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
+        'modal-in': { from: { transform: 'translateY(8px) scale(0.98)', opacity: '0' }, to: { transform: 'translateY(0) scale(1)', opacity: '1' } },
       },
       animation: {
         'sheet-up': 'sheet-up 180ms ease-out',
         'fade-in': 'fade-in 150ms ease-out',
+        'modal-in': 'modal-in 160ms ease-out',
       },
     },
   },

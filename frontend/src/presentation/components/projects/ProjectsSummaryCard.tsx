@@ -11,7 +11,7 @@ export function ProjectsSummaryCard({ summary }: { summary: ProjectsSummary }) {
     return null;
   }
   return (
-    <section aria-label="Synthèse des projets" className={`${cardClass} flex flex-col gap-md`}>
+    <section aria-label="Synthèse des projets" className={`${cardClass} flex flex-col gap-md lg:grid lg:grid-cols-2 lg:items-center lg:gap-10`}>
       <dl className="grid grid-cols-2 gap-md">
         <div>
           <dt className="font-label-caps text-label-caps uppercase text-mute">Besoin par mois</dt>

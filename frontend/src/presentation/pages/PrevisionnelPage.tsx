@@ -20,6 +20,7 @@ import { RecurringForm } from '../components/recurring/RecurringForm';
 import { RecurringList } from '../components/recurring/RecurringList';
 import { panelId, SegmentedTabs, tabId, TabOption } from '../components/SegmentedTabs';
 import { useToast } from '../components/Toast';
+import { PageIntro, TwoColumns } from '../layout/PageLayout';
 import { cardClass } from '../components/ui';
 import { YearPanel } from '../components/year/YearPanel';
 
@@ -112,61 +113,66 @@ export function PrevisionnelPage() {
 
   return (
     <>
-      <div>
-        <h2 className="font-heading-lg text-heading-lg">Prévisionnel</h2>
-        <p className="font-body-sm text-body-sm text-mute">Où en sera le budget à la fin du mois ?</p>
-      </div>
+      <PageIntro title="Prévisionnel" description="Où en sera le budget à la fin du mois ?" />
       <SegmentedTabs label="Vue du prévisionnel" idPrefix={TABS_ID} options={VIEWS} value={view} onChange={changeView} />
 
       {view === 'mois' && (
         <div role="tabpanel" id={panelId(TABS_ID, 'mois')} aria-labelledby={tabId(TABS_ID, 'mois')} className="flex flex-col gap-gutter">
           <MonthPicker month={month} onChange={setMonth} />
 
-          {forecast.data ? (
-            <>
-              <BalanceHero forecast={forecast.data} />
-              <ForecastBlocs forecast={forecast.data} />
-              <ForecastOccurrences occurrences={forecast.data.occurrences} />
-            </>
-          ) : offline ? (
-            <OfflineNotice message="Hors ligne : le prévisionnel reviendra avec le réseau." onRetry={retry} />
-          ) : forecast.error ? (
-            <ErrorNotice message={describeError(forecast.error, 'Impossible de calculer le prévisionnel.')} onRetry={forecast.reload} />
-          ) : (
-            <LoadingScreen />
-          )}
+          <TwoColumns
+            left={
+              forecast.data ? (
+                <>
+                  <BalanceHero forecast={forecast.data} />
+                  <ForecastBlocs forecast={forecast.data} />
+                </>
+              ) : offline ? (
+                <OfflineNotice message="Hors ligne : le prévisionnel reviendra avec le réseau." onRetry={retry} />
+              ) : forecast.error ? (
+                <ErrorNotice message={describeError(forecast.error, 'Impossible de calculer le prévisionnel.')} onRetry={forecast.reload} />
+              ) : (
+                <LoadingScreen />
+              )
+            }
+            right={
+              <>
+                {forecast.data && <ForecastOccurrences occurrences={forecast.data.occurrences} />}
 
-          {recurring.items ? (
-            <RecurringList
-              items={recurring.items}
-              aidRules={aidRules.rules}
-              accountNameOf={nameOf}
-              busy={recurring.saving}
-              onAdd={() => setSheet({ editing: null })}
-              onEdit={(item) => setSheet({ editing: item })}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
-            />
-          ) : offline ? null : recurring.error ? (
-            <ErrorNotice
-              message={describeError(recurring.error, 'Impossible de charger les paiements récurrents.')}
-              onRetry={recurring.reload}
-            />
-          ) : (
-            <LoadingScreen />
-          )}
+                {recurring.items ? (
+                  <RecurringList
+                    items={recurring.items}
+                    aidRules={aidRules.rules}
+                    accountNameOf={nameOf}
+                    busy={recurring.saving}
+                    onAdd={() => setSheet({ editing: null })}
+                    onEdit={(item) => setSheet({ editing: item })}
+                    onToggle={handleToggle}
+                    onDelete={handleDelete}
+                  />
+                ) : offline ? null : recurring.error ? (
+                  <ErrorNotice
+                    message={describeError(recurring.error, 'Impossible de charger les paiements récurrents.')}
+                    onRetry={recurring.reload}
+                  />
+                ) : (
+                  <LoadingScreen />
+                )}
 
-          {isCommon && (
-            <section className={`${cardClass} flex flex-col gap-sm`}>
-              <h3 className="font-label-caps text-label-caps uppercase text-mute">Aides officielles</h3>
-              <p className="font-body-sm text-body-sm text-mute">
-                Garde d’enfants, ménage à domicile… une partie de certaines dépenses vous revient en crédit d’impôt.
-              </p>
-              <Link to="/aides" className="inline-flex min-h-[44px] items-center font-body-md text-body-md font-semibold underline">
-                Voir mes aides et estimer une crèche
-              </Link>
-            </section>
-          )}
+                {isCommon && (
+                  <section className={`${cardClass} flex flex-col gap-sm`}>
+                    <h3 className="font-label-caps text-label-caps uppercase text-mute">Aides officielles</h3>
+                    <p className="font-body-sm text-body-sm text-mute">
+                      Garde d’enfants, ménage à domicile… une partie de certaines dépenses vous revient en crédit d’impôt.
+                    </p>
+                    <Link to="/aides" className="inline-flex min-h-[44px] items-center font-body-md text-body-md font-semibold underline">
+                      Voir mes aides et estimer une crèche
+                    </Link>
+                  </section>
+                )}
+              </>
+            }
+          />
         </div>
       )}
 

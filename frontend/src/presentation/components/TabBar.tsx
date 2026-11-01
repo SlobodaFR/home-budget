@@ -12,7 +12,7 @@ const TABS: { to: string; label: string; icon: ReactNode; end?: boolean; alsoAct
 export function TabBar() {
   const { pathname } = useLocation();
   return (
-    <nav aria-label="Navigation principale" className="shrink-0 border-t border-hairline-soft bg-surface pb-safe pl-safe pr-safe">
+    <nav aria-label="Navigation principale" className="shrink-0 border-t border-hairline-soft bg-surface pb-safe pl-safe pr-safe lg:hidden">
       <ul className="grid grid-cols-4">
         {TABS.map((tab) => (
           <li key={tab.to}>

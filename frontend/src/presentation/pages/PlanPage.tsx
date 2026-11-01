@@ -6,6 +6,7 @@ import { ErrorNotice } from '../components/ErrorNotice';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { PlanForm } from '../components/PlanForm';
 import { useToast } from '../components/Toast';
+import { PageIntro } from '../layout/PageLayout';
 
 export function PlanPage() {
   const { space, kind } = useSpace();
@@ -25,10 +26,7 @@ export function PlanPage() {
 
   return (
     <>
-      <div>
-        <h2 className="font-heading-lg text-heading-lg">Plan {kind === 'COMMON' ? 'commun' : 'perso'}</h2>
-        <p className="font-body-sm text-body-sm text-mute">Le budget prévu pour un mois type.</p>
-      </div>
+      <PageIntro title={`Plan ${kind === 'COMMON' ? 'commun' : 'perso'}`} description="Le budget prévu pour un mois type." />
       {plan ? (
         <PlanForm key={space.id} initial={plan} saving={saving} isCommon={kind === 'COMMON'} onSave={handleSave} />
       ) : error ? (

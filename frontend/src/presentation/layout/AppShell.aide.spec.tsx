@@ -60,7 +60,7 @@ describe('AppShell : accès à l’aide', () => {
 
   it('makes the help link a comfortable touch target (at least 44 px)', () => {
     renderShell('/');
-    expect(screen.getByRole('link', { name: 'Aide et documentation' }).className).toMatch(/h-\[52px\].*w-\[52px\]/);
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Aide et documentation' }).className).toMatch(/h-\[52px\].*w-\[52px\]/);
   });
 
   it('does not add a fifth tab to the tab bar', () => {
