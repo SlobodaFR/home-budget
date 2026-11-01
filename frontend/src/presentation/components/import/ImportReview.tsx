@@ -127,7 +127,7 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
         </section>
       )}
 
-      <div className="sticky bottom-0 z-10 -mx-margin-mobile flex flex-col gap-sm border-t border-hairline-soft bg-surface px-margin-mobile py-md">
+      <div className="sticky bottom-0 z-10 -mx-margin-mobile flex flex-col gap-sm border-t border-hairline-soft bg-surface px-margin-mobile py-md md:-mx-8 md:px-8 lg:mx-0 lg:mt-sm lg:rounded lg:border lg:bg-white lg:px-6 lg:shadow-lg">
         {error && (
           <div className="max-h-[30dvh] overflow-y-auto">
             <ErrorNotice message={error} />
@@ -139,8 +139,9 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
             importez le relevé en deux fois.
           </p>
         )}
-        <div className="flex items-center gap-sm">
+        <div className="flex items-center gap-sm lg:justify-end">
           {remaining > 0 ? (
+
             <button
               type="button"
               onClick={() => scrollToFirstUnclassified(preview.rows, (row) => choices[row.index] === null)}
@@ -155,7 +156,7 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
             type="button"
             disabled={blocked}
             onClick={() => onSubmit(review.result())}
-            className={`${buttonPrimary} min-w-0 flex-1 px-lg`}
+            className={`${buttonPrimary} min-w-0 flex-1 px-lg lg:flex-none lg:px-10`}
           >
             {submitting ? 'Import en cours…' : `Importer ${pluralize(totals.toCreateCount, 'opération', 'opérations')}`}
           </button>

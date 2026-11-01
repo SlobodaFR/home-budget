@@ -33,7 +33,7 @@ export function SegmentedTabs<T extends string>({ label, idPrefix, options, valu
   };
 
   return (
-    <div role="tablist" aria-label={label} className="grid grid-cols-3 rounded-full bg-soft-cloud p-1">
+    <div role="tablist" aria-label={label} className="grid grid-cols-3 rounded-full bg-soft-cloud p-1 lg:max-w-[520px]">
       {options.map((option, index) => {
         const selected = option.id === value;
         return (
@@ -50,7 +50,7 @@ export function SegmentedTabs<T extends string>({ label, idPrefix, options, valu
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(option.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`min-h-[48px] rounded-full px-sm font-button-md text-body-sm font-semibold ${selected ? 'bg-ink text-surface' : 'text-ink'}`}
+            className={`min-h-[48px] cursor-pointer rounded-full px-sm font-button-md text-body-sm font-semibold transition-colors ${selected ? 'bg-ink text-surface' : 'text-ink hover:bg-white'}`}
           >
             {option.label}
           </button>

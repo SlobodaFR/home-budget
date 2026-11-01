@@ -41,7 +41,7 @@ export function StepGroupList({ steps, isSaving, onToggle, onSaveNote }: Props) 
   );
 
   return (
-    <div className="flex flex-col gap-lg">
+    <div className="flex flex-col gap-lg lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-10">
       {groupSteps(steps).map((group) =>
         group.status === 'DONE' ? (
           <details key={group.status} className="group rounded border border-hairline-soft" data-testid="step-group" data-status={group.status}>

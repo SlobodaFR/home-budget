@@ -34,8 +34,8 @@ export function DebtsSummaryCard({ summary }: { summary: DebtsSummary }) {
   const referencePosition = ratioGaugePercent(DEBT_RATIO_REFERENCE_PERCENT);
 
   return (
-    <section aria-label="Synthèse des crédits" className={`${cardClass} flex flex-col gap-md`}>
-      <dl className="grid grid-cols-2 gap-md">
+    <section aria-label="Synthèse des crédits" className={`${cardClass} flex flex-col gap-md lg:grid lg:grid-cols-2 lg:gap-x-10`}>
+      <dl className="grid grid-cols-2 gap-md lg:col-start-1 lg:row-start-1">
         <div>
           <dt className="font-label-caps text-label-caps uppercase text-mute">Crédits en cours</dt>
           <dd className="tabular font-heading-lg text-heading-lg">{summary.activeCount}</dd>
@@ -71,7 +71,7 @@ export function DebtsSummaryCard({ summary }: { summary: DebtsSummary }) {
       </dl>
 
       {showLenders && (
-        <div className="border-t border-hairline-soft pt-md">
+        <div className="border-t border-hairline-soft pt-md lg:col-start-1 lg:row-start-2">
           <h3 className="font-label-caps text-label-caps uppercase text-mute">Par prêteur</h3>
           <ul aria-label="Crédits par prêteur" className="mt-sm flex flex-col divide-y divide-hairline-soft">
             {summary.byLender.map((entry) => (
@@ -87,7 +87,7 @@ export function DebtsSummaryCard({ summary }: { summary: DebtsSummary }) {
         </div>
       )}
 
-      <div className="border-t border-hairline-soft pt-md">
+      <div className="border-t border-hairline-soft pt-md lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
         <div className="flex flex-wrap items-center justify-between gap-sm">
           <p className="font-label-caps text-label-caps uppercase text-mute">Taux d’endettement</p>
           <span className={`inline-flex items-center gap-1 rounded-full px-md py-0.5 font-body-sm text-body-sm font-semibold ${style.badge}`} data-level={level}>

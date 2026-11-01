@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
 import { useAccounts } from '../../application/use-accounts';
 import { useProjectActions } from '../../application/use-project-actions';
@@ -7,7 +6,7 @@ import { useProjects, useProjectsSummary } from '../../application/use-projects'
 import { useSpace } from '../../application/use-space';
 import { activeProjects, archivedProjects, Project, ProjectPayload } from '../../domain/project';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, TargetIcon } from '../components/Icons';
+import { ChevronRightIcon, PlusIcon, TargetIcon } from '../components/Icons';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { ProjectCard } from '../components/projects/ProjectCard';
 import { ProjectDetail } from '../components/projects/ProjectDetail';
@@ -15,6 +14,7 @@ import { ProjectForm } from '../components/projects/ProjectForm';
 import { ProjectsSummaryCard } from '../components/projects/ProjectsSummaryCard';
 import { useToast } from '../components/Toast';
 import { buttonPrimary, cardClass } from '../components/ui';
+import { CardGrid, PageIntro } from '../layout/PageLayout';
 
 type SheetState = { type: 'form'; editing: Project | null } | { type: 'detail'; id: string } | null;
 
@@ -98,20 +98,17 @@ export function ProjetsPage() {
 
   return (
     <>
-      <div>
-        <Link to="/" className="-ml-2 inline-flex min-h-[44px] items-center gap-1 px-2 font-body-sm text-body-sm font-semibold">
-          <ChevronLeftIcon width={18} height={18} />
-          Accueil
-        </Link>
-        <h2 className="font-heading-lg text-heading-lg">Projets {kind === 'COMMON' ? 'communs' : 'perso'}</h2>
-        <p className="font-body-sm text-body-sm text-mute">Vacances, naissance, travaux… de l’espace « {space.name} ».</p>
-      </div>
+      <PageIntro
+        title={`Projets ${kind === 'COMMON' ? 'communs' : 'perso'}`}
+        description={`Vacances, naissance, travaux… de l’espace « ${space.name} ».`}
+        back={{ to: '/', label: 'Accueil' }}
+      />
 
       {summary.data && projects.data && <ProjectsSummaryCard summary={summary.data} />}
 
       {projects.data ? (
         list.length === 0 ? (
-          <section aria-label="À quoi servent les projets" className={`${cardClass} flex flex-col gap-md`}>
+          <section aria-label="À quoi servent les projets" className={`${cardClass} flex flex-col gap-md lg:max-w-[680px]`}>
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-soft-cloud">
               <TargetIcon width={24} height={24} />
             </span>
@@ -121,27 +118,29 @@ export function ProjetsPage() {
               combien mettre de côté chaque mois pour y arriver, et si vous êtes dans le rythme.
             </p>
             <p className="font-body-sm text-body-sm text-mute">Aucun montant n’est imposé : vous choisissez la somme et la date.</p>
-            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full`}>
+            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full lg:w-fit`}>
               <PlusIcon width={18} height={18} />
               Créer mon premier projet
             </button>
           </section>
         ) : (
           <>
-            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full`}>
+            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full lg:w-fit lg:self-start`}>
               <PlusIcon width={18} height={18} />
               Nouveau projet
             </button>
-            {active.length > 0 && <ul aria-label="Projets en cours" className="flex flex-col gap-gutter">{active.map(renderCard)}</ul>}
+            {active.length > 0 && <CardGrid columns={3} label="Projets en cours">{active.map(renderCard)}</CardGrid>}
             {archived.length > 0 && (
               <details className="group rounded bg-white shadow-[0_0_0_1px_#E5E5E5]">
                 <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-md px-gutter font-body-md text-body-md font-semibold">
                   <span>Projets archivés ({archived.length})</span>
                   <ChevronRightIcon width={20} height={20} className="transition-transform group-open:rotate-90" />
                 </summary>
-                <ul aria-label="Projets archivés" className="flex flex-col gap-gutter p-gutter pt-0">
-                  {archived.map(renderCard)}
-                </ul>
+                <div className="p-gutter pt-0">
+                  <CardGrid columns={3} label="Projets archivés">
+                    {archived.map(renderCard)}
+                  </CardGrid>
+                </div>
               </details>
             )}
           </>
