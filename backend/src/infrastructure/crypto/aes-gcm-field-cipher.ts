@@ -12,6 +12,7 @@ import { FieldCipher } from '../../domain/shared/field-cipher';
 const VERSION = 'v1';
 const KEY_BYTES = 32;
 const IV_BYTES = 12;
+const AUTH_TAG_BYTES = 16;
 const HKDF_INFO = 'home-budget/personal-space/v1';
 
 /**
@@ -84,6 +85,7 @@ export class AesGcmFieldCipher extends FieldCipher {
       'aes-256-gcm',
       this.keyFor(ownerUserId),
       Buffer.from(iv, 'base64url'),
+      { authTagLength: AUTH_TAG_BYTES },
     );
     decipher.setAAD(Buffer.from(aad, 'utf8'));
     decipher.setAuthTag(Buffer.from(tag, 'base64url'));

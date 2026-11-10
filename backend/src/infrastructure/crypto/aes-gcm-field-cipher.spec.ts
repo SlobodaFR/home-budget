@@ -42,6 +42,15 @@ describe('AesGcmFieldCipher', () => {
     expect(() => cipher.decrypt('alice', 'tx:1', parts.join('.'))).toThrow();
   });
 
+  it('rejects a truncated authentication tag', () => {
+    const token = cipher.encrypt('alice', 'tx:1', 'secret');
+    const parts = token.split('.');
+    parts[2] = Buffer.from(parts[2], 'base64url')
+      .subarray(0, 4)
+      .toString('base64url');
+    expect(() => cipher.decrypt('alice', 'tx:1', parts.join('.'))).toThrow();
+  });
+
   it('does not decrypt with another master key', () => {
     const other = cipherWith({
       PERSONAL_DATA_KEY: randomBytes(32).toString('base64'),
