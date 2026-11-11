@@ -45,10 +45,15 @@ COPY --from=backend-build /app/backend/dist backend/dist
 COPY --from=backend-build /app/backend/package.json backend/package.json
 COPY backend/litestream.yml backend/litestream.yml
 COPY backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Non-root: the data volume (SQLite + Litestream -wal/-shm/.litestream files) and the
+# WORKDIR itself (relative DATABASE_PATH) must be writable by `node` (uid 1000). OCR/PDF
+# tools write into os.tmpdir() (/tmp, world-writable).
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && mkdir -p /app/backend/data
+    && mkdir -p /app/backend/data \
+    && chown node:node /app/backend /app/backend/data
 VOLUME ["/app/backend/data"]
 WORKDIR /app/backend
 EXPOSE 3000
+USER node
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/main.js"]
