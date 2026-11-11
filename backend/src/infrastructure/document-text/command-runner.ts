@@ -17,6 +17,7 @@ export interface CommandResult {
 }
 
 export type CommandFailure =
+  | 'NOT_ALLOWED'
   | 'NOT_FOUND'
   | 'EXIT'
   | 'TIMEOUT'
@@ -49,7 +50,22 @@ export abstract class CommandRunner {
 
 const MAX_STDERR_BYTES = 8 * 1024;
 
+/** Seuls programmes que l'extraction de documents a le droit de lancer. */
+export const SYSTEM_DOCUMENT_TOOLS: readonly string[] = [
+  'pdfinfo',
+  'pdftotext',
+  'pdftoppm',
+  'tesseract',
+];
+
 export class ProcessCommandRunner extends CommandRunner {
+  private readonly allowedCommands: ReadonlySet<string>;
+
+  constructor(allowedCommands: readonly string[] = SYSTEM_DOCUMENT_TOOLS) {
+    super();
+    this.allowedCommands = new Set(allowedCommands);
+  }
+
   run(
     command: string,
     args: readonly string[],
@@ -60,6 +76,11 @@ export class ProcessCommandRunner extends CommandRunner {
         reject(new CommandError('ABORTED'));
         return;
       }
+      if (!this.allowedCommands.has(command)) {
+        reject(new CommandError('NOT_ALLOWED'));
+        return;
+      }
+      // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- command is checked against a fixed allowlist above, args are an array, shell is disabled
       const child = spawn(command, [...args], {
         cwd: options.cwd,
         env: options.env,
