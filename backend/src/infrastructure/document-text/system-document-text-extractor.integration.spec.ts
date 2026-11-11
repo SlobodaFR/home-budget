@@ -28,6 +28,7 @@ const LANG = process.env.OCR_LANG ?? 'fra';
 
 function exits0(command: string, args: string[]): boolean {
   try {
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- test-only probe called with literal tool names, no shell
     return spawnSync(command, args, { timeout: 8_000 }).status === 0;
   } catch {
     return false;
