@@ -50,12 +50,12 @@ export function IncomeExpenseChart({ months }: { months: readonly TrendMonth[] }
   return (
     <figure className="m-0">
       <div role="img" aria-label={describeIncomeExpenseChart(months)} data-testid="income-expense-chart">
-        <div className="flex h-[140px] items-end gap-1 border-b border-hairline" aria-hidden="true">
+        <div className="flex h-[140px] items-end gap-1 lg:h-[220px] lg:gap-3 border-b border-hairline" aria-hidden="true">
           {months.map((month) => (
             <div key={month.month} className="flex h-full min-w-0 flex-1 items-end justify-center gap-[2px]">
-              <span className="block w-1/2 max-w-[14px] rounded-t-sm bg-ink" style={{ height: `${barPercent(month.incomeCents, max)}%` }} data-testid="income-bar" />
+              <span className="block w-1/2 max-w-[14px] lg:max-w-[26px] rounded-t-sm bg-ink" style={{ height: `${barPercent(month.incomeCents, max)}%` }} data-testid="income-bar" />
               <span
-                className="block w-1/2 max-w-[14px] rounded-t-sm border-2 border-b-0 border-ink text-ink"
+                className="block w-1/2 max-w-[14px] lg:max-w-[26px] rounded-t-sm border-2 border-b-0 border-ink text-ink"
                 style={{ height: `${barPercent(month.expenseCents, max)}%`, backgroundImage: HATCH }}
                 data-testid="expense-bar"
               />
@@ -87,14 +87,14 @@ export function BalanceChart({ months }: { months: readonly TrendMonth[] }) {
             const negative = month.balanceCents < 0;
             return (
               <div key={month.month} className="flex min-w-0 flex-1 flex-col items-center">
-                <div className="flex h-[60px] w-full items-end justify-center">
-                  {positive && <span className="block w-1/2 max-w-[14px] rounded-t-sm bg-success" style={{ height: `${height}%` }} data-testid="balance-bar-positive" />}
+                <div className="flex h-[60px] w-full items-end justify-center lg:h-[90px]">
+                  {positive && <span className="block w-1/2 max-w-[14px] lg:max-w-[26px] rounded-t-sm bg-success" style={{ height: `${height}%` }} data-testid="balance-bar-positive" />}
                 </div>
                 <div className="h-px w-full bg-ink" />
-                <div className="flex h-[60px] w-full items-start justify-center">
+                <div className="flex h-[60px] w-full items-start justify-center lg:h-[90px]">
                   {negative && (
                     <span
-                      className="block w-1/2 max-w-[14px] rounded-b-sm border-2 border-t-0 border-error text-error"
+                      className="block w-1/2 max-w-[14px] lg:max-w-[26px] rounded-b-sm border-2 border-t-0 border-error text-error"
                       style={{ height: `${height}%`, backgroundImage: HATCH }}
                       data-testid="balance-bar-negative"
                     />

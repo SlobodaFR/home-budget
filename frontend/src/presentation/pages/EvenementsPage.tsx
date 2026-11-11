@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
 import { useLifeEventActions } from '../../application/use-life-event-actions';
 import { useLifeEventSteps } from '../../application/use-life-event-steps';
 import { useLifeEventCatalog, useLifeEvents } from '../../application/use-life-events';
 import { attachVerification, BIRTH_TYPE, LifeEvent } from '../../domain/life-event';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { ChevronLeftIcon, PlusIcon } from '../components/Icons';
+import { PlusIcon } from '../components/Icons';
 import { LifeEventCard } from '../components/life-events/LifeEventCard';
 import { LifeEventForm } from '../components/life-events/LifeEventForm';
 import { LifeEventsDisclaimer } from '../components/life-events/LifeEventsDisclaimer';
@@ -14,6 +13,7 @@ import { LifeEventsEmptyState } from '../components/life-events/LifeEventsEmptyS
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useToast } from '../components/Toast';
 import { buttonPrimary } from '../components/ui';
+import { CardGrid, PageIntro } from '../layout/PageLayout';
 
 type SheetState = { editing: LifeEvent | null } | null;
 
@@ -106,7 +106,7 @@ export function EvenementsPage() {
   };
 
   const addButton = (
-    <button type="button" onClick={() => setSheet({ editing: null })} className={`${buttonPrimary} w-full`}>
+    <button type="button" onClick={() => setSheet({ editing: null })} className={`${buttonPrimary} w-full lg:w-fit lg:self-start`}>
       <PlusIcon width={18} height={18} />
       Ajouter une naissance
     </button>
@@ -114,14 +114,11 @@ export function EvenementsPage() {
 
   return (
     <>
-      <div>
-        <Link to="/" className="-ml-2 inline-flex min-h-[44px] items-center gap-1 px-2 font-body-sm text-body-sm font-semibold">
-          <ChevronLeftIcon width={18} height={18} />
-          Accueil
-        </Link>
-        <h2 className="font-heading-lg text-heading-lg">Événements de vie</h2>
-        <p className="font-body-sm text-body-sm text-mute">Les démarches à ne pas oublier, avec leurs échéances. Les mêmes pour tout le foyer.</p>
-      </div>
+      <PageIntro
+        title="Événements de vie"
+        description="Les démarches à ne pas oublier, avec leurs échéances. Les mêmes pour tout le foyer."
+        back={{ to: '/', label: 'Accueil' }}
+      />
 
       <LifeEventsDisclaimer />
 
@@ -131,7 +128,7 @@ export function EvenementsPage() {
         ) : (
           <>
             {addButton}
-            <ul aria-label="Événements de vie du foyer" className="flex flex-col gap-gutter">
+            <CardGrid label="Événements de vie du foyer" fullWidthWhenAlone>
               {events.map((event) => (
                 <LifeEventCard
                   key={event.id}
@@ -142,7 +139,7 @@ export function EvenementsPage() {
                   onEdit={(target) => setSheet({ editing: target })}
                 />
               ))}
-            </ul>
+            </CardGrid>
           </>
         )
       ) : offline ? (

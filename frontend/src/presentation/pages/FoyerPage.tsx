@@ -18,6 +18,7 @@ import { MembersList } from '../components/MembersList';
 import { SafetyNetSection } from '../components/SafetyNetSection';
 import { useToast } from '../components/Toast';
 import { buttonSecondary, cardClass } from '../components/ui';
+import { PageIntro, TwoColumns } from '../layout/PageLayout';
 import { HELP_ROUTE, HELP_TITLE } from '../../domain/routes';
 
 function Section({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
@@ -73,13 +74,12 @@ export function FoyerPage() {
 
   return (
     <>
-      <div>
-        <h2 className="font-heading-lg text-heading-lg">{household.name}</h2>
-        <p className="font-body-sm text-body-sm text-mute">
-          {household.members.length} membre{household.members.length > 1 ? 's' : ''}
-        </p>
-      </div>
+      <PageIntro title={household.name} description={`${household.members.length} membre${household.members.length > 1 ? 's' : ''}`} />
 
+      <TwoColumns
+        from="md"
+        left={
+          <>
       <Section title="Membres">
         <MembersList household={household} currentUserId={user?.id ?? ''} />
       </Section>
@@ -106,7 +106,10 @@ export function FoyerPage() {
       <ContributionStatusCard />
 
       <SafetyNetSection />
-
+          </>
+        }
+        right={
+          <>
       <Section title="Aides officielles">
         <p className="font-body-sm text-body-sm text-mute">
           Crédits d’impôt sur la garde d’enfants ou le ménage à domicile, et estimation du tarif de crèche.
@@ -187,9 +190,12 @@ export function FoyerPage() {
         <InvitationCard full={household.members.length >= MAX_HOUSEHOLD_MEMBERS} />
       </Section>
 
-      <button type="button" onClick={() => void logout()} className={`${buttonSecondary} w-full`}>
+      <button type="button" onClick={() => void logout()} className={`${buttonSecondary} w-full lg:w-fit`}>
         Se déconnecter
       </button>
+          </>
+        }
+      />
     </>
   );
 }

@@ -29,10 +29,10 @@ export function AidePage() {
 
   return (
     <>
-      <div>
+      <div className="lg:max-w-[75ch]">
         <Link
           to={hasHousehold ? '/foyer' : '/bienvenue'}
-          className="-ml-2 inline-flex min-h-[44px] items-center gap-1 px-2 font-body-sm text-body-sm font-semibold"
+          className="-ml-2 inline-flex min-h-[44px] items-center gap-1 px-2 font-body-sm text-body-sm font-semibold lg:hidden"
         >
           <ChevronLeftIcon width={18} height={18} />
           {hasHousehold ? 'Foyer' : 'Bienvenue'}
@@ -48,7 +48,9 @@ export function AidePage() {
         )}
       </div>
 
-      <HelpSearch query={query} onChange={setQuery} />
+      <div className="lg:max-w-[72ch]">
+        <HelpSearch query={query} onChange={setQuery} />
+      </div>
 
       <p role="status" className="-mt-sm font-body-sm text-body-sm text-mute">
         {searching
@@ -59,7 +61,7 @@ export function AidePage() {
       </p>
 
       {visible.length === 0 ? (
-        <div className="flex flex-col items-start gap-md rounded bg-soft-cloud p-gutter">
+        <div className="flex flex-col items-start gap-md rounded bg-soft-cloud p-gutter lg:max-w-[72ch]">
           <p className="font-body-md text-body-md">
             Aucun résultat. Essayez un mot plus court (par exemple « crèche », « import » ou « chiffrement »), ou parcourez le sommaire.
           </p>
@@ -68,19 +70,23 @@ export function AidePage() {
           </button>
         </div>
       ) : (
-        <>
-          <HelpToc sections={visible} />
-          {visible.map((section) => (
-            <HelpSectionView
-              key={section.id}
-              section={section}
-              showInternalLinks={hasHousehold}
-              searching={searching}
-              sourcesStatus={sources.status}
-              onReloadSources={sources.reload}
-            />
-          ))}
-        </>
+        <div className="flex flex-col gap-gutter lg:grid lg:grid-cols-[260px_minmax(0,72ch)] lg:items-start lg:gap-10">
+          <div className="lg:sticky lg:top-0 lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto">
+            <HelpToc sections={visible} />
+          </div>
+          <div className="flex min-w-0 flex-col gap-gutter lg:gap-6">
+            {visible.map((section) => (
+              <HelpSectionView
+                key={section.id}
+                section={section}
+                showInternalLinks={hasHousehold}
+                searching={searching}
+                sourcesStatus={sources.status}
+                onReloadSources={sources.reload}
+              />
+            ))}
+          </div>
+        </div>
       )}
     </>
   );

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { describeError, isOfflineError } from '../../application/error-message';
 import { useDebtActions } from '../../application/use-debt-actions';
 import { useDebts, useDebtsSummary } from '../../application/use-debts';
@@ -11,10 +10,11 @@ import { DebtDetail } from '../components/debts/DebtDetail';
 import { DebtForm } from '../components/debts/DebtForm';
 import { DebtsSummaryCard } from '../components/debts/DebtsSummaryCard';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { ChevronLeftIcon, ChevronRightIcon, CreditCardIcon, PlusIcon } from '../components/Icons';
+import { ChevronRightIcon, CreditCardIcon, PlusIcon } from '../components/Icons';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useToast } from '../components/Toast';
 import { buttonPrimary, cardClass } from '../components/ui';
+import { CardGrid, PageIntro } from '../layout/PageLayout';
 
 type SheetState = { type: 'form'; editing: Debt | null } | { type: 'detail'; id: string } | null;
 
@@ -95,20 +95,17 @@ export function DettesPage() {
 
   return (
     <>
-      <div>
-        <Link to="/" className="-ml-2 inline-flex min-h-[44px] items-center gap-1 px-2 font-body-sm text-body-sm font-semibold">
-          <ChevronLeftIcon width={18} height={18} />
-          Accueil
-        </Link>
-        <h2 className="font-heading-lg text-heading-lg">Crédits {kind === 'COMMON' ? 'communs' : 'perso'}</h2>
-        <p className="font-body-sm text-body-sm text-mute">Immobilier, auto, consommation… de l’espace « {space.name} ». Les chiffres sont des estimations.</p>
-      </div>
+      <PageIntro
+        title={`Crédits ${kind === 'COMMON' ? 'communs' : 'perso'}`}
+        description={`Immobilier, auto, consommation… de l’espace « ${space.name} ». Les chiffres sont des estimations.`}
+        back={{ to: '/', label: 'Accueil' }}
+      />
 
       {summary.data && debts.data && <DebtsSummaryCard summary={summary.data} />}
 
       {debts.data ? (
         list.length === 0 ? (
-          <section aria-label="À quoi sert le suivi des crédits" className={`${cardClass} flex flex-col gap-md`}>
+          <section aria-label="À quoi sert le suivi des crédits" className={`${cardClass} flex flex-col gap-md lg:max-w-[680px]`}>
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-soft-cloud">
               <CreditCardIcon width={24} height={24} />
             </span>
@@ -120,21 +117,19 @@ export function DettesPage() {
             <p className="font-body-sm text-body-sm text-mute">
               Vous pourrez aussi tester « et si je remboursais plus vite ? » pour voir l’effet sur la durée et les intérêts. Il vous faut seulement le tableau d’amortissement ou le relevé de la banque.
             </p>
-            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full`}>
+            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full lg:w-fit`}>
               <PlusIcon width={18} height={18} />
               Ajouter mon premier crédit
             </button>
           </section>
         ) : (
           <>
-            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full`}>
+            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full lg:w-fit lg:self-start`}>
               <PlusIcon width={18} height={18} />
               Nouveau crédit
             </button>
             {active.length > 0 && (
-              <ul aria-label="Crédits en cours" className="flex flex-col gap-gutter">
-                {active.map(renderCard)}
-              </ul>
+              <CardGrid label="Crédits en cours">{active.map(renderCard)}</CardGrid>
             )}
             {archived.length > 0 && (
               <details className="group rounded bg-white shadow-[0_0_0_1px_#E5E5E5]">
@@ -142,9 +137,9 @@ export function DettesPage() {
                   <span>Crédits archivés ({archived.length})</span>
                   <ChevronRightIcon width={20} height={20} className="transition-transform group-open:rotate-90" />
                 </summary>
-                <ul aria-label="Crédits archivés" className="flex flex-col gap-gutter p-gutter pt-0">
-                  {archived.map(renderCard)}
-                </ul>
+                <div className="p-gutter pt-0">
+                  <CardGrid label="Crédits archivés">{archived.map(renderCard)}</CardGrid>
+                </div>
               </details>
             )}
           </>

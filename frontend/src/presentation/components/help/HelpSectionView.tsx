@@ -109,7 +109,7 @@ export function HelpSectionView({ section, showInternalLinks, searching, sources
         <GroupedArticles entries={section.entries} showInternalLinks={showInternalLinks} />
       )}
 
-      <a href="#sommaire" className="-mb-2 inline-flex min-h-[44px] items-center self-start font-body-sm text-body-sm font-semibold text-ink underline">
+      <a href="#sommaire" className="-mb-2 inline-flex min-h-[44px] items-center self-start font-body-sm text-body-sm font-semibold text-ink underline lg:hidden">
         Retour au sommaire
       </a>
     </section>

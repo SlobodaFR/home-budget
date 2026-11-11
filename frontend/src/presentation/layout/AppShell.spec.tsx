@@ -66,8 +66,18 @@ function renderShell() {
   return userEvent.setup();
 }
 
-const openSheet = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(screen.getByRole('button', { name: 'Ajouter une opération' }));
+/**
+ * Le bouton « Ajouter une opération » existe deux fois dans le DOM : le bouton flottant (mobile et tablette) et celui de l'en-tête
+ * de page (ordinateur) ; une seule des deux est affichée selon la largeur (classes `lg:`), jsdom ne lit pas les feuilles de style.
+ */
+const addButtons = () => {
+  const header = screen.getByRole('banner');
+  const all = screen.getAllByRole('button', { name: 'Ajouter une opération' });
+  return { header: all.filter((button) => header.contains(button)), floating: all.filter((button) => !header.contains(button)) };
+};
+
+const openSheet = async (user: ReturnType<typeof userEvent.setup>, from: 'floating' | 'header' = 'floating') => {
+  await user.click(addButtons()[from][0]);
   return screen.findByRole('dialog', { name: 'Nouvelle opération' });
 };
 
@@ -79,6 +89,18 @@ describe('AppShell quick entry with bank accounts', () => {
     api.fetchInsights.mockResolvedValue([]);
     api.createTransaction.mockResolvedValue({});
     api.fetchAccounts.mockResolvedValue([account({ id: 'a1', name: 'Compte commun' }), account({ id: 'a2', name: 'Livret A' })]);
+  });
+
+  it('offers « Ajouter une opération » both as the floating button (mobile) and in the page header (desktop)', async () => {
+    const user = renderShell();
+    await screen.findByRole('region', { name: 'Soldes des comptes' });
+    const { header, floating } = addButtons();
+    expect(floating).toHaveLength(1);
+    expect(header).toHaveLength(1);
+    expect(floating[0].className).toContain('lg:hidden');
+    expect(header[0].className).toMatch(/hidden .*lg:inline-flex/);
+    const dialog = await openSheet(user, 'header');
+    expect(within(dialog).getByLabelText('Montant')).toBeInTheDocument();
   });
 
   it('attaches the operation to the chosen account, then preselects it next time', async () => {

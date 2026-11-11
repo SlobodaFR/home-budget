@@ -13,7 +13,10 @@ import { QuickEntrySheet } from '../components/QuickEntrySheet';
 import { SpaceSwitcher } from '../components/SpaceSwitcher';
 import { TabBar } from '../components/TabBar';
 import { ToastProvider, useToast } from '../components/Toast';
+import { buttonPrimary } from '../components/ui';
 import { QuickEntryContext, QuickEntryValue } from './QuickEntryContext';
+import { routeTitle } from './navigation';
+import { SideNav } from './SideNav';
 import { SyncBanner } from './SyncBanner';
 
 type SheetState = { editing: Transaction | null } | null;
@@ -67,32 +70,69 @@ function ShellContent() {
     closeSheet();
   };
 
+  const title = routeTitle(location.pathname);
+  const mobileTitle = showsSpace ? null : location.pathname === HELP_ROUTE ? HELP_TITLE : 'Foyer';
+  const addButtonVisible = location.pathname === '/';
+
   return (
     <QuickEntryContext.Provider value={quickEntry}>
-      <div className="h-dvh bg-soft-cloud">
-        <div className="relative mx-auto flex h-full w-full max-w-[600px] flex-col bg-surface md:border-x md:border-hairline-soft">
-          <header className="shrink-0 border-b border-hairline-soft bg-surface pb-md pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]">
-            <div className="flex items-start gap-sm pt-md">
-              <div className="min-w-0 flex-1">
-                {showsSpace ? (
-                  <SpaceSwitcher />
-                ) : (
-                  <h1 className="py-sm text-center font-heading-lg text-heading-lg">{location.pathname === HELP_ROUTE ? HELP_TITLE : 'Foyer'}</h1>
-                )}
-              </div>
-              {showsSpace && (
-                <Link
-                  to={HELP_ROUTE}
-                  aria-label={HELP_TITLE}
-                  className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-hairline-soft bg-white text-ink hover:bg-soft-cloud"
-                >
-                  <HelpIcon width={24} height={24} />
-                </Link>
+      <div className="h-dvh bg-soft-cloud lg:flex">
+        <a
+          href="#contenu-principal"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-ink focus:px-lg focus:py-sm focus:font-button-md focus:text-button-md focus:text-surface"
+        >
+          Aller au contenu
+        </a>
+        <SideNav />
+        <div className="relative mx-auto flex h-full w-full max-w-[600px] flex-col bg-surface md:max-w-[880px] md:border-x md:border-hairline-soft lg:mx-0 lg:min-w-0 lg:max-w-none lg:flex-1 lg:border-x-0">
+          <header className="shrink-0 border-b border-hairline-soft bg-surface pb-md pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] md:pl-[max(32px,env(safe-area-inset-left))] md:pr-[max(32px,env(safe-area-inset-right))] lg:px-8 lg:pb-0 lg:pt-0 xl:px-10">
+            <div className="mx-auto flex w-full items-start gap-sm pt-md lg:min-h-[72px] lg:max-w-[1200px] lg:items-center lg:gap-lg lg:py-5 xl:max-w-[1280px]">
+              {showsSpace ? (
+                <>
+                  <h1 className="hidden min-w-0 flex-1 truncate font-heading-xl text-heading-xl lg:block">{title}</h1>
+                  <div className="min-w-0 flex-1 lg:w-[280px] lg:flex-none">
+                    <SpaceSwitcher />
+                  </div>
+                  <Link
+                    to={HELP_ROUTE}
+                    aria-label={HELP_TITLE}
+                    className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-hairline-soft bg-white text-ink hover:bg-soft-cloud lg:h-12 lg:w-12"
+                  >
+                    <HelpIcon width={24} height={24} />
+                  </Link>
+                  {addButtonVisible && (
+                    <button
+                      type="button"
+                      onClick={quickEntry.openNew}
+                      aria-label="Ajouter une opération"
+                      className={`${buttonPrimary} hidden shrink-0 lg:inline-flex`}
+                    >
+                      <PlusIcon width={20} height={20} />
+                      <span className="hidden xl:inline">Ajouter une opération</span>
+                      <span className="xl:hidden">Ajouter</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="min-w-0 flex-1">
+                  <h1
+                    className={`py-sm text-center font-heading-lg text-heading-lg ${
+                      mobileTitle === title ? 'lg:text-left lg:font-heading-xl lg:text-heading-xl' : 'lg:hidden'
+                    }`}
+                  >
+                    {mobileTitle}
+                  </h1>
+                  {mobileTitle !== title && <h1 className="hidden truncate font-heading-xl text-heading-xl lg:block">{title}</h1>}
+                </div>
               )}
             </div>
           </header>
-          <main className={`min-h-0 flex-1 overflow-y-auto ${reservesFabSpace ? 'pb-[120px]' : 'pb-0'} pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-md`}>
-            <div className="flex flex-col gap-gutter">
+          <main
+            id="contenu-principal"
+            tabIndex={-1}
+            className={`focus:outline-none min-h-0 flex-1 overflow-y-auto ${reservesFabSpace ? 'pb-[120px]' : 'pb-0'} pl-[max(20px,env(safe-area-inset-left))] pr-[max(20px,env(safe-area-inset-right))] pt-md md:pl-[max(32px,env(safe-area-inset-left))] md:pr-[max(32px,env(safe-area-inset-right))] lg:px-8 lg:pb-16 lg:pt-8 xl:px-10`}
+          >
+            <div className="mx-auto flex w-full flex-col gap-gutter lg:max-w-[1200px] lg:gap-6 xl:max-w-[1280px]">
               <SyncBanner />
               <Outlet />
             </div>
@@ -102,7 +142,7 @@ function ShellContent() {
               type="button"
               onClick={quickEntry.openNew}
               aria-label="Ajouter une opération"
-              className="absolute bottom-[calc(env(safe-area-inset-bottom)+72px)] right-margin-mobile flex h-14 w-14 items-center justify-center rounded-full bg-ink text-surface shadow-xl transition-transform active:scale-95"
+              className="absolute bottom-[calc(env(safe-area-inset-bottom)+72px)] right-margin-mobile flex h-14 w-14 items-center justify-center rounded-full bg-ink text-surface shadow-xl transition-transform active:scale-95 lg:hidden"
             >
               <PlusIcon width={28} height={28} />
             </button>

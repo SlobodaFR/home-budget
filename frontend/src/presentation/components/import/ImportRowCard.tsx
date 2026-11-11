@@ -37,7 +37,7 @@ function ImportRowCardView({ row, choice, initial, similarCount, learnKeyword, o
         className={`w-1.5 shrink-0 self-stretch rounded-full ${choice === null ? 'bg-hairline' : TARGET_STYLE[choice].dot}`}
         aria-hidden="true"
       />
-      <div className="flex min-w-0 flex-1 flex-col gap-sm">
+      <div className="flex min-w-0 flex-1 flex-col gap-sm lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,540px)] lg:items-center lg:gap-x-8">
         <div className="flex items-start justify-between gap-md">
           <div className="min-w-0">
             <p className="flex flex-wrap items-center gap-x-sm gap-y-0.5 font-body-sm text-body-sm text-mute">
@@ -66,7 +66,7 @@ function ImportRowCardView({ row, choice, initial, similarCount, learnKeyword, o
         <TargetChips label={`Classement de ${row.label}`} value={choice} onChange={(target) => onChoose(row.index, target)} />
 
         {manual && derivedKeyword !== '' && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 lg:col-span-2">
             <label className="flex min-h-[44px] items-center gap-sm font-body-sm text-body-sm">
               <input
                 type="checkbox"
@@ -105,7 +105,7 @@ function ImportRowCardView({ row, choice, initial, similarCount, learnKeyword, o
           <button
             type="button"
             onClick={() => onClassifySimilar(row.index)}
-            className="min-h-[44px] rounded-full border border-ink px-lg font-button-md text-body-sm font-semibold"
+            className="min-h-[44px] cursor-pointer rounded-full border border-ink px-lg font-button-md text-body-sm font-semibold hover:bg-soft-cloud lg:col-span-2 lg:justify-self-start"
           >
             Classer toutes les lignes similaires ({similarCount})
           </button>

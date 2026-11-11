@@ -18,6 +18,7 @@ import { RulesEditor } from '../components/import/RulesEditor';
 import { StatementSource } from '../components/import/StatementSource';
 import { useToast } from '../components/Toast';
 import { cardClass } from '../components/ui';
+import { TwoColumns } from '../layout/PageLayout';
 
 function RulesSection({ spaceId }: { spaceId: string }) {
   const [open, setOpen] = useState(false);
@@ -155,12 +156,12 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
             Changer de relevé
           </button>
         ) : (
-          <Link to="/" className="inline-flex min-h-[44px] items-center gap-1 font-body-sm text-body-sm font-semibold">
+          <Link to="/" className="inline-flex min-h-[44px] items-center gap-1 font-body-sm text-body-sm font-semibold lg:hidden">
             <ChevronLeftIcon width={18} height={18} />
             Accueil
           </Link>
         )}
-        <h2 ref={headingRef} tabIndex={-1} className="font-heading-lg text-heading-lg outline-none">
+        <h2 ref={headingRef} tabIndex={-1} className="font-heading-lg text-heading-lg outline-none lg:sr-only">
           Importer un relevé
         </h2>
         <p className="font-body-sm text-body-sm text-mute">
@@ -184,24 +185,31 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
           onBack={() => setPreview(null)}
         />
       ) : (
-        <div className="flex flex-col gap-gutter pb-xl">
-          <AccountSelect
-            id="import-account"
-            accounts={accounts}
-            value={accountId}
-            onChange={setAccountId}
-            label="Compte du relevé (facultatif)"
-            hint="Toutes les opérations importées seront rattachées à ce compte."
+        <div className="pb-xl">
+          <TwoColumns
+            ratio="aside"
+            left={
+              <>
+                <AccountSelect
+                  id="import-account"
+                  accounts={accounts}
+                  value={accountId}
+                  onChange={setAccountId}
+                  label="Compte du relevé (facultatif)"
+                  hint="Toutes les opérations importées seront rattachées à ce compte."
+                />
+                <StatementSource
+                  text={text}
+                  online={online}
+                  analyzing={analyzing}
+                  error={analyzeError}
+                  onTextChange={setText}
+                  onAnalyze={analyze}
+                />
+              </>
+            }
+            right={<RulesSection spaceId={spaceId} />}
           />
-          <StatementSource
-            text={text}
-            online={online}
-            analyzing={analyzing}
-            error={analyzeError}
-            onTextChange={setText}
-            onAnalyze={analyze}
-          />
-          <RulesSection spaceId={spaceId} />
         </div>
       )}
     </>

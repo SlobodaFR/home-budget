@@ -4,11 +4,11 @@ import { formatCents, formatRatio } from '../../domain/money';
 import { BlocBar } from './BlocBar';
 import { cardClass } from './ui';
 
-export function SummaryCard({ summary }: { summary: Summary }) {
+export function SummaryCard({ summary, className = '' }: { summary: Summary; className?: string }) {
   const balanceTone = summary.actualBalanceCents < 0 ? 'text-error' : 'text-ink';
 
   return (
-    <section aria-label="Synthèse du mois" className={cardClass}>
+    <section aria-label="Synthèse du mois" className={`${cardClass} ${className}`.trim()}>
       <p className="font-label-caps text-label-caps uppercase text-mute">Solde réel du mois</p>
       <p className={`tabular font-heading-xl text-heading-xl ${balanceTone}`}>{formatCents(summary.actualBalanceCents)}</p>
       <p className="font-body-sm text-body-sm text-mute">Prévu : {formatCents(summary.plannedBalanceCents)}</p>

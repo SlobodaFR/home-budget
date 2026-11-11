@@ -134,41 +134,45 @@ export function PlanForm({ initial, saving, isCommon, onSave }: Props) {
   );
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
-      {isCommon && (
-        <p className="rounded bg-soft-cloud p-md font-body-sm text-body-sm">
-          Le total des 4 blocs du plan commun sert de base au calcul de la contribution de chacun.
-        </p>
-      )}
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-8">
+      <div className="flex flex-col gap-lg">
+        {isCommon && (
+          <p className="rounded bg-soft-cloud p-md font-body-sm text-body-sm">
+            Le total des 4 blocs du plan commun sert de base au calcul de la contribution de chacun.
+          </p>
+        )}
 
-      <section className={`${cardClass} flex flex-col gap-lg`}>
-        {field('income', 'Revenus prévus', 'Ce qui rentre chaque mois dans cet espace.')}
-      </section>
+        <section className={`${cardClass} flex flex-col gap-lg lg:max-w-[420px]`}>
+          {field('income', 'Revenus prévus', 'Ce qui rentre chaque mois dans cet espace.')}
+        </section>
 
-      <section className={`${cardClass} flex flex-col gap-lg`}>
-        {BLOCS.map((bloc) => field(bloc, BLOC_INFO[bloc].label, BLOC_INFO[bloc].description, BLOC_STYLE[bloc].dot))}
-      </section>
+        <section className={`${cardClass} flex flex-col gap-lg md:grid md:grid-cols-2 md:gap-x-8`}>
+          {BLOCS.map((bloc) => field(bloc, BLOC_INFO[bloc].label, BLOC_INFO[bloc].description, BLOC_STYLE[bloc].dot))}
+        </section>
+      </div>
 
-      <section aria-label="Totaux" className={`${cardClass} flex flex-col gap-md`}>
-        <AllocationBar plan={plan} />
-        <dl className="grid grid-cols-2 gap-md">
-          <div>
-            <dt className="font-label-caps text-label-caps uppercase text-mute">Total des blocs</dt>
-            <dd className="tabular font-body-md text-body-md font-semibold">{formatCents(totals.blocsCents)}</dd>
-          </div>
-          <div>
-            <dt className="font-label-caps text-label-caps uppercase text-mute">Solde prévu</dt>
-            <dd className={`tabular font-body-md text-body-md font-semibold ${totals.status === 'overcommitted' ? 'text-error' : ''}`}>
-              {formatCents(totals.balanceCents)}
-            </dd>
-          </div>
-        </dl>
-        <BalanceMessage status={totals.status} balanceCents={totals.balanceCents} />
-      </section>
+      <div className="flex flex-col gap-lg xl:sticky xl:top-0">
+        <section aria-label="Totaux" className={`${cardClass} flex flex-col gap-md`}>
+          <AllocationBar plan={plan} />
+          <dl className="grid grid-cols-2 gap-md">
+            <div>
+              <dt className="font-label-caps text-label-caps uppercase text-mute">Total des blocs</dt>
+              <dd className="tabular font-body-md text-body-md font-semibold">{formatCents(totals.blocsCents)}</dd>
+            </div>
+            <div>
+              <dt className="font-label-caps text-label-caps uppercase text-mute">Solde prévu</dt>
+              <dd className={`tabular font-body-md text-body-md font-semibold ${totals.status === 'overcommitted' ? 'text-error' : ''}`}>
+                {formatCents(totals.balanceCents)}
+              </dd>
+            </div>
+          </dl>
+          <BalanceMessage status={totals.status} balanceCents={totals.balanceCents} />
+        </section>
 
-      <button type="submit" disabled={saving || !dirty} className={`${buttonPrimary} w-full`}>
-        {saving ? 'Enregistrement…' : dirty ? 'Enregistrer le plan' : 'Plan à jour'}
-      </button>
+        <button type="submit" disabled={saving || !dirty} className={`${buttonPrimary} w-full`}>
+          {saving ? 'Enregistrement…' : dirty ? 'Enregistrer le plan' : 'Plan à jour'}
+        </button>
+      </div>
     </form>
   );
 }

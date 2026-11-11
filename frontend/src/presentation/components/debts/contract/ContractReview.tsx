@@ -83,7 +83,7 @@ export function ContractReview({ result, onApply, onCancel }: Props) {
             </ul>
           </details>
 
-          <ul aria-label="Informations trouvées dans le contrat" className="flex flex-col gap-md">
+          <ul aria-label="Informations trouvées dans le contrat" className="flex flex-col gap-md md:grid md:grid-cols-2 md:items-start">
             {rows.map(({ item, problem }) => {
               const id = `${baseId}-${item.field}`;
               const hint = CONFIDENCE_HINT[item.confidence];
@@ -131,7 +131,7 @@ export function ContractReview({ result, onApply, onCancel }: Props) {
         <p>{NEVER_EXTRACTED_NOTE}</p>
       </section>
 
-      <div className="sticky bottom-0 -mx-margin-mobile flex flex-col gap-sm border-t border-hairline-soft bg-surface px-margin-mobile pb-sm pt-md">
+      <div className="sticky bottom-0 -mx-margin-mobile flex flex-col gap-sm border-t border-hairline-soft bg-surface px-margin-mobile pb-sm pt-md md:-mx-8 md:px-8">
         <p role="status" className="font-body-sm text-body-sm text-mute">
           {selectable === 0 ? 'Aucune information à reprendre.' : `${chosen.length} information${chosen.length > 1 ? 's' : ''} cochée${chosen.length > 1 ? 's' : ''} sur ${selectable}.`}
         </p>
