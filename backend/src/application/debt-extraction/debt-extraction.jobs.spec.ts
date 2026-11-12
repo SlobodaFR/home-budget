@@ -8,6 +8,7 @@ import {
   FakeDocumentTextExtractor,
   createGate,
 } from '../../testing/fake-document-text-extractor';
+import { SpyTelemetry } from '../../testing/spy-telemetry';
 import { SpaceAccessService } from '../household/space-access.service';
 import {
   DebtExtractionJobs,
@@ -28,8 +29,9 @@ function setup() {
   const access = {
     requireSpace: vi.fn<() => Promise<object>>().mockResolvedValue({}),
   } as unknown as SpaceAccessService & { requireSpace: Mock };
-  const jobs = new DebtExtractionJobs(extractor, access, clock);
-  return { extractor, clock, access, jobs };
+  const telemetry = new SpyTelemetry();
+  const jobs = new DebtExtractionJobs(extractor, access, clock, telemetry);
+  return { extractor, clock, access, jobs, telemetry };
 }
 
 describe('DebtExtractionJobs', () => {
@@ -129,6 +131,53 @@ describe('DebtExtractionJobs', () => {
         status: 503,
       });
       expect(extractor.inspectCalls).toBe(0);
+    });
+  });
+
+  describe('télémétrie', () => {
+    it('rapporte la fin d’un job réussi : source et nombre de champs, avec l’utilisateur', async () => {
+      const { jobs, telemetry } = setup();
+      const { jobId } = await jobs.start('alice', 'space-1', PDF);
+      await jobs.idle();
+      const fields = jobs.get('alice', jobId).result!.fields.length;
+      expect(telemetry.captured).toEqual([
+        {
+          event: {
+            name: 'debt_extraction_finished',
+            properties: { outcome: 'done', source: 'TEXT_LAYER', fields },
+          },
+          userId: 'alice',
+        },
+      ]);
+    });
+
+    it('rapporte un échec sans détail ni contenu', async () => {
+      const { jobs, extractor, telemetry } = setup();
+      extractor.failWith = new Error('secret du document');
+      await jobs.start('alice', 'space-1', PDF);
+      await jobs.idle();
+      expect(telemetry.captured).toEqual([
+        {
+          event: {
+            name: 'debt_extraction_finished',
+            properties: { outcome: 'failed' },
+          },
+          userId: 'alice',
+        },
+      ]);
+      expect(JSON.stringify(telemetry.captured)).not.toContain('secret');
+    });
+
+    it('ne rapporte rien pour un job supprimé pendant le traitement', async () => {
+      const { jobs, extractor, telemetry } = setup();
+      const { gate, open } = createGate();
+      extractor.gate = gate;
+      const { jobId } = await jobs.start('alice', 'space-1', PDF);
+      await new Promise((resolve) => setImmediate(resolve));
+      jobs.delete('alice', jobId);
+      open();
+      await jobs.idle();
+      expect(telemetry.captured).toEqual([]);
     });
   });
 

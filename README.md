@@ -80,6 +80,8 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 | `AUTH_WEBHOOK_SECRET`     | oui         | -                       | Secret partage pour le webhook `POST /api/auth/disconnect?secret=...` (serveur a serveur).                                                                                                                                           |
 | `FRONTEND_URL`            | non         | `http://localhost:3000` | Base URL du frontend, utilisee pour le `redirect_uri` OAuth2 et la redirection apres connexion.                                                                                                                                      |
 | `PSEUDONYM_SECRET`        | prod        | -                       | Secret HMAC (32 octets minimum : `openssl rand -hex 32`) des pseudonymes : les logs n'identifient un membre que par un pseudonyme de son id (jamais email ni nom). Obligatoire en production. 1Password : `BUDGET_PSEUDONYM_SECRET`. |
+| `POSTHOG_API_KEY` | non | - | Cle projet PostHog : active la telemetrie produit anonyme (voir « Telemetrie »). Sans elle, aucun evenement n'est envoye. 1Password : `POSTHOG_API_KEY` (partage). |
+| `POSTHOG_HOST` | non | `https://eu.i.posthog.com` | Hote PostHog (region UE par defaut). |
 | `DATABASE_PATH`           | non         | -                       | Chemin du fichier SQLite.                                                                                                                                                                                                            |
 | `NODE_ENV`                | non         | -                       | `production` active le flag `secure` sur le cookie de session.                                                                                                                                                                       |
 | `PORT`                    | non         | `3000`                  | Port d'ecoute du serveur.                                                                                                                                                                                                            |
@@ -98,6 +100,12 @@ si `AUTH_SERVICE_URL` ou `FRONTEND_URL` n'est pas une URL https, si `AUTH_CLIENT
 
 Copiez `backend/.env.example` en `backend/.env` et completez les valeurs. Ce fichier est lu
 automatiquement par `ConfigModule` en dev, et peut aussi etre passe a `docker run --env-file`.
+
+## Telemetrie
+
+Evenements produit anonymes vers PostHog (projet partage, `service=home-budget`), desactives sans `POSTHOG_API_KEY` : `household_created`, `statement_imported` (nombre de lignes), `data_exported` (`json` ou `csv`), `debt_extraction_finished` (resultat `done`/`failed`, origine du texte et nombre de champs), `http_request` (route parametree, methode, statut, duree ; pas `/healthz`). Les evenements metier ne sont emis qu'apres succes.
+
+Regle : jamais de donnee personnelle dans un evenement (libelle, montant, nom de foyer, e-mail, identifiant brut, nom de fichier). Le membre n'apparait que sous pseudonyme (HMAC de son id avec `PSEUDONYM_SECRET`, meme fonction que les logs) ; sans secret ou sans membre, l'evenement est anonyme (sans profil). Port `Telemetry` dans `backend/src/domain/shared/telemetry.ts`, adaptateur dans `backend/src/infrastructure/telemetry/`.
 
 ## Development
 
