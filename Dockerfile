@@ -19,7 +19,9 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY frontend/package.json frontend/package.json
 COPY backend/package.json backend/package.json
-RUN npm install
+RUN npm install \
+    # Module natif : echouer ici plutot qu'au demarrage si son script d'installation n'a pas tourne.
+    && node -e "new (require('better-sqlite3'))(':memory:')"
 COPY backend backend
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN npm run build --workspace=backend

@@ -39,5 +39,11 @@
     "*.{ts,tsx,js,mjs,json,md,yml,yaml,css,html}": [
       "oxfmt --no-error-on-unmatched-pattern"
     ]
+  },
+  "allowScripts": {
+    "better-sqlite3": true,
+    "esbuild": true,
+    "@nestjs/core": false,
+    "fsevents": false
   }
 }
