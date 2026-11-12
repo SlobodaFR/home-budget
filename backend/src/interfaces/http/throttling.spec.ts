@@ -83,7 +83,7 @@ describe('rate limiting (HTTP)', () => {
 
   it('should key on the address added by Caddy, not on a spoofed X-Forwarded-For', async () => {
     app = await createApp();
-    // Caddy ajoute l'adresse réelle à la fin de ce que le client a envoyé.
+    // Avec `trust proxy` 1, la clé est l'adresse la plus à droite (celle posée par Caddy) : ce que le client met devant ne compte pas.
     await exhaust((i) => `198.51.100.${String(i)}, 203.0.113.9`);
 
     expect((await ping('198.51.100.250, 203.0.113.9')).status).toBe(429);
