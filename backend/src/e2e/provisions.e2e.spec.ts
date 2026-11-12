@@ -39,9 +39,13 @@ describe('Non-monthly payments and provisions API (tranche 5, end to end)', () =
     await app.init();
     dataSource = app.get(DataSource);
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
     const created = await alice
       .post('/api/household')
@@ -534,7 +538,10 @@ describe('Non-monthly payments and provisions API (tranche 5, end to end)', () =
     });
 
     it('requires authentication', async () => {
-      const anonymous = request(app.getHttpServer());
+      // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+      const anonymous = request
+        .agent(app.getHttpServer())
+        .set('Sec-Fetch-Site', 'same-origin');
       await anonymous.get(`/api/spaces/${common}/provisions`).expect(401);
       await anonymous.get(`/api/spaces/${common}/forecast/year`).expect(401);
     });

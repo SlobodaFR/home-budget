@@ -72,11 +72,17 @@ describe('Life events API (tranche 11, end to end, AUTH_MODE=dev, in-memory SQLi
     await app.init();
     dataSource = app.get(DataSource);
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
-    anonymous = request.agent(app.getHttpServer());
+    anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
 
     // Un troisième utilisateur, d'un autre foyer : jeton de dev signé localement.
     const { token } = await signDevAccessToken(app.get(ConfigService), {
@@ -84,7 +90,9 @@ describe('Life events API (tranche 11, end to end, AUTH_MODE=dev, in-memory SQLi
       email: 'carol@example.test',
       name: 'Carol',
     });
-    carol = request.agent(app.getHttpServer());
+    carol = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     carol.set('Cookie', `access_token=${token}`);
   });
 

@@ -65,7 +65,9 @@ describe('Accounts API (tranche 4, end to end, AUTH_MODE=dev, in-memory SQLite)'
   });
 
   async function login(name: 'alice' | 'bob'): Promise<Agent> {
-    const agent = request.agent(app.getHttpServer());
+    const agent = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await agent.get(`/api/auth/dev-login?as=${name}`).expect(302);
     return agent;
   }
@@ -116,7 +118,10 @@ describe('Accounts API (tranche 4, end to end, AUTH_MODE=dev, in-memory SQLite)'
 
   describe('CRUD', () => {
     it('requires authentication', async () => {
-      const anonymous = request(app.getHttpServer());
+      // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+      const anonymous = request
+        .agent(app.getHttpServer())
+        .set('Sec-Fetch-Site', 'same-origin');
       await anonymous.get(`/api/spaces/${common}/accounts`).expect(401);
       await anonymous
         .post(`/api/spaces/${common}/accounts`)

@@ -18,6 +18,7 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
       NODE_ENV: 'test',
       DATABASE_PATH: ':memory:',
       FRONTEND_URL: 'http://localhost:3000',
+      AUTH_WEBHOOK_SECRET: 'test-webhook-secret',
     });
     delete process.env.PERSONAL_DATA_KEY;
     const moduleRef = await Test.createTestingModule({
@@ -35,7 +36,9 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
   });
 
   async function login(name: 'alice' | 'bob'): Promise<Agent> {
-    const agent = request.agent(app.getHttpServer());
+    const agent = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await agent.get(`/api/auth/dev-login?as=${name}`).expect(302);
     return agent;
   }
@@ -53,7 +56,10 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
   });
 
   it('exposes the auth mode and rejects unknown dev users', async () => {
-    const anonymous = request(app.getHttpServer());
+    // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+    const anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     const config = await anonymous.get('/api/auth/config').expect(200);
     expect(config.body).toEqual({ mode: 'dev', devUsers: ['alice', 'bob'] });
     await anonymous.get('/api/auth/dev-login?as=mallory').expect(404);
@@ -542,8 +548,31 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
       .expect(400);
   });
 
+  it('refuses a cookie-authenticated mutation coming from another site', async () => {
+    const alice = await login('alice');
+    // Un autre sous-domaine *.sloboda.fr : meme site, donc le cookie SameSite=Lax part.
+    await alice
+      .post('/api/household')
+      .set('Sec-Fetch-Site', 'same-site')
+      .send({ name: 'Piege' })
+      .expect(403);
+    await alice
+      .post('/api/auth/logout')
+      .set('Sec-Fetch-Site', 'cross-site')
+      .expect(403);
+  });
+
+  it('still accepts the server-to-server logout webhook (no browser headers)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/disconnect?secret=wrong')
+      .send({ userId: 'alice' })
+      .expect(401); // refuse par son secret, pas par le SameOriginGuard (403)
+  });
+
   it('refuses a user who has no household for household-scoped routes', async () => {
-    const agent = request.agent(app.getHttpServer());
+    const agent = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await agent.get('/api/auth/dev-login?as=alice').expect(302);
     // alice has one by now ; a fresh app instance would not. Check the guard on an anonymous call instead.
     await request(app.getHttpServer())

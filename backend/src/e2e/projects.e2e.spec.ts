@@ -40,9 +40,13 @@ describe('Savings projects API (tranche 6, end to end, AUTH_MODE=dev, in-memory 
     await app.init();
     dataSource = app.get(DataSource);
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
     const created = await alice
       .post('/api/household')
@@ -98,7 +102,10 @@ describe('Savings projects API (tranche 6, end to end, AUTH_MODE=dev, in-memory 
   let vacances: string;
 
   it('requires authentication on every route', async () => {
-    const anonymous = request(app.getHttpServer());
+    // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+    const anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     const base = `/api/spaces/${common}/projects`;
     await anonymous.get(base).expect(401);
     await anonymous.get(`${base}/summary`).expect(401);
