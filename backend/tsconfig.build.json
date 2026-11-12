@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": { "types": ["node", "multer"] },
   "exclude": [
     "node_modules",
     "test",
