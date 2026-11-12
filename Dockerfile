@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------- Frontend build ----------
-FROM node:20-bookworm-slim AS frontend-build
+FROM node:26-bookworm-slim AS frontend-build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY frontend/package.json frontend/package.json
@@ -11,7 +11,7 @@ COPY frontend frontend
 RUN npm run build --workspace=frontend
 
 # ---------- Backend build ----------
-FROM node:20-bookworm-slim AS backend-build
+FROM node:26-bookworm-slim AS backend-build
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -26,7 +26,7 @@ RUN npm run build --workspace=backend
 RUN npm prune --omit=dev
 
 # ---------- Runtime ----------
-FROM node:20-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 ARG TARGETARCH
 ARG LITESTREAM_VERSION=0.3.13
 ENV NODE_ENV=production
