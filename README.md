@@ -113,6 +113,21 @@ npm run dev:frontend   # Vite on :5173, proxies /api to :3000
 npm test               # backend + frontend (vitest)
 ```
 
+## Qualité du code
+
+Le lint est assuré par [Oxlint](https://oxc.rs/docs/guide/usage/linter) (avec les règles typées,
+`oxlint-tsgolint`) et le formatage par [Oxfmt](https://oxc.rs/docs/guide/usage/formatter), tous deux
+configurés à la racine (`.oxlintrc.json`, `.oxfmtrc.json`). Ni ESLint ni Prettier.
+
+```bash
+npm run lint           # Oxlint, règles typées comprises
+npm run format         # Oxfmt : reformate le code
+npm run format:check   # Oxfmt : vérifie sans écrire
+npm run typecheck      # tsc sur le backend et le frontend
+```
+
+La CI exécute `lint`, `format:check`, `typecheck`, les tests puis le build.
+
 ## Build & run with Docker
 
 ```bash
