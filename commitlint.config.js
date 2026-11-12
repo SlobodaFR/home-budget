@@ -14,6 +14,8 @@ module.exports = {
         'ci',
         'build',
         'perf',
+        // Commits de reformatage seul (convention oxc : reformatage dans un commit séparé).
+        'style',
       ],
     ],
   },
