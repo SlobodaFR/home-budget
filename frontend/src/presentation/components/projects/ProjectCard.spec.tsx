@@ -48,8 +48,8 @@ describe('ProjectStatusBadge', () => {
 
 describe('ProjectCard', () => {
   const renderCard = (props: Partial<Parameters<typeof ProjectCard>[0]> = {}) => {
-    const onOpen = vi.fn();
-    const onEdit = vi.fn();
+    const onOpen = vi.fn<() => void>();
+    const onEdit = vi.fn<() => void>();
     render(
       <ul>
         <ProjectCard project={project()} onOpen={onOpen} onEdit={onEdit} {...props} />

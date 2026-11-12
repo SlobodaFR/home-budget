@@ -1,14 +1,14 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { RecurringPayment } from '../../../domain/recurring';
+import { RecurringPayload, RecurringPayment } from '../../../domain/recurring';
 import { RecurringForm } from './RecurringForm';
 
 const NOW = () => new Date(2026, 9, 30, 9, 0, 0);
 
 function setup(props: Partial<Parameters<typeof RecurringForm>[0]> = {}) {
-  const onSubmit = vi.fn().mockResolvedValue(undefined);
-  render(<RecurringForm editing={null} allowAid={false} aidRules={null} onClose={vi.fn()} onSubmit={onSubmit} now={NOW} {...props} />);
+  const onSubmit = vi.fn<(payload: RecurringPayload) => Promise<void>>().mockResolvedValue(undefined);
+  render(<RecurringForm editing={null} allowAid={false} aidRules={null} onClose={vi.fn<() => void>()} onSubmit={onSubmit} now={NOW} {...props} />);
   return { onSubmit, user: userEvent.setup() };
 }
 

@@ -4,7 +4,7 @@ import { parseTrends } from '../../domain/trends';
 import { ApiError, NetworkError } from '../../infrastructure/api-client';
 import { renderInApp } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchTrends: vi.fn(), fetchAccounts: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchTrends: vi.fn<ApiMock<'fetchTrends'>>(), fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -12,10 +12,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { TendancesPage } from './TendancesPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
 

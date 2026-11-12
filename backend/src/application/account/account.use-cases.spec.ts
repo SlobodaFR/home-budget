@@ -438,8 +438,10 @@ describe('attaching operations, recurring items and imports to accounts', () => 
       ).accountId,
     ).toBeNull();
     const listed = await s.listTx.execute('alice', s.commonId, '2026-11');
-    expect(listed.map((t) => t.accountId).sort()).toEqual(
-      [a.id, null, null].sort(),
+    const byId = (x: string | null, y: string | null) =>
+      String(x).localeCompare(String(y));
+    expect(listed.map((t) => t.accountId).sort(byId)).toEqual(
+      [a.id, null, null].sort(byId),
     );
     expect(
       (await s.createRec.execute('alice', s.commonId, rent(a.id))).accountId,

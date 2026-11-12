@@ -6,7 +6,7 @@ import {
   InMemoryDebtRepository,
   InMemoryHouseholdRepository,
   InMemoryRecurringItemRepository,
-  InMemoryUserRepository,
+  InMemoryUserRepository,InMemoryAccountRepository
 } from '../../testing/in-memory-repositories';
 import { AccountAssignmentService } from '../account/account-assignment.service';
 import { CreateHouseholdUseCase } from '../household/create-household.use-case';
@@ -26,7 +26,6 @@ import {
   UpdateDebtUseCase,
 } from './debt.use-cases';
 import { DebtViewsService } from './debt-views.service';
-import { InMemoryAccountRepository } from '../../testing/in-memory-repositories';
 
 async function setup() {
   const households = new InMemoryHouseholdRepository();

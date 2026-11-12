@@ -7,13 +7,13 @@ import { SpaceProvider } from '../../application/use-space';
 import { Contribution, Household } from '../../domain/household';
 
 const api = vi.hoisted(() => ({
-  fetchContribution: vi.fn(),
-  updateMyIncome: vi.fn(),
-  updateContributionMode: vi.fn(),
-  createInvitation: vi.fn(),
-  fetchSafetyNet: vi.fn(),
-  fetchContributionStatus: vi.fn(),
-  saveSafetyNet: vi.fn(),
+  fetchContribution: vi.fn<ApiMock<'fetchContribution'>>(),
+  updateMyIncome: vi.fn<ApiMock<'updateMyIncome'>>(),
+  updateContributionMode: vi.fn<ApiMock<'updateContributionMode'>>(),
+  createInvitation: vi.fn<ApiMock<'createInvitation'>>(),
+  fetchSafetyNet: vi.fn<ApiMock<'fetchSafetyNet'>>(),
+  fetchContributionStatus: vi.fn<ApiMock<'fetchContributionStatus'>>(),
+  saveSafetyNet: vi.fn<ApiMock<'saveSafetyNet'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -22,10 +22,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { FoyerPage } from './FoyerPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const household: Household = {
   id: 'h1',
@@ -60,14 +61,14 @@ const shareLines = () =>
     .filter((text) => /verse .* il lui reste/.test(text));
 
 function renderPage(overrides: Partial<Household> = {}) {
-  const reload = vi.fn().mockResolvedValue(undefined);
+  const reload = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
   const value: HouseholdContextValue = {
     household: { ...household, ...overrides },
     loading: false,
     offline: false,
     failed: false,
     reload,
-    setHousehold: vi.fn(),
+    setHousehold: vi.fn<() => void>(),
   };
   render(
     <MemoryRouter>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { BottomSheet } from './BottomSheet';
 
-function Host({ onClose = vi.fn() }: { onClose?: () => void }) {
+function Host({ onClose = vi.fn<() => void>() }: { onClose?: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -57,7 +57,7 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
 
   it('closes with Escape', async () => {
     const user = userEvent.setup();
-    const onClose = vi.fn();
+    const onClose = vi.fn<() => void>();
     render(<Host onClose={onClose} />);
     await user.click(screen.getByRole('button', { name: 'Ouvrir' }));
     await user.keyboard('{Escape}');
@@ -67,7 +67,7 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
 
   it('closes on a click on the dimmed background, but not on a click inside the dialog', async () => {
     const user = userEvent.setup();
-    const onClose = vi.fn();
+    const onClose = vi.fn<() => void>();
     render(<Host onClose={onClose} />);
     await user.click(screen.getByRole('button', { name: 'Ouvrir' }));
     await user.click(screen.getByRole('button', { name: 'Valider' }));
@@ -158,8 +158,8 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
 
   it('only the topmost of two stacked sheets reacts to Escape', async () => {
     const user = userEvent.setup();
-    const closeBottom = vi.fn();
-    const closeTop = vi.fn();
+    const closeBottom = vi.fn<() => void>();
+    const closeTop = vi.fn<() => void>();
     render(
       <>
         <BottomSheet title="Dessous" onClose={closeBottom}>

@@ -9,9 +9,9 @@ import { lifeEventCatalog } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchAidRules: vi.fn(),
-  fetchLifeEventCatalog: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchAidRules: vi.fn<ApiMock<'fetchAidRules'>>(),
+  fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -20,10 +20,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { AidePage } from './AidePage';
+import type { ApiMock } from '../../test/api-mock';
 
 const rule: AidRule = {
   id: 'CREDIT_IMPOT_GARDE_HORS_DOMICILE',
@@ -40,7 +41,7 @@ const rule: AidRule = {
 const renderPage = () => renderInApp(<AidePage />, { path: '/aide' });
 
 function renderWithoutHousehold() {
-  const value: HouseholdContextValue = { household: null, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+  const value: HouseholdContextValue = { household: null, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
   render(
     <MemoryRouter initialEntries={['/aide']}>
       <HouseholdContext.Provider value={value}>

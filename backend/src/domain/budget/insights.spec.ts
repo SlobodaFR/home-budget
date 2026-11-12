@@ -1858,7 +1858,7 @@ describe('buildInsights', () => {
       ]);
       const rank = { WARNING: 0, ACTION: 1, INFO: 2, GOOD: 3 };
       const ranks = insights.map((i) => rank[i.severity]);
-      expect([...ranks].sort()).toEqual(ranks);
+      expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
     });
 
     it('is deterministic', () => {

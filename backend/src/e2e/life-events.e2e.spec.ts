@@ -301,7 +301,7 @@ describe('Life events API (tranche 11, end to end, AUTH_MODE=dev, in-memory SQLi
     const statuses = event.steps.map((s) => s.status);
     const rank = ['OVERDUE', 'DUE_SOON', 'UPCOMING', 'NO_DATE', 'DONE'];
     expect(statuses.map((s) => rank.indexOf(s))).toEqual(
-      [...statuses.map((s) => rank.indexOf(s))].sort((a, b) => a - b),
+      statuses.map((s) => rank.indexOf(s)).sort((a, b) => a - b),
     );
 
     clock.set('2026-11-13T08:00:00Z');

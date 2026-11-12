@@ -3,11 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { account } from '../../test/fixtures';
 import { QuickEntrySheet } from './QuickEntrySheet';
+import type { TransactionPayload } from '../../domain/budget';
 
 const NOW = new Date(2026, 9, 20, 12, 0, 0);
 
-function setup(onSubmit = vi.fn().mockResolvedValue(undefined)) {
-  const onClose = vi.fn();
+function setup(onSubmit = vi.fn<(payload: TransactionPayload) => Promise<void>>().mockResolvedValue(undefined)) {
+  const onClose = vi.fn<() => void>();
   render(<QuickEntrySheet defaultBloc="COURANT" onClose={onClose} onSubmit={onSubmit} now={() => NOW} />);
   return { onSubmit, onClose, user: userEvent.setup() };
 }
@@ -75,7 +76,7 @@ describe('QuickEntrySheet', () => {
   });
 
   it('does not send twice when the button is tapped repeatedly', async () => {
-    const onSubmit = vi.fn(() => new Promise<void>(() => undefined));
+    const onSubmit = vi.fn<(payload: TransactionPayload) => Promise<void>>(() => new Promise<void>(() => undefined));
     const { user } = setup(onSubmit);
     await user.type(screen.getByLabelText('Montant'), '8');
     const button = screen.getByRole('button', { name: 'Ajouter la dépense' });
@@ -85,7 +86,7 @@ describe('QuickEntrySheet', () => {
   });
 
   it('shows the error returned by the submission and allows another try', async () => {
-    const onSubmit = vi.fn().mockRejectedValueOnce(new Error('Pas de connexion')).mockResolvedValueOnce(undefined);
+    const onSubmit = vi.fn<(payload: TransactionPayload) => Promise<void>>().mockRejectedValueOnce(new Error('Pas de connexion')).mockResolvedValueOnce(undefined);
     const { user } = setup(onSubmit);
     await user.type(screen.getByLabelText('Montant'), '8');
     await user.click(screen.getByRole('button', { name: 'Ajouter la dépense' }));
@@ -99,8 +100,8 @@ describe('QuickEntrySheet', () => {
       <QuickEntrySheet
         defaultBloc="COURANT"
         editing={{ id: 't1', spaceId: 's1', kind: 'EXPENSE', bloc: 'EPARGNE', label: 'Livret', amountCents: 5050, date: '2026-10-05T08:00:00.000Z' }}
-        onClose={vi.fn()}
-        onSubmit={vi.fn()}
+        onClose={vi.fn<() => void>()}
+        onSubmit={vi.fn<(payload: TransactionPayload) => Promise<void>>()}
       />,
     );
     expect(screen.getByLabelText('Montant')).toHaveValue('50,50');
@@ -116,21 +117,21 @@ describe('QuickEntrySheet', () => {
       account({ id: 'a3', name: 'Ancien compte', archived: true }),
     ];
     const setupWithAccounts = (props: Partial<React.ComponentProps<typeof QuickEntrySheet>> = {}) => {
-      const onSubmit = vi.fn().mockResolvedValue(undefined);
-      render(<QuickEntrySheet defaultBloc="COURANT" accounts={accounts} onClose={vi.fn()} onSubmit={onSubmit} now={() => NOW} {...props} />);
+      const onSubmit = vi.fn<(payload: TransactionPayload) => Promise<void>>().mockResolvedValue(undefined);
+      render(<QuickEntrySheet defaultBloc="COURANT" accounts={accounts} onClose={vi.fn<() => void>()} onSubmit={onSubmit} now={() => NOW} {...props} />);
       return { onSubmit, user: userEvent.setup() };
     };
 
     it('shows no selector when the space has no account, or only archived ones', () => {
       setup();
       expect(screen.queryByLabelText(/Compte/)).not.toBeInTheDocument();
-      render(<QuickEntrySheet defaultBloc="COURANT" accounts={[accounts[2]]} onClose={vi.fn()} onSubmit={vi.fn()} />);
+      render(<QuickEntrySheet defaultBloc="COURANT" accounts={[accounts[2]]} onClose={vi.fn<() => void>()} onSubmit={vi.fn<(payload: TransactionPayload) => Promise<void>>()} />);
       expect(screen.queryByLabelText(/Compte \(facultatif\)/)).not.toBeInTheDocument();
     });
 
     it('offers « Aucun » first, then the non archived accounts, with none selected by default', () => {
       setupWithAccounts();
-      const select = screen.getByLabelText('Compte (facultatif)') as HTMLSelectElement;
+      const select = screen.getByLabelText<HTMLSelectElement>('Compte (facultatif)');
       expect(select).toHaveValue('');
       expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Aucun', 'Compte commun', 'Livret A']);
     });
@@ -174,15 +175,15 @@ describe('QuickEntrySheet', () => {
     it('still lists the archived account of an edited operation, labelled', () => {
       const editing = { id: 't1', spaceId: 's1', kind: 'EXPENSE' as const, bloc: 'COURANT' as const, label: 'Courses', amountCents: 4200, date: '2026-10-05T08:00:00.000Z', accountId: 'a3' };
       setupWithAccounts({ editing });
-      const select = screen.getByLabelText('Compte (facultatif)') as HTMLSelectElement;
+      const select = screen.getByLabelText<HTMLSelectElement>('Compte (facultatif)');
       expect(select).toHaveValue('a3');
       expect(Array.from(select.options).map((option) => option.textContent)).toContain('Ancien compte (archivé)');
     });
 
     it('does not detach an edited operation from its account when the accounts could not be loaded', async () => {
       const editing = { id: 't1', spaceId: 's1', kind: 'EXPENSE' as const, bloc: 'COURANT' as const, label: 'Courses', amountCents: 4200, date: '2026-10-05T08:00:00.000Z', accountId: 'a2' };
-      const onSubmit = vi.fn().mockResolvedValue(undefined);
-      render(<QuickEntrySheet defaultBloc="COURANT" editing={editing} onClose={vi.fn()} onSubmit={onSubmit} />);
+      const onSubmit = vi.fn<(payload: TransactionPayload) => Promise<void>>().mockResolvedValue(undefined);
+      render(<QuickEntrySheet defaultBloc="COURANT" editing={editing} onClose={vi.fn<() => void>()} onSubmit={onSubmit} />);
       expect(screen.queryByLabelText(/Compte/)).not.toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
       expect(onSubmit.mock.calls[0][0].accountId).toBe('a2');

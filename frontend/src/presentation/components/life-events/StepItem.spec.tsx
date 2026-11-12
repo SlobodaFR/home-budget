@@ -8,7 +8,7 @@ import { StepItem } from './StepItem';
 type Props = Parameters<typeof StepItem>[0];
 
 function renderStep(overrides: Partial<Props> = {}) {
-  const props: Props = { step: lifeEventStep(), saving: false, onToggle: vi.fn(), onSaveNote: vi.fn().mockResolvedValue(undefined), ...overrides };
+  const props: Props = { step: lifeEventStep(), saving: false, onToggle: vi.fn<() => void>(), onSaveNote: vi.fn<(note: string) => Promise<void>>().mockResolvedValue(undefined), ...overrides };
   render(
     <MemoryRouter>
       <ul>
@@ -191,7 +191,7 @@ describe('StepItem', () => {
     });
 
     it('keeps the typed note, and says why, when saving fails', async () => {
-      const { user } = await openNote({ onSaveNote: vi.fn().mockRejectedValue(new Error('Pas de connexion : votre note reste ici.')) });
+      const { user } = await openNote({ onSaveNote: vi.fn<(note: string) => Promise<void>>().mockRejectedValue(new Error('Pas de connexion : votre note reste ici.')) });
       await user.type(screen.getByRole('textbox'), 'Ma saisie importante');
       await user.click(screen.getByRole('button', { name: 'Enregistrer la note' }));
       expect(await screen.findByRole('alert')).toHaveTextContent('Pas de connexion : votre note reste ici.');

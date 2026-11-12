@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, NetworkError } from './api-client';
 
 const respond = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
-  vi.fn().mockResolvedValue(new Response(status === 204 ? null : typeof body === 'string' ? body : JSON.stringify(body), { status, headers }));
+  vi.fn<typeof fetch>().mockResolvedValue(new Response(status === 204 ? null : typeof body === 'string' ? body : JSON.stringify(body), { status, headers }));
 
 describe('apiClient reviews', () => {
   beforeEach(() => {
@@ -61,7 +61,7 @@ const readBlobAsText = (blob: Blob): Promise<string> =>
     ? blob.text()
     : new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
+        reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
         reader.onerror = () => reject(reader.error);
         reader.readAsText(blob);
       });

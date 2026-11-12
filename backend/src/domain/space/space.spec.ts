@@ -35,7 +35,7 @@ describe('Space visibility', () => {
         ownerUserId: null,
         name: 'x',
       }),
-    ).toThrow();
+    ).toThrow('proprietaire');
     expect(() =>
       Space.create({
         id: 'x',
@@ -44,6 +44,6 @@ describe('Space visibility', () => {
         ownerUserId: 'a',
         name: 'x',
       }),
-    ).toThrow();
+    ).toThrow('pas de proprietaire');
   });
 });

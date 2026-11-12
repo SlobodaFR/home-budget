@@ -2,8 +2,9 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../infrastructure/api-client';
 import { useProjectDeposits } from './use-project-deposits';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchDeposits: vi.fn(), createDeposit: vi.fn(), deleteDeposit: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchDeposits: vi.fn<ApiMock<'fetchDeposits'>>(), createDeposit: vi.fn<ApiMock<'createDeposit'>>(), deleteDeposit: vi.fn<ApiMock<'deleteDeposit'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -13,7 +14,7 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 const deposits = [{ id: 'd1', date: '2026-11-15', amountCents: 20000, note: 'Prime' }];
 
 describe('useProjectDeposits', () => {
-  const onChanged = vi.fn();
+  const onChanged = vi.fn<() => void>();
 
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset());

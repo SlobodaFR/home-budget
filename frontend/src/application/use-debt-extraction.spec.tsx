@@ -5,10 +5,10 @@ import { ApiError, NetworkError } from '../infrastructure/api-client';
 import { rawExtractionJob, rawExtractionResult } from '../test/fixtures';
 
 const api = vi.hoisted(() => ({
-  fetchDebtExtractionCapabilities: vi.fn(),
-  startDebtExtraction: vi.fn(),
-  fetchDebtExtraction: vi.fn(),
-  deleteDebtExtraction: vi.fn(),
+  fetchDebtExtractionCapabilities: vi.fn<ApiMock<'fetchDebtExtractionCapabilities'>>(),
+  startDebtExtraction: vi.fn<ApiMock<'startDebtExtraction'>>(),
+  fetchDebtExtraction: vi.fn<ApiMock<'fetchDebtExtraction'>>(),
+  deleteDebtExtraction: vi.fn<ApiMock<'deleteDebtExtraction'>>(),
 }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
@@ -17,6 +17,7 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 import { useDebtExtraction, useExtractionCapabilities } from './use-debt-extraction';
+import type { ApiMock } from '../test/api-mock';
 
 const file = new File(['%PDF-1.4'], 'contrat.pdf', { type: 'application/pdf' });
 const job = (raw: Record<string, unknown>) => {

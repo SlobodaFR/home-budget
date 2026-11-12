@@ -38,8 +38,8 @@ export function renderInApp(page: ReactElement, { path = '/', month = '2026-11',
     loading: false,
     offline: false,
     failed: false,
-    reload: vi.fn(),
-    setHousehold: vi.fn(),
+    reload: vi.fn<() => Promise<void>>(),
+    setHousehold: vi.fn<() => void>(),
   };
   render(
     <MemoryRouter initialEntries={[path]}>

@@ -72,7 +72,7 @@ describe('parseMonth', () => {
   });
 
   it('rejects malformed months', () => {
-    expect(() => parseMonth('2026-13')).toThrow();
-    expect(() => parseMonth('26-10')).toThrow();
+    expect(() => parseMonth('2026-13')).toThrow('Mois invalide');
+    expect(() => parseMonth('26-10')).toThrow('Mois invalide');
   });
 });

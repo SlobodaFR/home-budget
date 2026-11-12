@@ -95,7 +95,7 @@ describe('filterSections', () => {
     expect(filterSections(sections, 'taxe fonciere')[0]?.entries.map((item) => item.id)).toEqual(['provisions']);
     expect(filterSections(sections, 'documentation')[0]?.entries.map((item) => item.id)).toEqual(['export']);
     expect(filterSections(sections, 'lisser')[0]?.entries.map((item) => item.id)).toEqual(['provisions']);
-    const withSource: HelpSection[] = [{ ...sections[0]!, entries: [entry({ id: 's', title: 'Règle', source: { label: 'impots.gouv.fr', url: null, verifiedOn: null } })] }];
+    const withSource: HelpSection[] = [{ ...sections[0], entries: [entry({ id: 's', title: 'Règle', source: { label: 'impots.gouv.fr', url: null, verifiedOn: null } })] }];
     expect(filterSections(withSource, 'impots').map((section) => section.id)).toEqual(['guide']);
   });
 
@@ -117,8 +117,8 @@ describe('filterSections', () => {
 
 describe('entryMatches / countEntries', () => {
   it('uses the section title as context', () => {
-    expect(entryMatches(sections[1]!, sections[1]!.entries[1]!, 'mes donnees')).toBe(true);
-    expect(entryMatches(sections[0]!, sections[0]!.entries[1]!, 'mes donnees')).toBe(false);
+    expect(entryMatches(sections[1], sections[1].entries[1], 'mes donnees')).toBe(true);
+    expect(entryMatches(sections[0], sections[0].entries[1], 'mes donnees')).toBe(false);
   });
 
   it('counts entries across sections', () => {
@@ -210,7 +210,7 @@ describe('server rules as help entries', () => {
   });
 
   it('adds live entries in front of the « sources » section only', () => {
-    const base: HelpSection[] = [sections[0]!, { id: 'regles', kind: 'sources', title: 'Règles', summary: '.', entries: [entry({ id: 'static', title: 'Statique' })] }];
+    const base: HelpSection[] = [sections[0], { id: 'regles', kind: 'sources', title: 'Règles', summary: '.', entries: [entry({ id: 'static', title: 'Statique' })] }];
     const merged = withLiveSources(base, [aidRuleToHelpEntry(rule)]);
     expect(merged[0]).toBe(base[0]);
     expect(merged[1]?.entries.map((item) => item.id)).toEqual(['regle-CREDIT', 'static']);

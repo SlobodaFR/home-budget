@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../infrastructure/api-client';
 import { project } from '../test/fixtures';
 import { useProjects, useProjectsSummary } from './use-projects';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchProjects: vi.fn(), fetchProjectsSummary: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchProjects: vi.fn<ApiMock<'fetchProjects'>>(), fetchProjectsSummary: vi.fn<ApiMock<'fetchProjectsSummary'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),

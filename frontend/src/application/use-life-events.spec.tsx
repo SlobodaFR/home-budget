@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../infrastructure/api-client';
 import { lifeEvent, lifeEventCatalog } from '../test/fixtures';
 import { useLifeEventCatalog, useLifeEvents } from './use-life-events';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchLifeEvents: vi.fn(), fetchLifeEventCatalog: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchLifeEvents: vi.fn<ApiMock<'fetchLifeEvents'>>(), fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),

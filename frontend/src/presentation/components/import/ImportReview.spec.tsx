@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -6,8 +7,8 @@ import { previewRow } from '../../../test/fixtures';
 import { ImportReview } from './ImportReview';
 
 function setup(preview: ImportPreview, props: { submitting?: boolean; error?: string | null } = {}) {
-  const onSubmit = vi.fn();
-  const onBack = vi.fn();
+  const onSubmit = vi.fn<ComponentProps<typeof ImportReview>['onSubmit']>();
+  const onBack = vi.fn<() => void>();
   render(<ImportReview preview={preview} submitting={props.submitting ?? false} error={props.error ?? null} onSubmit={onSubmit} onBack={onBack} />);
   return { onSubmit, onBack, user: userEvent.setup() };
 }

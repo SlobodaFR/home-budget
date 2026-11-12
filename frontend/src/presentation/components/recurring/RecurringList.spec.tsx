@@ -18,7 +18,7 @@ const base: RecurringPayment = {
 };
 
 const renderList = (items: RecurringPayment[]) =>
-  render(<RecurringList items={items} aidRules={null} busy={false} onAdd={vi.fn()} onEdit={vi.fn()} onToggle={vi.fn()} onDelete={vi.fn()} />);
+  render(<RecurringList items={items} aidRules={null} busy={false} onAdd={vi.fn<() => void>()} onEdit={vi.fn<() => void>()} onToggle={vi.fn<() => void>()} onDelete={vi.fn<(item: RecurringPayment) => Promise<void>>()} />);
 
 describe('RecurringList periodicity', () => {
   it('says « Tous les ans en octobre » and « Tous les 3 mois à partir de novembre »', () => {

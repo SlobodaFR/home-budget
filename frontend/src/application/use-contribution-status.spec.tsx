@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../infrastructure/api-client';
 import { account } from '../test/fixtures';
 import { describePaymentError, useContributionPayment, useContributionStatus, useSpaceAccounts } from './use-contribution-status';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchContributionStatus: vi.fn(), createContributionPayment: vi.fn(), fetchAccounts: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchContributionStatus: vi.fn<ApiMock<'fetchContributionStatus'>>(), createContributionPayment: vi.fn<ApiMock<'createContributionPayment'>>(), fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),

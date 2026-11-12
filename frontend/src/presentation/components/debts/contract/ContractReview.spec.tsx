@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { parseExtractionResult } from '../../../../domain/debt-extraction';
@@ -11,8 +12,8 @@ function setup(raw: Record<string, unknown> = rawExtractionResult()) {
   if (!result) {
     throw new Error('résultat illisible');
   }
-  const onApply = vi.fn();
-  const onCancel = vi.fn();
+  const onApply = vi.fn<ComponentProps<typeof ContractReview>['onApply']>();
+  const onCancel = vi.fn<() => void>();
   render(<ContractReview result={result} onApply={onApply} onCancel={onCancel} />);
   return { onApply, onCancel };
 }

@@ -5,10 +5,10 @@ import { lifeEventCatalog } from '../test/fixtures';
 import { testHousehold } from '../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchHousehold: vi.fn(),
-  fetchAccounts: vi.fn(),
-  fetchAidRules: vi.fn(),
-  fetchLifeEventCatalog: vi.fn(),
+  fetchHousehold: vi.fn<ApiMock<'fetchHousehold'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  fetchAidRules: vi.fn<ApiMock<'fetchAidRules'>>(),
+  fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>(),
 }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
@@ -17,10 +17,11 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('./auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import App from './App';
+import type { ApiMock } from '../test/api-mock';
 
 const renderApp = (path = '/aide') =>
   render(

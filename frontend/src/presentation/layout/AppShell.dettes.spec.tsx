@@ -9,7 +9,7 @@ import { SpaceProvider } from '../../application/use-space';
 import { debt, debtsSummary } from '../../test/fixtures';
 import { testHousehold } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn(), fetchDebts: vi.fn(), fetchDebtsSummary: vi.fn(), fetchRecurring: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(), fetchDebts: vi.fn<ApiMock<'fetchDebts'>>(), fetchDebtsSummary: vi.fn<ApiMock<'fetchDebtsSummary'>>(), fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -17,11 +17,12 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { DettesPage } from '../pages/DettesPage';
 import { AppShell } from './AppShell';
+import type { ApiMock } from '../../test/api-mock';
 
 describe('AppShell on the credits page', () => {
   beforeEach(() => {
@@ -32,7 +33,7 @@ describe('AppShell on the credits page', () => {
   });
 
   it('lets you switch space, adds no fifth tab and keeps « Accueil » highlighted', async () => {
-    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
     render(
       <MemoryRouter initialEntries={['/dettes']}>
         <HouseholdContext.Provider value={value}>

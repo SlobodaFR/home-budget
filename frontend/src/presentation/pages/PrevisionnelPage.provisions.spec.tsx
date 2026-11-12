@@ -8,16 +8,16 @@ import { ApiError, NetworkError } from '../../infrastructure/api-client';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchForecast: vi.fn(),
-  fetchRecurring: vi.fn(),
-  createRecurring: vi.fn(),
-  updateRecurring: vi.fn(),
-  deleteRecurring: vi.fn(),
-  fetchAidRules: vi.fn(),
-  fetchAccounts: vi.fn(),
-  fetchProvisions: vi.fn(),
-  fetchYearForecast: vi.fn(),
-  createTransaction: vi.fn(),
+  fetchForecast: vi.fn<ApiMock<'fetchForecast'>>(),
+  fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>(),
+  createRecurring: vi.fn<ApiMock<'createRecurring'>>(),
+  updateRecurring: vi.fn<ApiMock<'updateRecurring'>>(),
+  deleteRecurring: vi.fn<ApiMock<'deleteRecurring'>>(),
+  fetchAidRules: vi.fn<ApiMock<'fetchAidRules'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  fetchProvisions: vi.fn<ApiMock<'fetchProvisions'>>(),
+  fetchYearForecast: vi.fn<ApiMock<'fetchYearForecast'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -26,10 +26,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { PrevisionnelPage } from './PrevisionnelPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const forecast: Forecast = {
   month: '2026-11',
@@ -367,7 +368,7 @@ describe('PrevisionnelPage tabs', () => {
     });
 
     it('does not break on a response without frequency fields or odd months', async () => {
-      api.fetchYearForecast.mockResolvedValue({ year: 2026, months: [{ month: '2026-01' }] } as unknown as YearForecast);
+      api.fetchYearForecast.mockResolvedValue({ year: 2026, months: [{ month: '2026-01' }] });
       renderPage('/previsionnel?vue=annee');
       expect(await screen.findByRole('region', { name: 'Mois par mois' })).toBeInTheDocument();
     });

@@ -443,7 +443,7 @@ describe('safety net and insights use cases', () => {
       monthlyBasisCents: 275000,
       coveredMonths: 2.5,
     });
-    expect(progress.detail).toContain(`(2${'\u00a0'}750${'\u00a0'}€ par mois)`);
+    expect(progress.detail).toContain(`(2\u00a0750\u00a0€ par mois)`);
   });
 
   it('falls back to the 3-month real average of essential spending when the plan is empty', async () => {

@@ -26,7 +26,7 @@ function setup() {
   const extractor = new FakeDocumentTextExtractor();
   const clock = FakeClock.at('2026-10-31T10:00:00Z');
   const access = {
-    requireSpace: vi.fn().mockResolvedValue({}),
+    requireSpace: vi.fn<() => Promise<object>>().mockResolvedValue({}),
   } as unknown as SpaceAccessService & { requireSpace: Mock };
   const jobs = new DebtExtractionJobs(extractor, access, clock);
   return { extractor, clock, access, jobs };

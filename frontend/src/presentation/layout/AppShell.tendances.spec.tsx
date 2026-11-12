@@ -9,7 +9,7 @@ import { SpaceProvider } from '../../application/use-space';
 import { parseTrends } from '../../domain/trends';
 import { testHousehold } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn(), fetchTrends: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(), fetchTrends: vi.fn<ApiMock<'fetchTrends'>>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -17,11 +17,12 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { TendancesPage } from '../pages/TendancesPage';
 import { AppShell } from './AppShell';
+import type { ApiMock } from '../../test/api-mock';
 
 describe('AppShell on the trends page', () => {
   beforeEach(() => {
@@ -30,7 +31,7 @@ describe('AppShell on the trends page', () => {
   });
 
   it('lets you switch space, adds no fifth tab and keeps « Accueil » highlighted', async () => {
-    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
     render(
       <MemoryRouter initialEntries={['/tendances']}>
         <HouseholdContext.Provider value={value}>

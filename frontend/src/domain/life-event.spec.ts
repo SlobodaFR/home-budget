@@ -287,9 +287,7 @@ describe('buildLifeEventPayload', () => {
     expect(buildLifeEventPayload({ eventDate: '2028-04-30', label: '' }, { now: NOW }).ok).toBe(true);
     const tooOld = buildLifeEventPayload({ eventDate: '2024-10-29', label: '' }, { now: NOW });
     expect(tooOld.ok).toBe(false);
-    if (!tooOld.ok) {
-      expect(tooOld.errors.eventDate).toContain('entre le 30 octobre 2024 et le 30 avril 2028');
-    }
+    expect(tooOld.ok ? undefined : tooOld.errors.eventDate).toContain('entre le 30 octobre 2024 et le 30 avril 2028');
     expect(buildLifeEventPayload({ eventDate: '2028-05-01', label: '' }, { now: NOW }).ok).toBe(false);
   });
 
@@ -298,9 +296,7 @@ describe('buildLifeEventPayload', () => {
     expect(missing).toEqual({ ok: false, errors: { eventDate: 'Indiquez la date de naissance (prévue ou réelle).' } });
     const impossible = buildLifeEventPayload({ eventDate: '2026-02-31', label: '' }, { now: NOW });
     expect(impossible.ok).toBe(false);
-    if (!impossible.ok) {
-      expect(impossible.errors.eventDate).toContain('pas valide');
-    }
+    expect(impossible.ok ? undefined : impossible.errors.eventDate).toContain('pas valide');
   });
 
   it('limits the label to 60 characters, 60 being fine', () => {
@@ -312,9 +308,7 @@ describe('buildLifeEventPayload', () => {
   it('requires a label when editing (the server refuses an empty one) and reports both errors at once', () => {
     const result = buildLifeEventPayload({ eventDate: '', label: ' ' }, { now: NOW, labelRequired: true });
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(Object.keys(result.errors).sort()).toEqual(['eventDate', 'label']);
-    }
+    expect(result.ok ? [] : Object.keys(result.errors).sort()).toEqual(['eventDate', 'label']);
     expect(buildLifeEventPayload({ eventDate: '2026-11-12', label: 'Bébé' }, { now: NOW, labelRequired: true })).toEqual({ ok: true, payload: { eventDate: '2026-11-12', label: 'Bébé' } });
   });
 });

@@ -18,7 +18,7 @@ describe('Money', () => {
   });
 
   it('rejects non-integer cents', () => {
-    expect(() => Money.fromCents(10.5)).toThrow();
+    expect(() => Money.fromCents(10.5)).toThrow('integer amount of cents');
   });
 
   it('exposes euros representation', () => {

@@ -2,9 +2,10 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../infrastructure/api-client';
 import { describeExportError, useExport } from './use-export';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ downloadExport: vi.fn(), downloadTransactionsCsv: vi.fn() }));
-const files = vi.hoisted(() => ({ saveFile: vi.fn() }));
+const api = vi.hoisted(() => ({ downloadExport: vi.fn<ApiMock<'downloadExport'>>(), downloadTransactionsCsv: vi.fn<ApiMock<'downloadTransactionsCsv'>>() }));
+const files = vi.hoisted(() => ({ saveFile: vi.fn<() => void>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),

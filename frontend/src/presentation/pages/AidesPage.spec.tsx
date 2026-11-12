@@ -5,12 +5,12 @@ import { ApiError } from '../../infrastructure/api-client';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchAids: vi.fn(),
-  fetchFiscalProfile: vi.fn(),
-  saveFiscalProfile: vi.fn(),
-  fetchCrecheEstimate: vi.fn(),
-  createTransaction: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchAids: vi.fn<ApiMock<'fetchAids'>>(),
+  fetchFiscalProfile: vi.fn<ApiMock<'fetchFiscalProfile'>>(),
+  saveFiscalProfile: vi.fn<ApiMock<'saveFiscalProfile'>>(),
+  fetchCrecheEstimate: vi.fn<ApiMock<'fetchCrecheEstimate'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -19,10 +19,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { AidesPage } from './AidesPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const aids: AidsSummary = {
   year: 2026,
