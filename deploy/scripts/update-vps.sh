@@ -65,19 +65,37 @@ docker compose pull
 # L'image tourne en utilisateur `node` (uid 1000) : le volume de donnees doit lui appartenir. Un volume cree
 # du temps ou l'image tournait en root reste a root ; on le rend a l'uid 1000, conteneur arrete pour qu'aucun
 # fichier root n'y soit cree entre-temps. Idempotent : sans effet si le volume appartient deja a 1000.
-DATA_VOLUME="${COMPOSE_PROJECT}_budget-data"
-if docker volume inspect "$DATA_VOLUME" >/dev/null 2>&1; then
+# Les commandes passent par l'image qu'on vient de tirer (aucune dependance a Docker Hub) et le volume est
+# retrouve par ses labels compose, comme compose lui-meme.
+DATA_VOLUME=$(docker volume ls -q \
+  --filter "label=com.docker.compose.project=$COMPOSE_PROJECT" \
+  --filter "label=com.docker.compose.volume=budget-data")
+if [ -z "$DATA_VOLUME" ] && [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT")" ]; then
+  echo "Conteneur $COMPOSE_PROJECT present mais volume budget-data introuvable : deploiement interrompu." >&2
+  exit 1
+fi
+CHOWN_FAILED=
+if [ -n "$DATA_VOLUME" ]; then
+  as_root() {
+    entrypoint="$1"
+    shift
+    docker run --rm --user 0 --entrypoint "$entrypoint" -v "$DATA_VOLUME":/app/backend/data "$IMAGE:$IMAGE_TAG" "$@"
+  }
   # Premier fichier n'appartenant pas a l'uid 1000 ; si la verification echoue, on corrige quand meme.
-  NOT_OWNED=$(docker run --rm -v "$DATA_VOLUME":/data alpine sh -c 'find /data ! -user 1000 | head -n 1') \
-    || NOT_OWNED=unknown
+  NOT_OWNED=$(as_root find /app/backend/data ! -user 1000 -print -quit) || NOT_OWNED=unknown
   if [ -n "$NOT_OWNED" ]; then
     echo "Volume $DATA_VOLUME : passage a l'uid 1000"
     docker compose stop
-    docker run --rm -v "$DATA_VOLUME":/data alpine chown -R 1000:1000 /data
+    as_root chown -R 1000:1000 /app/backend/data || CHOWN_FAILED=1
   fi
 fi
 
 docker compose up -d --remove-orphans
+# Le service est relance dans tous les cas ; un echec du chown fait quand meme echouer le deploiement.
+if [ -n "$CHOWN_FAILED" ]; then
+  echo "Echec du passage du volume $DATA_VOLUME a l'uid 1000 : verifier les droits." >&2
+  exit 1
+fi
 
 # Après le déploiement : on ne garde que la courante + les précédentes.
 cleanup_docker "$KEEP_VERSIONS"
