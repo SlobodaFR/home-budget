@@ -128,6 +128,13 @@ npm run typecheck      # tsc sur le backend et le frontend
 
 La CI exécute `lint`, `format:check`, `typecheck`, les tests puis le build.
 
+Hooks Git (Husky, installés par `npm install`) :
+
+- `commit-msg` : commitlint, [commits conventionnels](https://www.conventionalcommits.org/fr/)
+  (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `build`, `perf`) ;
+- `pre-commit` : Oxfmt sur les fichiers indexés (lint-staged) ;
+- `pre-push` : `npm run lint` puis `npm test` (bloquant).
+
 ## Build & run with Docker
 
 ```bash
