@@ -9,8 +9,5 @@ export function configureApp(app: NestExpressApplication): void {
   app.useBodyParser('json', { limit: '1mb' });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
-  app.enableCors({
-    origin: process.env.FRONTEND_URL ?? true,
-    credentials: true,
-  });
+  // Pas de CORS : le front est servi par la meme origine (et par le proxy Vite en dev).
 }

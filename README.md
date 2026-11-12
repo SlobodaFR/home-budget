@@ -78,7 +78,7 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 | `AUTH_CLIENT_ID` | oui | - | Identifiant client OAuth2 enregistre aupres d'auth-service. |
 | `AUTH_CLIENT_SECRET` | oui | - | Secret client OAuth2 correspondant. |
 | `AUTH_WEBHOOK_SECRET` | oui | - | Secret partage pour le webhook `POST /api/auth/internal/session-revoked`. |
-| `FRONTEND_URL` | non | `http://localhost:3000` | Base URL du frontend, utilisee pour le `redirect_uri` OAuth2 et la config CORS. |
+| `FRONTEND_URL` | non | `http://localhost:3000` | Base URL du frontend, utilisee pour le `redirect_uri` OAuth2 et la redirection apres connexion. |
 | `DATABASE_PATH` | non | - | Chemin du fichier SQLite. |
 | `NODE_ENV` | non | - | `production` active le flag `secure` sur le cookie de session. |
 | `PORT` | non | `3000` | Port d'ecoute du serveur. |
