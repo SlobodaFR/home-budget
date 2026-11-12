@@ -48,7 +48,10 @@ COPY --from=backend-build /app/backend/package.json backend/package.json
 COPY backend/litestream.yml backend/litestream.yml
 COPY backend/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && mkdir -p /app/backend/data
+    && mkdir -p /app/backend/data \
+    && chown node:node /app/backend/data
+# Utilisateur non root (uid 1000) : le volume de donnees lui appartient (cf. deploy/scripts/update-vps.sh).
+USER node
 VOLUME ["/app/backend/data"]
 WORKDIR /app/backend
 EXPOSE 3000
