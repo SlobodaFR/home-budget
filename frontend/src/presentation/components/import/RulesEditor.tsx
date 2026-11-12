@@ -167,7 +167,7 @@ export function RulesEditor({ spaceId }: { spaceId: string }) {
       </form>
 
       {saveError && <ErrorNotice message={saveError} />}
-      <button type="button" disabled={!dirty || saving || !online} onClick={handleSave} className={buttonPrimary}>
+      <button type="button" disabled={!dirty || saving || !online} onClick={() => void handleSave()} className={buttonPrimary}>
         {saving ? 'Enregistrement…' : 'Enregistrer les règles'}
       </button>
       {!online && <p className="font-body-sm text-body-sm text-mute">Hors ligne : l’enregistrement des règles attend le réseau.</p>}

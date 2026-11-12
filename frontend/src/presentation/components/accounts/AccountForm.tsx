@@ -64,7 +64,7 @@ export function AccountForm({ editing, existing, onClose, onSubmit, now = () => 
 
   return (
     <BottomSheet title={editing ? 'Modifier le compte' : 'Nouveau compte'} onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
         <div>
           <label htmlFor="account-name" className={labelClass}>
             Nom du compte

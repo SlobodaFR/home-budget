@@ -16,7 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    apiClient
+    void apiClient
       .fetchCurrentUser()
       .then((current) => {
         if (current) {

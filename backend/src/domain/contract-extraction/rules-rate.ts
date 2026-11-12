@@ -16,6 +16,7 @@ import {
   valuePosition,
 } from './rules-common';
 import { PercentValue, scanPercent } from './scanners';
+import { at } from '../shared/at';
 
 export interface RuleResult {
   fields: ExtractedField[];
@@ -268,7 +269,7 @@ export function extractRateType(lines: readonly Line[]): RuleResult {
     if (!match) {
       return;
     }
-    const word = match[1] ?? match[2];
+    const word = at(match, 1) ?? match[2];
     const kind = kindOf(word);
     if (!kind) {
       return;

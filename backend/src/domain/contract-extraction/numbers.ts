@@ -1,3 +1,5 @@
+import { at } from '../shared/at';
+
 /**
  * Lecture des nombres d'un contrat français, tout en entiers (aucun flottant) :
  * « 150 000,00 € », « 150.000 euros », « 3,45 % ». Les confusions classiques de
@@ -181,7 +183,7 @@ export function parsePercent(raw: string): PercentParse {
   if (!match) {
     return null;
   }
-  let fraction = (match[2] ?? '').replace(/0+$/, '');
+  let fraction = (at(match, 2) ?? '').replace(/0+$/, '');
   if (fraction.length > 2) {
     return 'TOO_PRECISE';
   }

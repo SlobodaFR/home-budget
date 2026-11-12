@@ -3,6 +3,7 @@ import { Bloc } from '../shared/bloc';
 import { DomainError } from '../shared/domain-error';
 import { roundDivSigned } from '../shared/rounding';
 import { Transaction } from '../transaction/transaction';
+import { at } from '../shared/at';
 
 export const MIN_TREND_MONTHS = 3;
 export const MAX_TREND_MONTHS = 24;
@@ -295,6 +296,6 @@ export function findSpendingRiser(
   if (span < MIN_RISER_MONTHS) {
     return null;
   }
-  const [top] = buildTrends(toMonth, span, inWindow).risers;
+  const top = at(buildTrends(toMonth, span, inWindow).risers, 0);
   return top && top.deltaCents >= SPENDING_RISER_MIN_DELTA_CENTS ? top : null;
 }

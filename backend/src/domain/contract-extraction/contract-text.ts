@@ -20,7 +20,7 @@ const SPACES = new RegExp('[\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]', 'g');
 const APOSTROPHES = new RegExp('[\\u2019\\u2018\\u02BC\\u00B4`\\u2032]', 'g');
 const QUOTES = new RegExp('[\\u201C\\u201D\\u201E]', 'g');
 const DASHES = new RegExp('[\\u2013\\u2014\\u2212\\u2012]', 'g');
-// eslint-disable-next-line no-control-regex -- on retire justement les caractères de contrôle
+// oxlint-disable-next-line no-control-regex -- on retire justement les caractères de contrôle
 const CONTROLS = new RegExp('[\\u0000-\\u0009\\u000B-\\u001F\\u007F]', 'g');
 
 /** Normalise un texte brut (PDF ou OCR) : espaces insécables et fines, apostrophes, tirets, ligatures. */

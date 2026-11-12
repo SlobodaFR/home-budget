@@ -158,7 +158,7 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
       }
     },
     // `scheduleNext` et `poll` se référencent l'un l'autre : on passe par la ref ci-dessous.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps -- `scheduleNext` et `poll` se référencent l'un l'autre via la ref ci-dessus
     [deleteJob, fail],
   );
 
@@ -208,7 +208,7 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
         },
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps -- `scheduleNext` est recréée à chaque rendu et n'est lue qu'à l'appel : l'inclure referait `start` à chaque rendu
     [spaceId, clearTimer, fail],
   );
 

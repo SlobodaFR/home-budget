@@ -77,7 +77,7 @@ export class AesGcmFieldCipher extends FieldCipher {
   }
 
   decrypt(ownerUserId: string, aad: string, token: string): string {
-    const [version, iv, tag, encrypted] = token.split('.');
+    const [version, iv, tag, encrypted] = token.split('.') as (string | undefined)[];
     if (version !== VERSION || !iv || !tag || encrypted === undefined) {
       throw new Error('Format de donnee chiffree inconnu');
     }

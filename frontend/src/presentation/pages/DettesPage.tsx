@@ -161,7 +161,7 @@ export function DettesPage() {
           busy={actions.busy}
           onClose={closeSheet}
           onEdit={(target) => setSheet({ type: 'form', editing: target })}
-          onToggleArchive={handleToggleArchive}
+          onToggleArchive={(item) => void handleToggleArchive(item)}
           onDelete={handleDelete}
         />
       )}

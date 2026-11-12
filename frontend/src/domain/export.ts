@@ -63,10 +63,12 @@ export const backupFilename = (now: Date = new Date()): string => `budget-export
 
 export const csvFilename = (range: ExportRange): string => `operations-${range.from}_${range.to}.csv`;
 
+// oxlint-disable-next-line no-control-regex -- on retire justement les caractères de contrôle des noms de fichier
+const FORBIDDEN_FILENAME_CHARS = /[\u0000-\u001f\u007f"<>:*?|]/g;
+
 /** Retire tout ce qui pourrait sortir du dossier de téléchargement ou casser un nom de fichier. */
 export function sanitizeFilename(name: string): string {
-  // eslint-disable-next-line no-control-regex
-  const cleaned = name.replace(/[\u0000-\u001f\u007f"<>:*?|]/g, '').replace(/^.*[\\/]/, '').trim().replace(/^\.+/, '');
+  const cleaned = name.replace(FORBIDDEN_FILENAME_CHARS, '').replace(/^.*[\\/]/, '').trim().replace(/^\.+/, '');
   return cleaned.slice(0, 120);
 }
 

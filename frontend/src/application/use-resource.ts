@@ -37,7 +37,7 @@ export function useResource<T>(load: () => Promise<T>, deps: readonly unknown[],
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps -- `load` change à chaque rendu : la clé sérialisée de `deps` en tient lieu
   }, [key, nonce, refreshToken]);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);

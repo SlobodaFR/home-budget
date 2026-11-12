@@ -91,13 +91,15 @@ function Row({
             <button
               type="button"
               disabled={busy}
-              onClick={async () => {
-                try {
-                  await onDelete(item);
-                } finally {
-                  setConfirming(false);
-                }
-              }}
+              onClick={() =>
+                void (async () => {
+                  try {
+                    await onDelete(item);
+                  } finally {
+                    setConfirming(false);
+                  }
+                })()
+              }
               className="min-h-[44px] rounded-full bg-error px-lg font-button-md text-body-sm font-semibold text-white disabled:opacity-40"
             >
               Supprimer

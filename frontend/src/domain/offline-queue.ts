@@ -53,7 +53,7 @@ function isPendingTransaction(value: unknown): value is PendingTransaction {
     return false;
   }
   const item = value as Record<string, unknown>;
-  const payload = item.payload as Record<string, unknown> | undefined;
+  const payload = item.payload as Record<string, unknown> | null | undefined;
   return (
     typeof item.clientId === 'string' &&
     typeof item.spaceId === 'string' &&

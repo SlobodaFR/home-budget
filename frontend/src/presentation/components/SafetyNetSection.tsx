@@ -90,7 +90,7 @@ function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null;
   );
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+    <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
       <div>
         <label htmlFor="safety-saved" className={labelClass}>
           Montant épargné

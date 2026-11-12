@@ -81,7 +81,7 @@ export function ContributionPaymentSheet({ month, member, commonSpaceId, persona
 
   return (
     <BottomSheet title="Verser ma contribution" onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
         <p className="font-body-md text-body-md">
           Contribution au commun pour <span className="font-semibold">{monthLabel}</span>.
           {member?.remainingCents ? ` Il vous reste ${formatCentsShort(member.remainingCents)} à verser.` : ''}

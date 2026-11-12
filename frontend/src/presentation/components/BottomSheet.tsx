@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { CloseIcon } from './Icons';
 
 interface Props {
@@ -39,12 +39,12 @@ function focusableIn(root: HTMLElement): HTMLElement[] {
 export function BottomSheet({ title, onClose, children }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
   // L'élément qui avait le focus avant l'ouverture, lu pendant le rendu : un `autoFocus` du contenu le déplace dès le montage.
-  const triggerRef = useRef<Element | null | undefined>(undefined);
-  if (triggerRef.current === undefined) {
-    triggerRef.current = typeof document === 'undefined' ? null : document.activeElement;
-  }
+  const [openerAtMount] = useState<Element | null>(() => (typeof document === 'undefined' ? null : document.activeElement));
+  const triggerRef = useRef<Element | null>(openerAtMount);
 
   useEffect(() => {
     const dialog = dialogRef.current;

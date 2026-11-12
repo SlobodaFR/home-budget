@@ -109,7 +109,7 @@ export function parseContributionReport(raw: unknown, fallbackMonth: string): Co
       }
     }
   }
-  const incomplete = source.incomplete === true || (members.length > 0 && members.some((member) => member.expectedCents === null));
+  const incomplete = source.incomplete === true || members.some((member) => member.expectedCents === null);
   return {
     month: typeof source.month === 'string' && isMonth(source.month) ? source.month : fallbackMonth,
     incomplete,

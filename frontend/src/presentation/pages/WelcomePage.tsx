@@ -112,7 +112,7 @@ export function WelcomePage() {
       )}
 
       {mode === 'create' && (
-        <form onSubmit={handleCreate} noValidate className="flex flex-col gap-lg">
+        <form onSubmit={(event) => void handleCreate(event)} noValidate className="flex flex-col gap-lg">
           <div>
             <label htmlFor="household-name" className={labelClass}>
               Nom du foyer
@@ -144,7 +144,7 @@ export function WelcomePage() {
       )}
 
       {mode === 'join' && (
-        <form onSubmit={handleJoin} noValidate className="flex flex-col gap-lg">
+        <form onSubmit={(event) => void handleJoin(event)} noValidate className="flex flex-col gap-lg">
           <div>
             <label htmlFor="invitation-code" className={labelClass}>
               Code d’invitation

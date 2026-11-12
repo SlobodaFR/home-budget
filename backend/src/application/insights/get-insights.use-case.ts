@@ -13,7 +13,7 @@ import {
   SPENDING_RISER_WINDOW_MONTHS,
 } from '../../domain/trend/trends';
 import { buildProvisions } from '../../domain/budget/provisions';
-import { parseMonth } from '../../domain/budget/month';
+import { parseMonth,currentMonth } from '../../domain/budget/month';
 import { summarizeMonth } from '../../domain/budget/month-summary';
 import { RecurringItemRepository } from '../../domain/recurring/recurring-item.repository';
 import { SafetyNetRepository } from '../../domain/safety-net/safety-net.repository';
@@ -23,7 +23,6 @@ import { SpacePlanRepository } from '../../domain/space/space-plan.repository';
 import { TransactionRepository } from '../../domain/transaction/transaction.repository';
 import { SpaceAccessService } from '../household/space-access.service';
 import { MonthReviewRepository } from '../../domain/review/month-review.repository';
-import { currentMonth } from '../../domain/budget/month';
 import { previousMonth } from '../../domain/shared/format';
 import { summarizeDebts, isActiveDebt } from '../../domain/debt/debt-view';
 import { DebtViewsService } from '../debt/debt-views.service';

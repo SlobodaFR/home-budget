@@ -124,7 +124,7 @@ export function ProjectForm({ editing, accounts = [], onClose, onSubmit, now = (
 
   return (
     <BottomSheet title={editing ? 'Modifier le projet' : 'Nouveau projet'} onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
         {!editing && (
           <button
             type="button"

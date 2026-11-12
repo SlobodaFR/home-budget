@@ -147,7 +147,7 @@ export function PrevisionnelPage() {
                     busy={recurring.saving}
                     onAdd={() => setSheet({ editing: null })}
                     onEdit={(item) => setSheet({ editing: item })}
-                    onToggle={handleToggle}
+                    onToggle={(item, active) => void handleToggle(item, active)}
                     onDelete={handleDelete}
                   />
                 ) : offline ? null : recurring.error ? (

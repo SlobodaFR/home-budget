@@ -8,7 +8,7 @@ interface Props {
   onChange: (target: ImportTarget) => void;
 }
 
-const ARROW_STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+const ARROW_STEP: Partial<Record<string, number>> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 
 export function TargetChips({ label, value, onChange }: Props) {
   const tabStop = value ?? IMPORT_TARGETS[0];
@@ -19,7 +19,7 @@ export function TargetChips({ label, value, onChange }: Props) {
       return;
     }
     event.preventDefault();
-    const current = IMPORT_TARGETS.indexOf((value ?? IMPORT_TARGETS[0]) as ImportTarget);
+    const current = IMPORT_TARGETS.indexOf(value ?? IMPORT_TARGETS[0]);
     const next = IMPORT_TARGETS[(current + step + IMPORT_TARGETS.length) % IMPORT_TARGETS.length];
     onChange(next);
     const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]');

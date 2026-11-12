@@ -213,7 +213,7 @@ export class DebtExtractionJobs implements OnModuleInit, OnModuleDestroy {
   /** Retire les extractions expirées et les entrées de quota de plus d'une heure. */
   purgeExpired(): void {
     const now = this.clock.now().getTime();
-    for (const job of [...this.jobs.values()]) {
+    for (const job of this.jobs.values()) {
       if (job.expiresAt <= now) {
         this.remove(job);
         this.logger.log(`job=${job.id} expiré`);
