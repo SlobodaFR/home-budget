@@ -1,6 +1,7 @@
 import { parseMasterKey } from '../infrastructure/crypto/aes-gcm-field-cipher';
 
 const AUTH_MODES = ['oauth', 'dev'];
+const MIN_SECRET_BYTES = 32;
 
 /**
  * Validation de l'environnement au demarrage, avant que l'app ne serve quoi que ce soit.
@@ -27,6 +28,11 @@ export function validateEnv(env: Record<string, string | undefined>): void {
     if (!env[variable]?.trim())
       throw new Error(`${variable} est obligatoire en production`);
   assertMasterKey(env.PERSONAL_DATA_KEY);
+  // Sans lui, les logs et la telemetrie perdraient l'utilisateur sans le moindre signal.
+  if (Buffer.byteLength(env.PSEUDONYM_SECRET ?? '', 'utf8') < MIN_SECRET_BYTES)
+    throw new Error(
+      `PSEUDONYM_SECRET doit faire au moins ${MIN_SECRET_BYTES} octets en production (openssl rand -hex 32)`,
+    );
 }
 
 function assertHttpsUrl(value: string | undefined, variable: string): void {
