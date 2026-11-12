@@ -68,7 +68,7 @@ export function StepNote({ note, onSave }: Props) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-sm">
+    <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-sm">
       <label htmlFor={`${id}-note`} className={labelClass}>
         Ma note (facultatif)
       </label>

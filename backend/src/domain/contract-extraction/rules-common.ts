@@ -7,6 +7,7 @@ import {
   confidenceRank,
 } from './extraction.types';
 import { NumberToken, numberTokens } from './numbers';
+import { at } from '../shared/at';
 
 /** Valeur lue dans une ligne, à des positions précises de `line.text`. */
 export interface Scanned<V> {
@@ -92,7 +93,7 @@ export function valueAfter<V>(
     };
   }
   const restOfLine = hit.line.text.slice(hit.end);
-  const next = lines[hit.lineIndex + 1];
+  const next = at(lines, hit.lineIndex + 1);
   if (
     next &&
     !next.virtual &&
@@ -137,7 +138,7 @@ export function firstToken(
   limit: number,
 ): NumberToken | null {
   const tokens = numberTokens(line.text, from);
-  const first = tokens[0];
+  const first = at(tokens, 0);
   return first && first.start < limit ? first : null;
 }
 

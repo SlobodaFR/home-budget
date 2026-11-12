@@ -87,7 +87,7 @@ export function QuickEntrySheet({
 
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
         <div role="group" aria-label="Type d’opération" className="grid grid-cols-2 rounded-full bg-soft-cloud p-1">
           {KINDS.map((option) => (
             <button

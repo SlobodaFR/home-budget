@@ -64,7 +64,7 @@ export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Da
   const withdraw = values.mode === 'WITHDRAW';
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label="Nouveau versement" className="flex flex-col gap-lg rounded bg-soft-cloud p-md">
+    <form onSubmit={(event) => void handleSubmit(event)} noValidate aria-label="Nouveau versement" className="flex flex-col gap-lg rounded bg-soft-cloud p-md">
       <div role="group" aria-label="Sens du mouvement" className="grid grid-cols-2 rounded-full bg-white p-1">
         {MODES.map((mode) => (
           <button

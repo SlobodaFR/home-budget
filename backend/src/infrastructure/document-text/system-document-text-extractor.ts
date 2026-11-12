@@ -188,9 +188,9 @@ export class SystemDocumentTextExtractor extends DocumentTextExtractor {
   ): Promise<DocumentText> {
     // Délai global : un seul contrôleur d'annulation pour l'appelant et pour le délai.
     const controller = new AbortController();
-    let timedOut = false;
+    const timeout = { fired: false };
     const total = setTimeout(() => {
-      timedOut = true;
+      timeout.fired = true;
       controller.abort();
     }, this.config.totalTimeoutMs);
     total.unref();
@@ -208,7 +208,7 @@ export class SystemDocumentTextExtractor extends DocumentTextExtractor {
         this.config.tempRoot,
       );
     } catch (error) {
-      if (timedOut) {
+      if (timeout.fired) {
         throw new DocumentExtractionError(
           'Le traitement du document a pris trop de temps : essayez avec un document plus court ou un scan moins lourd.',
         );

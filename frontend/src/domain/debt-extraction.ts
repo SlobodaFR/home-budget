@@ -174,6 +174,11 @@ export function parseExtractionStart(raw: unknown): ExtractionStart | null {
 }
 
 /** Le texte de la valeur est-il du bon type pour ce champ ? Une valeur de mauvais type est écartée, jamais convertie. */
+/** Libellé d'une valeur brute venue de l'extraction : la valeur elle-même quand elle n'est pas dans le catalogue. */
+function labelOr(value: string, labels: Readonly<Partial<Record<string, string>>>): string {
+  return labels[value] ?? value;
+}
+
 function readValue(field: ExtractionFieldKey, raw: unknown): string | number | null {
   if (TEXT_FIELDS.includes(field)) {
     return asText(raw, 200);
@@ -326,11 +331,11 @@ export function formatExtractedValue(item: Pick<ExtractedField, 'field' | 'value
   }
   switch (field) {
     case 'rateType':
-      return RATE_TYPE_LABEL[value as RateType] ?? value;
+      return labelOr(value, RATE_TYPE_LABEL);
     case 'insuranceMode':
-      return INSURANCE_MODE_LABEL[value as InsuranceMode] ?? value;
+      return labelOr(value, INSURANCE_MODE_LABEL);
     case 'guaranteeKind':
-      return GUARANTEE_KIND_LABEL[value as GuaranteeKind] ?? value;
+      return labelOr(value, GUARANTEE_KIND_LABEL);
     case 'startDate':
       return formatLongDateInput(value);
     default:

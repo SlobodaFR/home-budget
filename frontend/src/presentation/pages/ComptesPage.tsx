@@ -63,7 +63,7 @@ export function ComptesPage() {
       account={account}
       busy={actions.busy}
       onEdit={(target) => setSheet({ editing: target })}
-      onToggleArchive={handleToggleArchive}
+      onToggleArchive={(item) => void handleToggleArchive(item)}
       onDelete={handleDelete}
     />
   );

@@ -58,7 +58,8 @@ export class RecurringItem {
     if (props.amount.toCents() <= 0) {
       throw new DomainError('Le montant doit être strictement positif');
     }
-    if (props.kind !== 'INCOME' && props.kind !== 'EXPENSE') {
+    const kind: string = props.kind; // valeur non fiable venue d'un appelant : on revalide à l'exécution.
+    if (kind !== 'INCOME' && kind !== 'EXPENSE') {
       throw new DomainError('Type invalide : INCOME ou EXPENSE');
     }
     if (props.kind === 'EXPENSE' && !isBloc(props.bloc)) {

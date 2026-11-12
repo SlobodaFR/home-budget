@@ -63,7 +63,7 @@ export function FiscalProfileForm({ initial, saving, onSave }: Props) {
   );
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+    <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
       {numberField(
         'childrenUnderSix',
         'Enfants de moins de 6 ans',

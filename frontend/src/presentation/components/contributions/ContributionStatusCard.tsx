@@ -117,7 +117,9 @@ export function ContributionStatusCard({ now = () => new Date() }: { now?: () =>
     if (!wantsPayment || handled.current) {
       return;
     }
-    ref.current?.scrollIntoView?.({ block: 'start' });
+    if (typeof ref.current?.scrollIntoView === 'function') {
+      ref.current.scrollIntoView({ block: 'start' });
+    }
     if (report) {
       handled.current = true;
       if (me && needsPayment(me) && common) {

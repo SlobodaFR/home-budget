@@ -31,7 +31,7 @@ export function IncomeForm({ currentCents, onSave }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-md">
+    <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-md">
       <div>
         <label htmlFor="my-income" className="sr-only">
           Revenu net mensuel

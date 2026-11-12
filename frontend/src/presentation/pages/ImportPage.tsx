@@ -64,12 +64,15 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
   const submittingRef = useRef(false);
   const analyzingRef = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const reviewKey = useRef(0);
+  const [reviewKey, setReviewKey] = useState(0);
   const step = preview ? 2 : 1;
 
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
-    headingRef.current?.closest('main')?.scrollTo?.({ top: 0 });
+    const main = headingRef.current?.closest('main');
+    if (typeof main?.scrollTo === 'function') {
+      main.scrollTo({ top: 0 });
+    }
   }, [step]);
 
   const analyze = async () => {
@@ -86,7 +89,7 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
     setAnalyzeError(null);
     try {
       const result = await apiClient.previewImport(spaceId, text, accountId);
-      reviewKey.current += 1;
+      setReviewKey((key) => key + 1);
       setSubmitError(null);
       setPreview(result);
     } catch (error) {
@@ -177,11 +180,11 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
 
       {preview ? (
         <ImportReview
-          key={reviewKey.current}
+          key={reviewKey}
           preview={preview}
           submitting={submitting}
           error={submitError}
-          onSubmit={submit}
+          onSubmit={(event) => void submit(event)}
           onBack={() => setPreview(null)}
         />
       ) : (
@@ -204,7 +207,7 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
                   analyzing={analyzing}
                   error={analyzeError}
                   onTextChange={setText}
-                  onAnalyze={analyze}
+                  onAnalyze={() => void analyze()}
                 />
               </>
             }

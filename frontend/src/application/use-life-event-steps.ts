@@ -65,7 +65,7 @@ export function useLifeEventSteps(source: LifeEvent[] | undefined, onSettled: ()
         onSettled();
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps -- `findStep` ne lit que des refs (état courant) : l'inclure referait le callback à chaque rendu
     [track, onSettled, now],
   );
 
@@ -82,7 +82,7 @@ export function useLifeEventSteps(source: LifeEvent[] | undefined, onSettled: ()
         onSettled();
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps -- `findStep` ne lit que des refs (état courant) : l'inclure referait le callback à chaque rendu
     [track, onSettled, now],
   );
 

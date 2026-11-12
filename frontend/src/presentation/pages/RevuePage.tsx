@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { describeError, isOfflineError } from '../../application/error-message';
 import { useOnlineStatus } from '../../application/use-online-status';
 import { describeReviewSaveError, useReview, useReviewActions, useReviewHistory } from '../../application/use-review';
@@ -29,11 +29,11 @@ export function RevuePage() {
   const { space, kind } = useSpace();
   const toast = useToast();
   const online = useOnlineStatus();
-  const now = useMemo(() => new Date(), []);
+  const [now] = useState(() => new Date());
   const [version, setVersion] = useState(0);
   const [month, setMonth] = useState<string | null>(null);
   /** Textes en cours de saisie, par espace et par mois : changer de mois puis revenir ne fait rien perdre. */
-  const drafts = useRef(new Map<string, ReviewAnswers>());
+  const [drafts] = useState(() => new Map<string, ReviewAnswers>());
   const refresh = useCallback(() => setVersion((value) => value + 1), []);
 
   const history = useReviewHistory(space.id, version);
@@ -97,9 +97,9 @@ export function RevuePage() {
       <ReviewForm
         key={draftKey}
         review={data}
-        initialValues={drafts.current.get(draftKey) ?? reviewToForm(data)}
+        initialValues={drafts.get(draftKey) ?? reviewToForm(data)}
         offline={!online}
-        onChange={(values) => drafts.current.set(draftKey, values)}
+        onChange={(values) => drafts.set(draftKey, values)}
         onSave={(payload) => handleSave(payload, data.status === 'DONE')}
       />
     </section>

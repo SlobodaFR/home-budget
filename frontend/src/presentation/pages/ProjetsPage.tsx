@@ -165,7 +165,7 @@ export function ProjetsPage() {
           busy={actions.busy}
           onClose={closeSheet}
           onEdit={(target) => setSheet({ type: 'form', editing: target })}
-          onToggleArchive={handleToggleArchive}
+          onToggleArchive={(item) => void handleToggleArchive(item)}
           onDelete={handleDelete}
           onChanged={refresh}
           onNotify={(message, tone) => toast.show(message, tone)}

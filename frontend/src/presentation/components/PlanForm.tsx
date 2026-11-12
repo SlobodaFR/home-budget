@@ -134,7 +134,7 @@ export function PlanForm({ initial, saving, isCommon, onSave }: Props) {
   );
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-8">
+    <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-8">
       <div className="flex flex-col gap-lg">
         {isCommon && (
           <p className="rounded bg-soft-cloud p-md font-body-sm text-body-sm">

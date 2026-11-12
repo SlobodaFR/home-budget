@@ -84,7 +84,7 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
 
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
         <div>
           <label htmlFor="life-event-date" className={labelClass}>
             Date de naissance (prévue ou réelle)

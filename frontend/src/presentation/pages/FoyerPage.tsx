@@ -90,7 +90,7 @@ export function FoyerPage() {
 
       <Section title="Règle de contribution">
         <p className="font-body-sm text-body-sm text-mute">Comment chacun finance l’espace commun.</p>
-        <ContributionRule mode={household.contributionMode} disabled={savingMode} onChange={changeMode} />
+        <ContributionRule mode={household.contributionMode} disabled={savingMode} onChange={(mode) => void changeMode(mode)} />
       </Section>
 
       <Section title="Aperçu des parts">

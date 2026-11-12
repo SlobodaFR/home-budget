@@ -75,8 +75,8 @@ interface CachedSession {
 export const sessionCache = {
   load(): CachedSession | null {
     try {
-      const parsed = JSON.parse(read('session') ?? 'null') as CachedSession | null;
-      return parsed?.user?.id ? parsed : null;
+      const parsed = JSON.parse(read('session') ?? 'null') as { user?: { id?: string } | null } | null;
+      return parsed?.user?.id ? (parsed as CachedSession) : null;
     } catch {
       return null;
     }

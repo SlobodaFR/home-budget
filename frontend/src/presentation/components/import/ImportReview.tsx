@@ -26,7 +26,10 @@ interface Props {
 function scrollToFirstUnclassified(rows: readonly PreviewRow[], isUnclassified: (row: PreviewRow) => boolean) {
   const target = rows.find(isUnclassified);
   if (target) {
-    document.getElementById(`import-row-${target.index}`)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    const row = document.getElementById(`import-row-${target.index}`);
+    if (typeof row?.scrollIntoView === 'function') {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 }
 

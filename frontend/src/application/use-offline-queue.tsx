@@ -44,7 +44,7 @@ async function sendPending(item: PendingTransaction): Promise<SendOutcome> {
 }
 
 async function withFlushLock(task: () => Promise<void>): Promise<void> {
-  if (typeof navigator !== 'undefined' && navigator.locks) {
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
     await navigator.locks.request('foyer-budget-flush', task);
   } else {
     await task();

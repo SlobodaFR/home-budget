@@ -16,6 +16,7 @@ import {
   valuePosition,
 } from './rules-common';
 import { RuleResult } from './rules-rate';
+import { at } from '../shared/at';
 
 // ---------------------------------------------------------------------------
 // Durée (en mois)
@@ -43,7 +44,7 @@ const ALT_RE = new RegExp(
 );
 
 function isYears(unit: string): boolean {
-  return /^an/.test(unit);
+  return unit.startsWith('an');
 }
 
 const scanDuration: Scanner<DurationValue> = (line, from, limit) => {
@@ -267,7 +268,7 @@ const scanDate: Scanner<string> = (line, from, limit) => {
     }
   }
   found.sort((a, b) => a.index - b.index);
-  const first = found[0];
+  const first = at(found, 0);
   if (!first) {
     return null;
   }

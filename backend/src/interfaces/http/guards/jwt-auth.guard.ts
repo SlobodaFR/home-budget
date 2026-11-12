@@ -6,21 +6,23 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { AccessTokenVerifier } from '../../../domain/auth/access-token-verifier';
 import { OAuthClient } from '../../../domain/auth/oauth-client';
 import { RevokedSessionRepository } from '../../../domain/auth/revoked-session.repository';
 import { setAuthCookies } from '../auth-cookies';
-import { CurrentUserPayload } from '../decorators/current-user.decorator';
+import {
+  ACCESS_TOKEN_COOKIE_NAME,
+  AuthenticatedRequest,
+  REFRESH_TOKEN_COOKIE_NAME,
+} from '../auth-session';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
-export const ACCESS_TOKEN_COOKIE_NAME = 'access_token';
-export const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
-
-export interface AuthenticatedRequest extends Request {
-  cookies: Record<string, string | undefined>;
-  user?: CurrentUserPayload;
-}
+export {
+  ACCESS_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_COOKIE_NAME,
+} from '../auth-session';
+export type { AuthenticatedRequest } from '../auth-session';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {

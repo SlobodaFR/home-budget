@@ -102,7 +102,7 @@ export function AccountCard({ account, busy, onEdit, onToggleArchive, onDelete }
             <button
               type="button"
               disabled={busy}
-              onClick={confirmDelete}
+              onClick={() => void confirmDelete()}
               className="min-h-[44px] rounded-full bg-error px-lg font-button-md text-body-sm font-semibold text-white disabled:opacity-40"
             >
               Supprimer

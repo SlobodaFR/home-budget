@@ -16,6 +16,7 @@ import {
   valuePosition,
 } from './rules-common';
 import { RuleResult } from './rules-rate';
+import { at } from '../shared/at';
 
 // ---------------------------------------------------------------------------
 // Prêteur
@@ -133,7 +134,7 @@ const scanLenderName: Scanner<string> = (line, from, limit) => {
 
 function nearAccountInfo(lines: readonly Line[], index: number): boolean {
   for (let d = -2; d <= 2; d++) {
-    const line = lines[index + d];
+    const line = at(lines, index + d);
     if (
       line &&
       /\biban\b|\brib\b|\bbic\b|domicili|compte\s+(?:bancaire|a\s+debiter|courant)|prelevement/.test(
@@ -287,8 +288,8 @@ function lenderFromDefinition(lines: readonly Line[]): Candidate<string>[] {
     // Début de la phrase : on remonte (3 lignes au plus) jusqu'à une ligne qui suit un « : » ou un « . ».
     let startIndex = index;
     for (let back = 0; back <= 3; back++) {
-      const candidate = real[index - back];
-      const before = real[index - back - 1];
+      const candidate = at(real, index - back);
+      const before = at(real, index - back - 1);
       if (!candidate || candidate.page !== line.page) {
         break;
       }

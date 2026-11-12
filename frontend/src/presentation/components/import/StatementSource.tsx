@@ -63,7 +63,7 @@ export function StatementSource({ text, online, analyzing, error, onTextChange, 
         <label className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-sm rounded-full border border-hairline px-xl font-button-md text-button-md hover:bg-soft-cloud focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink">
           <UploadIcon width={20} height={20} />
           Choisir un fichier
-          <input type="file" accept=".csv,.txt,text/csv,text/plain" onChange={handleFile} className="sr-only" aria-label="Fichier du relevé" />
+          <input type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(event) => void handleFile(event)} className="sr-only" aria-label="Fichier du relevé" />
         </label>
         {loaded && (
           <p role="status" className="mt-sm font-body-sm text-body-sm text-mute">

@@ -202,7 +202,7 @@ export function findSimilarUnclassified(
 export function collectLearnedRules(
   rows: readonly PreviewRow[],
   choices: Choices,
-  learn: Readonly<Record<number, string>>,
+  learn: Readonly<Partial<Record<number, string>>>,
 ): LearnedRule[] {
   const learned: LearnedRule[] = [];
   for (const row of rows) {

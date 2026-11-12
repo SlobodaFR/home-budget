@@ -21,6 +21,7 @@ import {
 } from './rules-common';
 import { RuleResult } from './rules-rate';
 import { AmountValue, PercentValue, scanAmount, scanPercent } from './scanners';
+import { at } from '../shared/at';
 
 interface LabelSpec {
   pattern: RegExp;
@@ -206,7 +207,7 @@ export function extractInsuranceMonthly(lines: readonly Line[]): RuleResult {
   ).filter((candidate) => candidate.value > 0);
   // « Échéance avec assurance : … » n'est pas le coût de l'assurance.
   const retained = candidates.filter((candidate) => {
-    const line = lines[candidate.order];
+    const line = at(lines, candidate.order);
     return (
       !line ||
       !/(?:mensualite|echeance|remboursement)s?[^:;\d]{0,50}\bassurance/.test(
@@ -383,7 +384,7 @@ function locateBase(
     }
   }
   for (const { index, distance } of around) {
-    const line = lines[index];
+    const line = at(lines, index);
     if (!line || line.virtual || line.page !== page) {
       continue;
     }
@@ -696,7 +697,7 @@ export function extractGuarantee(lines: readonly Line[]): RuleResult {
     if (line.virtual || NO_GUARANTEE.test(line.fold)) {
       return;
     }
-    const previous = lines[lineIndex - 1];
+    const previous = at(lines, lineIndex - 1);
     for (const { kind, pattern } of GUARANTEE_KEYWORDS) {
       const match = pattern.exec(line.fold);
       if (!match) {

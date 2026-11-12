@@ -29,7 +29,6 @@ import {
   RATE_TYPES,
   rateTypeWarning,
   REMAINING_HELP,
-  TermUnit,
 } from '../../../domain/debt';
 import {
   applyExtractedFields,
@@ -70,13 +69,13 @@ interface Props {
 
 export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClose, onSubmit, now = () => new Date() }: Props) {
   const [values, setValues] = useState(() => (editing ? debtToForm(editing) : emptyDebtForm(now())));
-  const initialValues = useRef(values);
+  const [initialValues] = useState(values);
   const [view, setView] = useState<'form' | 'import'>('form');
   const [marks, setMarks] = useState<PrefillMarks>({});
   const [prefillReport, setPrefillReport] = useState<PrefillReport | null>(null);
   const capabilities = useExtractionCapabilities(Boolean(spaceId) && !editing);
   // Le bouton d'import n'apparaît que sur un formulaire encore vierge : il n'écrase jamais ce qui a été saisi.
-  const canImport = capabilities !== null && spaceId !== undefined && isFormUntouched(values, initialValues.current);
+  const canImport = capabilities !== null && spaceId !== undefined && isFormUntouched(values, initialValues);
   const [errors, setErrors] = useState<DebtFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -143,7 +142,7 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
 
   return (
     <BottomSheet title={editing ? 'Modifier le crédit' : 'Nouveau crédit'} onClose={onClose}>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-lg">
+      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
         {prefillReport && (
           <section role="status" aria-label="Résultat de l’import du contrat" className="flex flex-col gap-sm rounded border border-plaisir/60 bg-plaisir/10 p-md font-body-sm text-body-sm">
             <p>{prefillReport.message}</p>
@@ -343,7 +342,7 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                 key={unit}
                 type="button"
                 aria-pressed={values.termUnit === unit}
-                onClick={() => set('termUnit', unit as TermUnit)}
+                onClick={() => set('termUnit', unit)}
                 className={`flex min-h-[48px] items-center justify-center rounded-full border-2 px-sm font-button-md text-body-sm font-semibold leading-tight ${
                   values.termUnit === unit ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
                 }`}

@@ -57,7 +57,7 @@ export function TransactionRow({ transaction, accountName = null, onEdit, onDele
             </button>
             <button
               type="button"
-              onClick={confirmDelete}
+              onClick={() => void confirmDelete()}
               disabled={busy}
               className="min-h-[44px] rounded-full bg-error px-lg font-button-md text-body-sm font-semibold text-white disabled:opacity-40"
             >
