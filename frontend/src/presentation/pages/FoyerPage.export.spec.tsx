@@ -10,13 +10,13 @@ import { preferences } from '../../infrastructure/local-store';
 import { testHousehold } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchContribution: vi.fn(),
-  fetchSafetyNet: vi.fn(),
-  fetchContributionStatus: vi.fn(),
-  downloadExport: vi.fn(),
-  downloadTransactionsCsv: vi.fn(),
+  fetchContribution: vi.fn<ApiMock<'fetchContribution'>>(),
+  fetchSafetyNet: vi.fn<ApiMock<'fetchSafetyNet'>>(),
+  fetchContributionStatus: vi.fn<ApiMock<'fetchContributionStatus'>>(),
+  downloadExport: vi.fn<ApiMock<'downloadExport'>>(),
+  downloadTransactionsCsv: vi.fn<ApiMock<'downloadTransactionsCsv'>>(),
 }));
-const files = vi.hoisted(() => ({ saveFile: vi.fn() }));
+const files = vi.hoisted(() => ({ saveFile: vi.fn<() => void>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -25,16 +25,17 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 vi.mock('../../infrastructure/browser-download', () => files);
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { FoyerPage } from './FoyerPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const blob = new Blob(['{}']);
 
 function renderPage(kind: 'COMMON' | 'PERSONAL' = 'COMMON') {
   preferences.setSpaceKind(kind);
-  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
   render(
     <MemoryRouter>
       <HouseholdContext.Provider value={value}>

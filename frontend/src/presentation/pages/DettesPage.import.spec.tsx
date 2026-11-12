@@ -6,18 +6,18 @@ import { debtsSummary, rawExtractedField, rawExtractionJob, rawExtractionResult 
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchDebts: vi.fn(),
-  fetchDebtsSummary: vi.fn(),
-  createDebt: vi.fn(),
-  updateDebt: vi.fn(),
-  deleteDebt: vi.fn(),
-  fetchDebtWhatIf: vi.fn(),
-  fetchRecurring: vi.fn(),
-  fetchAccounts: vi.fn(),
-  fetchDebtExtractionCapabilities: vi.fn(),
-  startDebtExtraction: vi.fn(),
-  fetchDebtExtraction: vi.fn(),
-  deleteDebtExtraction: vi.fn(),
+  fetchDebts: vi.fn<ApiMock<'fetchDebts'>>(),
+  fetchDebtsSummary: vi.fn<ApiMock<'fetchDebtsSummary'>>(),
+  createDebt: vi.fn<ApiMock<'createDebt'>>(),
+  updateDebt: vi.fn<ApiMock<'updateDebt'>>(),
+  deleteDebt: vi.fn<ApiMock<'deleteDebt'>>(),
+  fetchDebtWhatIf: vi.fn<ApiMock<'fetchDebtWhatIf'>>(),
+  fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  fetchDebtExtractionCapabilities: vi.fn<ApiMock<'fetchDebtExtractionCapabilities'>>(),
+  startDebtExtraction: vi.fn<ApiMock<'startDebtExtraction'>>(),
+  fetchDebtExtraction: vi.fn<ApiMock<'fetchDebtExtraction'>>(),
+  deleteDebtExtraction: vi.fn<ApiMock<'deleteDebtExtraction'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -26,10 +26,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { DettesPage } from './DettesPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const MAX = 1024 * 1024;
 const pdf = () => new File(['%PDF-1.4 contenu du contrat'], 'contrat-pret.pdf', { type: 'application/pdf' });
@@ -107,7 +108,7 @@ describe('DettesPage — import d’un contrat', () => {
       (api as Record<string, unknown>).fetchDebtExtractionCapabilities = undefined;
       await openForm();
       expect(importButton()).not.toBeInTheDocument();
-      api.fetchDebtExtractionCapabilities = vi.fn();
+      api.fetchDebtExtractionCapabilities = vi.fn<ApiMock<'fetchDebtExtractionCapabilities'>>();
     });
 
     it('is not offered when modifying an existing credit', async () => {

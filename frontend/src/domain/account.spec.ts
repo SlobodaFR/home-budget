@@ -78,7 +78,7 @@ describe('buildAccountPayload', () => {
 
   it('reports every error at once', () => {
     const result = buildAccountPayload(values({ name: '', openingBalance: 'x', openingDate: '' }));
-    expect(result.ok === false && Object.keys(result.errors).sort()).toEqual(['name', 'openingBalance', 'openingDate']);
+    expect(!result.ok && Object.keys(result.errors).sort()).toEqual(['name', 'openingBalance', 'openingDate']);
   });
 });
 

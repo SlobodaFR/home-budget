@@ -13,12 +13,12 @@ import { account } from '../../test/fixtures';
 import { testHousehold } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchSummary: vi.fn(),
-  fetchTransactions: vi.fn(),
-  fetchInsights: vi.fn(),
-  fetchAccounts: vi.fn(),
-  createTransaction: vi.fn(),
-  updateTransaction: vi.fn(),
+  fetchSummary: vi.fn<ApiMock<'fetchSummary'>>(),
+  fetchTransactions: vi.fn<ApiMock<'fetchTransactions'>>(),
+  fetchInsights: vi.fn<ApiMock<'fetchInsights'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
+  updateTransaction: vi.fn<ApiMock<'updateTransaction'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -27,11 +27,12 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { HomePage } from '../pages/HomePage';
 import { AppShell } from './AppShell';
+import type { ApiMock } from '../../test/api-mock';
 
 const summary = {
   month: '2026-11',
@@ -43,7 +44,7 @@ const summary = {
 };
 
 function renderShell() {
-  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
   render(
     <MemoryRouter initialEntries={['/']}>
       <HouseholdContext.Provider value={value}>

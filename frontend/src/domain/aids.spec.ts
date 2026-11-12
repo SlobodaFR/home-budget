@@ -65,7 +65,7 @@ describe('fiscal profile form', () => {
 
   it('reports both fields when both are wrong', () => {
     const result = buildFiscalProfile({ childrenUnderSix: 'a', dependentChildren: 'b', firstYearHomeServices: false });
-    expect(result.ok === false && Object.keys(result.errors)).toEqual(['childrenUnderSix', 'dependentChildren']);
+    expect(!result.ok && Object.keys(result.errors)).toEqual(['childrenUnderSix', 'dependentChildren']);
   });
 });
 

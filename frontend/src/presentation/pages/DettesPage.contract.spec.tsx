@@ -4,14 +4,14 @@ import { debt, debtPayload, debtsSummary } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchDebts: vi.fn(),
-  fetchDebtsSummary: vi.fn(),
-  createDebt: vi.fn(),
-  updateDebt: vi.fn(),
-  deleteDebt: vi.fn(),
-  fetchDebtWhatIf: vi.fn(),
-  fetchRecurring: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchDebts: vi.fn<ApiMock<'fetchDebts'>>(),
+  fetchDebtsSummary: vi.fn<ApiMock<'fetchDebtsSummary'>>(),
+  createDebt: vi.fn<ApiMock<'createDebt'>>(),
+  updateDebt: vi.fn<ApiMock<'updateDebt'>>(),
+  deleteDebt: vi.fn<ApiMock<'deleteDebt'>>(),
+  fetchDebtWhatIf: vi.fn<ApiMock<'fetchDebtWhatIf'>>(),
+  fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -20,10 +20,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { DettesPage } from './DettesPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
 
@@ -205,7 +206,7 @@ describe('DettesPage — prêts enrichis', () => {
 
     it('folds the notes and shows them as written', async () => {
       const { user, dialog } = await openDetail('Prêt maison');
-      const notes = within(dialog).getByTestId('debt-notes') as HTMLDetailsElement;
+      const notes = within(dialog).getByTestId<HTMLDetailsElement>('debt-notes');
       expect(notes.open).toBe(false);
       await user.click(within(notes).getByText('Notes'));
       expect(notes.open).toBe(true);
@@ -474,11 +475,11 @@ describe('DettesPage — prêts enrichis', () => {
       await screen.findByRole('list', { name: 'Crédits en cours' });
       await user.click(screen.getByRole('button', { name: 'Modifier Prêt simple' }));
       const simple = await screen.findByRole('dialog', { name: 'Modifier le crédit' });
-      expect((within(simple).getByTestId('contract-details') as HTMLDetailsElement).open).toBe(false);
+      expect((within(simple).getByTestId<HTMLDetailsElement>('contract-details')).open).toBe(false);
       await user.click(within(simple).getByRole('button', { name: 'Fermer' }));
       await user.click(screen.getByRole('button', { name: 'Modifier Prêt maison' }));
       const full = await screen.findByRole('dialog', { name: 'Modifier le crédit' });
-      expect((within(full).getByTestId('contract-details') as HTMLDetailsElement).open).toBe(true);
+      expect((within(full).getByTestId<HTMLDetailsElement>('contract-details')).open).toBe(true);
     });
 
     it('fills the form with the details of the debt and saves them all back', async () => {

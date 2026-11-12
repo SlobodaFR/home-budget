@@ -31,7 +31,7 @@ describe('month helpers', () => {
   });
 
   it('rejects an invalid month', () => {
-    expect(() => shiftMonth('2026-13', 1)).toThrow();
+    expect(() => shiftMonth('2026-13', 1)).toThrow(/invalide/);
   });
 
   it('labels a month in French', () => {
@@ -119,6 +119,6 @@ describe('addMonths', () => {
 
   it('goes back too, and refuses an invalid date', () => {
     expect(addMonths('2026-03-31', -1)).toBe('2026-02-28');
-    expect(() => addMonths('nope', 1)).toThrow();
+    expect(() => addMonths('nope', 1)).toThrow(/invalide/);
   });
 });

@@ -14,12 +14,12 @@ import { ToastProvider } from '../components/Toast';
 import { account, previewRow } from '../../test/fixtures';
 
 const api = vi.hoisted(() => ({
-  previewImport: vi.fn(),
-  commitImport: vi.fn(),
-  fetchRules: vi.fn(),
-  saveRules: vi.fn(),
-  createTransaction: vi.fn(),
-  fetchAccounts: vi.fn(),
+  previewImport: vi.fn<ApiMock<'previewImport'>>(),
+  commitImport: vi.fn<ApiMock<'commitImport'>>(),
+  fetchRules: vi.fn<ApiMock<'fetchRules'>>(),
+  saveRules: vi.fn<ApiMock<'saveRules'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -28,10 +28,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { ImportPage } from './ImportPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const household: Household = {
   id: 'h1',
@@ -69,8 +70,8 @@ function renderPage() {
     loading: false,
     offline: false,
     failed: false,
-    reload: vi.fn(),
-    setHousehold: vi.fn(),
+    reload: vi.fn<() => Promise<void>>(),
+    setHousehold: vi.fn<() => void>(),
   };
   render(
     <MemoryRouter initialEntries={['/import']}>
@@ -231,7 +232,7 @@ describe('ImportPage', () => {
 
   it('refuses a file larger than 1 Mo without reading it', async () => {
     const file = new File([new Uint8Array(1_000_001)], 'gros.csv', { type: 'text/csv' });
-    const arrayBuffer = vi.fn();
+    const arrayBuffer = vi.fn<() => void>();
     Object.defineProperty(file, 'arrayBuffer', { value: arrayBuffer });
     const user = renderPage();
     await user.upload(screen.getByLabelText('Fichier du relevé'), file);
@@ -338,7 +339,7 @@ describe('ImportPage', () => {
 
     it('lists only non archived accounts, with « Aucun » by default', async () => {
       renderPage();
-      const select = (await screen.findByLabelText('Compte du relevé (facultatif)')) as HTMLSelectElement;
+      const select = await screen.findByLabelText<HTMLSelectElement>('Compte du relevé (facultatif)');
       await waitFor(() => expect(select.options.length).toBe(3));
       expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Aucun', 'Compte commun', 'Livret A']);
       expect(select).toHaveValue('');

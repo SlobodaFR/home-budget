@@ -6,14 +6,14 @@ import { debt, debtPayload, debtsSummary } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchDebts: vi.fn(),
-  fetchDebtsSummary: vi.fn(),
-  createDebt: vi.fn(),
-  updateDebt: vi.fn(),
-  deleteDebt: vi.fn(),
-  fetchDebtWhatIf: vi.fn(),
-  fetchRecurring: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchDebts: vi.fn<ApiMock<'fetchDebts'>>(),
+  fetchDebtsSummary: vi.fn<ApiMock<'fetchDebtsSummary'>>(),
+  createDebt: vi.fn<ApiMock<'createDebt'>>(),
+  updateDebt: vi.fn<ApiMock<'updateDebt'>>(),
+  deleteDebt: vi.fn<ApiMock<'deleteDebt'>>(),
+  fetchDebtWhatIf: vi.fn<ApiMock<'fetchDebtWhatIf'>>(),
+  fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -22,10 +22,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { DettesPage } from './DettesPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
 

@@ -2,8 +2,9 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../infrastructure/api-client';
 import { describeReviewSaveError, useReview, useReviewActions, useReviewHistory } from './use-review';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchReview: vi.fn(), fetchReviews: vi.fn(), saveReview: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchReview: vi.fn<ApiMock<'fetchReview'>>(), fetchReviews: vi.fn<ApiMock<'fetchReviews'>>(), saveReview: vi.fn<ApiMock<'saveReview'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -64,7 +65,7 @@ describe('review hooks', () => {
   });
 
   it('saves then tells the page to refresh', async () => {
-    const onSaved = vi.fn();
+    const onSaved = vi.fn<() => void>();
     const { result } = renderHook(() => useReviewActions('s-common', '2026-10', onSaved));
     const payload = { answers: { wentWell: '', surprise: '', decision: 'Une liste' }, complete: true };
     await act(async () => {
@@ -77,7 +78,7 @@ describe('review hooks', () => {
 
   it('rejects and does not refresh when saving fails', async () => {
     api.saveReview.mockRejectedValue(new NetworkError());
-    const onSaved = vi.fn();
+    const onSaved = vi.fn<() => void>();
     const { result } = renderHook(() => useReviewActions('s-common', '2026-10', onSaved));
     await act(async () => {
       await expect(result.current.save({ answers: { wentWell: '', surprise: '', decision: '' }, complete: false })).rejects.toBeInstanceOf(NetworkError);

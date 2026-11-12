@@ -6,16 +6,16 @@ import { account, project } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchProjects: vi.fn(),
-  fetchProjectsSummary: vi.fn(),
-  createProject: vi.fn(),
-  updateProject: vi.fn(),
-  deleteProject: vi.fn(),
-  fetchDeposits: vi.fn(),
-  createDeposit: vi.fn(),
-  deleteDeposit: vi.fn(),
-  fetchAccounts: vi.fn(),
-  createTransaction: vi.fn(),
+  fetchProjects: vi.fn<ApiMock<'fetchProjects'>>(),
+  fetchProjectsSummary: vi.fn<ApiMock<'fetchProjectsSummary'>>(),
+  createProject: vi.fn<ApiMock<'createProject'>>(),
+  updateProject: vi.fn<ApiMock<'updateProject'>>(),
+  deleteProject: vi.fn<ApiMock<'deleteProject'>>(),
+  fetchDeposits: vi.fn<ApiMock<'fetchDeposits'>>(),
+  createDeposit: vi.fn<ApiMock<'createDeposit'>>(),
+  deleteDeposit: vi.fn<ApiMock<'deleteDeposit'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -24,10 +24,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { ProjetsPage } from './ProjetsPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
 
@@ -189,8 +190,8 @@ describe('ProjetsPage', () => {
       expect(within(dialog).getByLabelText('Nom du projet')).toHaveValue('Arrivée du bébé');
       expect(within(dialog).getByRole('button', { name: 'Naissance' })).toHaveAttribute('aria-pressed', 'true');
       expect(within(dialog).getByLabelText('Somme à atteindre')).toHaveValue('');
-      const start = (within(dialog).getByLabelText('Date de départ') as HTMLInputElement).value;
-      const due = (within(dialog).getByLabelText('Échéance') as HTMLInputElement).value;
+      const start = (within(dialog).getByLabelText<HTMLInputElement>('Date de départ')).value;
+      const due = (within(dialog).getByLabelText<HTMLInputElement>('Échéance')).value;
       expect(due > start).toBe(true);
       await user.type(within(dialog).getByLabelText('Somme à atteindre'), '2500');
       await user.type(within(dialog).getByLabelText('Déjà épargné au départ'), '300');

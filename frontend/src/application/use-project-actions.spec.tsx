@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../infrastructure/api-client';
 import { project } from '../test/fixtures';
 import { useProjectActions } from './use-project-actions';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ createProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn() }));
+const api = vi.hoisted(() => ({ createProject: vi.fn<ApiMock<'createProject'>>(), updateProject: vi.fn<ApiMock<'updateProject'>>(), deleteProject: vi.fn<ApiMock<'deleteProject'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -14,7 +15,7 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 const payload = { name: 'Voiture', kind: 'PURCHASE' as const, targetCents: 800000, targetDate: '2028-04-30', startCents: 0, startDate: '2026-10-30' };
 
 describe('useProjectActions', () => {
-  const onChanged = vi.fn();
+  const onChanged = vi.fn<() => void>();
 
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset().mockResolvedValue(undefined));

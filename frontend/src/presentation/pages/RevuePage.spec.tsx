@@ -5,10 +5,10 @@ import { review, reviewHistoryItem, reviewSnapshot } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchReview: vi.fn(),
-  fetchReviews: vi.fn(),
-  saveReview: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchReview: vi.fn<ApiMock<'fetchReview'>>(),
+  fetchReviews: vi.fn<ApiMock<'fetchReviews'>>(),
+  saveReview: vi.fn<ApiMock<'saveReview'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -17,10 +17,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { RevuePage } from './RevuePage';
+import type { ApiMock } from '../../test/api-mock';
 
 const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
 

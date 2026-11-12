@@ -8,7 +8,7 @@ import { SelectedMonthProvider } from '../../application/use-selected-month';
 import { SpaceProvider } from '../../application/use-space';
 import { testHousehold } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn(), fetchProjects: vi.fn(), fetchProjectsSummary: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(), fetchProjects: vi.fn<ApiMock<'fetchProjects'>>(), fetchProjectsSummary: vi.fn<ApiMock<'fetchProjectsSummary'>>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -16,11 +16,12 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { ProjetsPage } from '../pages/ProjetsPage';
 import { AppShell } from './AppShell';
+import type { ApiMock } from '../../test/api-mock';
 
 describe('AppShell on the projects page', () => {
   beforeEach(() => {
@@ -30,7 +31,7 @@ describe('AppShell on the projects page', () => {
   });
 
   it('lets you switch space, adds no fifth tab and keeps « Accueil » highlighted', async () => {
-    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
     render(
       <MemoryRouter initialEntries={['/projets']}>
         <HouseholdContext.Provider value={value}>

@@ -5,11 +5,11 @@ import { renderInApp } from '../../test/render-app';
 import { account } from '../../test/fixtures';
 
 const api = vi.hoisted(() => ({
-  fetchAccounts: vi.fn(),
-  createAccount: vi.fn(),
-  updateAccount: vi.fn(),
-  deleteAccount: vi.fn(),
-  createTransaction: vi.fn(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  createAccount: vi.fn<ApiMock<'createAccount'>>(),
+  updateAccount: vi.fn<ApiMock<'updateAccount'>>(),
+  deleteAccount: vi.fn<ApiMock<'deleteAccount'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -18,10 +18,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { ComptesPage } from './ComptesPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const accounts = [
   account({ id: 'a1', name: 'Compte commun', balanceCents: 98450, projectedMonthEndCents: 41200, transactionCount: 37 }),

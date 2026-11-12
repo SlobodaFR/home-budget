@@ -6,9 +6,9 @@ import { SpaceProvider } from '../../application/use-space';
 import { testHousehold } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchContribution: vi.fn(),
-  fetchSafetyNet: vi.fn(),
-  fetchContributionStatus: vi.fn(),
+  fetchContribution: vi.fn<ApiMock<'fetchContribution'>>(),
+  fetchSafetyNet: vi.fn<ApiMock<'fetchSafetyNet'>>(),
+  fetchContributionStatus: vi.fn<ApiMock<'fetchContributionStatus'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -17,13 +17,14 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { FoyerPage } from './FoyerPage';
+import type { ApiMock } from '../../test/api-mock';
 
 function renderPage(offline = false) {
-  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
   render(
     <MemoryRouter>
       <HouseholdContext.Provider value={value}>

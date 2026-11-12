@@ -820,25 +820,29 @@ describe('extractContractFields — respect des bornes du domaine', () => {
       NO_ACCENTS,
     ]) {
       const result = run(text);
+      const named = (name: string) =>
+        result.fields.filter((field) => field.field === name);
+      for (const field of named('annualRatePercent')) {
+        expect(field.value).toBeGreaterThanOrEqual(0);
+        expect(field.value).toBeLessThanOrEqual(100);
+        expect(
+          Math.abs(
+            (field.value as number) * 100 -
+              Math.round((field.value as number) * 100),
+          ),
+        ).toBeLessThan(1e-9);
+      }
+      for (const field of named('initialTermMonths')) {
+        expect(field.value).toBeGreaterThanOrEqual(1);
+        expect(field.value).toBeLessThanOrEqual(600);
+      }
+      for (const field of result.fields.filter((f) =>
+        f.field.endsWith('Cents'),
+      )) {
+        expect(Number.isInteger(field.value)).toBe(true);
+        expect(field.value as number).toBeGreaterThanOrEqual(0);
+      }
       for (const field of result.fields) {
-        if (field.field === 'annualRatePercent') {
-          expect(field.value).toBeGreaterThanOrEqual(0);
-          expect(field.value).toBeLessThanOrEqual(100);
-          expect(
-            Math.abs(
-              (field.value as number) * 100 -
-                Math.round((field.value as number) * 100),
-            ),
-          ).toBeLessThan(1e-9);
-        }
-        if (field.field === 'initialTermMonths') {
-          expect(field.value).toBeGreaterThanOrEqual(1);
-          expect(field.value).toBeLessThanOrEqual(600);
-        }
-        if (field.field.endsWith('Cents')) {
-          expect(Number.isInteger(field.value)).toBe(true);
-          expect(field.value as number).toBeGreaterThanOrEqual(0);
-        }
         expect(['HIGH', 'MEDIUM', 'LOW']).toContain(field.confidence);
       }
     }
@@ -859,9 +863,7 @@ describe('extractContractFields — extraits sans données sensibles superflues'
     const long = `Montant du crédit : ${'blabla '.repeat(30)} 150 000,00 €`;
     const result = run(`Offre de prêt\n${long}`);
     const field = get(result, 'principalCents');
-    if (field) {
-      expect(field.snippet.length).toBeLessThanOrEqual(140);
-    }
+    expect(field?.snippet.length ?? 0).toBeLessThanOrEqual(140);
   });
 });
 

@@ -5,13 +5,13 @@ import { lifeEvent, lifeEventCatalog, lifeEventStep } from '../../test/fixtures'
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchLifeEvents: vi.fn(),
-  fetchLifeEventCatalog: vi.fn(),
-  createLifeEvent: vi.fn(),
-  updateLifeEvent: vi.fn(),
-  deleteLifeEvent: vi.fn(),
-  setLifeEventStep: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchLifeEvents: vi.fn<ApiMock<'fetchLifeEvents'>>(),
+  fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>(),
+  createLifeEvent: vi.fn<ApiMock<'createLifeEvent'>>(),
+  updateLifeEvent: vi.fn<ApiMock<'updateLifeEvent'>>(),
+  deleteLifeEvent: vi.fn<ApiMock<'deleteLifeEvent'>>(),
+  setLifeEventStep: vi.fn<ApiMock<'setLifeEventStep'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -20,10 +20,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { EvenementsPage } from './EvenementsPage';
+import type { ApiMock } from '../../test/api-mock';
 
 const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
 
@@ -445,7 +446,7 @@ describe('EvenementsPage', () => {
       api.fetchLifeEvents = undefined as never;
       renderPage();
       expect(await screen.findByRole('alert')).toBeInTheDocument();
-      api.fetchLifeEvents = vi.fn();
+      api.fetchLifeEvents = vi.fn<ApiMock<'fetchLifeEvents'>>();
     });
   });
 });

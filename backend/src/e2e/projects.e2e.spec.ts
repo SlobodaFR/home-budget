@@ -589,7 +589,7 @@ describe('Savings projects API (tranche 6, end to end, AUTH_MODE=dev, in-memory 
         GOOD: 3,
       };
       const ranks = insights.map((i) => rank[i.severity]);
-      expect([...ranks].sort()).toEqual(ranks);
+      expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
 
       // Plus de 30 jours plus tard, la célébration disparaît.
       clock.set('2026-12-20T09:30:00Z');

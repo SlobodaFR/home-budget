@@ -6,7 +6,7 @@ import { FakeClock } from '../../testing/fake-clock';
 import {
   InMemoryHouseholdRepository,
   InMemoryTransactionRepository,
-  InMemoryUserRepository,
+  InMemoryUserRepository,InMemoryAccountRepository
 } from '../../testing/in-memory-repositories';
 import { CreateHouseholdUseCase } from '../household/create-household.use-case';
 import { CreateInvitationUseCase } from '../household/create-invitation.use-case';
@@ -15,7 +15,6 @@ import { JoinHouseholdUseCase } from '../household/join-household.use-case';
 import { SpaceAccessService } from '../household/space-access.service';
 import { CreateSpaceTransactionUseCase } from '../space/space-transaction.use-cases';
 import { AccountAssignmentService } from '../account/account-assignment.service';
-import { InMemoryAccountRepository } from '../../testing/in-memory-repositories';
 import { GetTrendsUseCase } from './get-trends.use-case';
 
 /** Dépôt qui compte et enregistre les lectures par période. */

@@ -83,26 +83,26 @@ describe('life event catalog', () => {
   });
 
   it('only links to known application routes', () => {
-    for (const { step } of allSteps) {
-      if (step.link !== null) {
-        expect([step.id, STEP_LINKS as readonly string[]]).toEqual([
-          step.id,
-          expect.arrayContaining([step.link]),
-        ]);
-        expect(KNOWN_ROUTES).toContain(step.link);
-      }
+    const linked = allSteps.flatMap(({ step }) =>
+      step.link === null ? [] : [{ id: step.id, link: step.link }],
+    );
+    for (const { id, link } of linked) {
+      expect([id, STEP_LINKS as readonly string[]]).toEqual([
+        id,
+        expect.arrayContaining([link]),
+      ]);
+      expect(KNOWN_ROUTES).toContain(link);
     }
   });
 
   it('uses integer offsets (or null), a label whenever there is a deadline, and a known category', () => {
     for (const { step } of allSteps) {
-      if (step.dueOffsetDays !== null) {
-        expect([step.id, Number.isInteger(step.dueOffsetDays)]).toEqual([
-          step.id,
-          true,
-        ]);
-        expect([step.id, step.dueLabel !== null]).toEqual([step.id, true]);
-      }
+      const hasDeadline = step.dueOffsetDays !== null;
+      expect([step.id, hasDeadline ? Number.isInteger(step.dueOffsetDays) : true]).toEqual([
+        step.id,
+        true,
+      ]);
+      expect([step.id, hasDeadline ? step.dueLabel !== null : true]).toEqual([step.id, true]);
       expect(STEP_CATEGORIES as readonly string[]).toContain(step.category);
       expect(step.title.trim()).not.toBe('');
       expect(step.detail.trim()).not.toBe('');

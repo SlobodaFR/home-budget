@@ -4,7 +4,7 @@ import { Transaction } from '../../domain/budget';
 import { account } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -12,10 +12,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { TransactionList } from './TransactionList';
+import type { ApiMock } from '../../test/api-mock';
 
 const transaction = (overrides: Partial<Transaction> = {}): Transaction => ({
   id: 't1',
@@ -30,7 +31,7 @@ const transaction = (overrides: Partial<Transaction> = {}): Transaction => ({
 });
 
 function renderList(props: Partial<Parameters<typeof TransactionList>[0]> = {}) {
-  return renderInApp(<TransactionList transactions={[transaction()]} pending={[]} onEdit={vi.fn()} onDelete={vi.fn()} {...props} />);
+  return renderInApp(<TransactionList transactions={[transaction()]} pending={[]} onEdit={vi.fn<() => void>()} onDelete={vi.fn<(transaction: Transaction) => Promise<void>>()} {...props} />);
 }
 
 describe('TransactionList (tableau sur ordinateur)', () => {

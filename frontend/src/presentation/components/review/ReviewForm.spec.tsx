@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { MAX_REVIEW_ANSWER_LENGTH } from '../../../domain/review';
+import { MAX_REVIEW_ANSWER_LENGTH, ReviewPayload } from '../../../domain/review';
 import { review } from '../../../test/fixtures';
 import { ReviewForm } from './ReviewForm';
 
 const setup = (overrides: Partial<Parameters<typeof ReviewForm>[0]> = {}) => {
-  const onSave = vi.fn().mockResolvedValue(undefined);
-  const onChange = vi.fn();
+  const onSave = vi.fn<(payload: ReviewPayload) => Promise<void>>().mockResolvedValue(undefined);
+  const onChange = vi.fn<() => void>();
   const base = review({ month: '2026-10' });
   render(<ReviewForm review={base} initialValues={base.answers} offline={false} onChange={onChange} onSave={onSave} {...overrides} />);
   return { onSave, onChange, user: userEvent.setup() };
@@ -49,7 +49,7 @@ describe('ReviewForm', () => {
   });
 
   it('shows the message of a failed save and keeps every field as typed', async () => {
-    const { user } = setup({ onSave: vi.fn().mockRejectedValue(new Error('Pas de connexion : votre texte est conservé sur cet écran.')) });
+    const { user } = setup({ onSave: vi.fn<(payload: ReviewPayload) => Promise<void>>().mockRejectedValue(new Error('Pas de connexion : votre texte est conservé sur cet écran.')) });
     await user.type(screen.getByLabelText(/Quelle décision/), 'Une liste');
     await user.click(screen.getByRole('button', { name: 'Terminer la revue' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Pas de connexion');

@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../infrastructure/api-client';
 import { lifeEvent } from '../test/fixtures';
 import { useLifeEventActions } from './use-life-event-actions';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ createLifeEvent: vi.fn(), updateLifeEvent: vi.fn(), deleteLifeEvent: vi.fn() }));
+const api = vi.hoisted(() => ({ createLifeEvent: vi.fn<ApiMock<'createLifeEvent'>>(), updateLifeEvent: vi.fn<ApiMock<'updateLifeEvent'>>(), deleteLifeEvent: vi.fn<ApiMock<'deleteLifeEvent'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -12,7 +13,7 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 describe('useLifeEventActions', () => {
-  const onChanged = vi.fn();
+  const onChanged = vi.fn<() => void>();
 
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset().mockResolvedValue(undefined));

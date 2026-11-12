@@ -9,7 +9,7 @@ import { SpaceProvider } from '../../application/use-space';
 import { lifeEvent, lifeEventCatalog } from '../../test/fixtures';
 import { testHousehold } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn(), fetchLifeEvents: vi.fn(), fetchLifeEventCatalog: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(), fetchLifeEvents: vi.fn<ApiMock<'fetchLifeEvents'>>(), fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>() }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -17,11 +17,12 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { EvenementsPage } from '../pages/EvenementsPage';
 import { AppShell } from './AppShell';
+import type { ApiMock } from '../../test/api-mock';
 
 describe('AppShell on the life events page', () => {
   beforeEach(() => {
@@ -31,7 +32,7 @@ describe('AppShell on the life events page', () => {
   });
 
   it('is household level: no space switcher, no fifth tab, « Accueil » stays highlighted', async () => {
-    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
     render(
       <MemoryRouter initialEntries={['/evenements']}>
         <HouseholdContext.Provider value={value}>

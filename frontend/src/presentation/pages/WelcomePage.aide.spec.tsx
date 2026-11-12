@@ -6,7 +6,7 @@ import { HouseholdContext, HouseholdContextValue } from '../../application/use-h
 import { WelcomePage } from './WelcomePage';
 
 function renderPage() {
-  const value: HouseholdContextValue = { household: null, loading: false, offline: false, failed: false, reload: vi.fn(), setHousehold: vi.fn() };
+  const value: HouseholdContextValue = { household: null, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
   render(
     <MemoryRouter initialEntries={['/bienvenue']}>
       <HouseholdContext.Provider value={value}>

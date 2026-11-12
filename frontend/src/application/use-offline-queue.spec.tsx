@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TransactionPayload } from '../domain/budget';
 import { pendingStore } from '../infrastructure/local-store';
 
-const api = vi.hoisted(() => ({ createTransaction: vi.fn() }));
+const api = vi.hoisted(() => ({ createTransaction: vi.fn<ApiMock<'createTransaction'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -12,11 +12,12 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../presentation/auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'a@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'a@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { NetworkError } from '../infrastructure/api-client';
 import { OfflineQueueProvider, useOfflineQueue } from './use-offline-queue';
+import type { ApiMock } from '../test/api-mock';
 
 const payload: TransactionPayload = {
   kind: 'EXPENSE',

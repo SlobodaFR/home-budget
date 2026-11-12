@@ -8,14 +8,14 @@ import { account } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
 const api = vi.hoisted(() => ({
-  fetchForecast: vi.fn(),
-  fetchRecurring: vi.fn(),
-  createRecurring: vi.fn(),
-  updateRecurring: vi.fn(),
-  deleteRecurring: vi.fn(),
-  fetchAidRules: vi.fn(),
-  createTransaction: vi.fn(),
-  fetchAccounts: vi.fn(),
+  fetchForecast: vi.fn<ApiMock<'fetchForecast'>>(),
+  fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>(),
+  createRecurring: vi.fn<ApiMock<'createRecurring'>>(),
+  updateRecurring: vi.fn<ApiMock<'updateRecurring'>>(),
+  deleteRecurring: vi.fn<ApiMock<'deleteRecurring'>>(),
+  fetchAidRules: vi.fn<ApiMock<'fetchAidRules'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
 }));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
@@ -24,10 +24,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
 }));
 
 import { PrevisionnelPage } from './PrevisionnelPage';
+import type { ApiMock } from '../../test/api-mock';
 
 
 const forecast: Forecast = {
@@ -386,7 +387,7 @@ describe('PrevisionnelPage and bank accounts', () => {
     await screen.findByRole('region', { name: 'Paiements récurrents' });
     await user.click(screen.getByRole('button', { name: /Ajouter/ }));
     const dialog = await screen.findByRole('dialog');
-    const select = within(dialog).getByLabelText('Compte (facultatif)') as HTMLSelectElement;
+    const select = within(dialog).getByLabelText<HTMLSelectElement>('Compte (facultatif)');
     expect(Array.from(select.options).map((option) => option.textContent)).toEqual(['Aucun', 'Compte commun', 'Livret A']);
     await user.selectOptions(select, 'a2');
     await user.type(within(dialog).getByLabelText('Libellé'), 'Salle de sport');

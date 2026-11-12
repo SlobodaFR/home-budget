@@ -4,8 +4,9 @@ import { LifeEvent } from '../domain/life-event';
 import { ApiError, NetworkError } from '../infrastructure/api-client';
 import { lifeEvent } from '../test/fixtures';
 import { useLifeEventSteps } from './use-life-event-steps';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ setLifeEventStep: vi.fn() }));
+const api = vi.hoisted(() => ({ setLifeEventStep: vi.fn<ApiMock<'setLifeEventStep'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -28,7 +29,7 @@ const deferred = () => {
 };
 
 describe('useLifeEventSteps', () => {
-  const onSettled = vi.fn();
+  const onSettled = vi.fn<() => void>();
 
   beforeEach(() => {
     api.setLifeEventStep.mockReset().mockResolvedValue(undefined);

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { debtPayload } from '../test/fixtures';
 import { ApiError, apiClient, NetworkError } from './api-client';
 
-const respond = (body: unknown, status = 200) => vi.fn().mockResolvedValue(new Response(status === 204 ? null : JSON.stringify(body), { status }));
+const respond = (body: unknown, status = 200) => vi.fn<typeof fetch>().mockResolvedValue(new Response(status === 204 ? null : JSON.stringify(body), { status }));
 
 describe('apiClient debts', () => {
   beforeEach(() => {

@@ -2,8 +2,9 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../infrastructure/api-client';
 import { useYearForecast } from './use-year-forecast';
+import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchYearForecast: vi.fn() }));
+const api = vi.hoisted(() => ({ fetchYearForecast: vi.fn<ApiMock<'fetchYearForecast'>>() }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),

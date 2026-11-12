@@ -6,15 +6,16 @@ import { useDebtActions } from './use-debt-actions';
 import { useDebtWhatIf } from './use-debt-what-if';
 import { useDebts, useDebtsSummary } from './use-debts';
 import { useRecurringOptions } from './use-recurring-options';
+import type { ApiMock } from '../test/api-mock';
 
 const api = vi.hoisted(() => ({
-  fetchDebts: vi.fn(),
-  fetchDebtsSummary: vi.fn(),
-  createDebt: vi.fn(),
-  updateDebt: vi.fn(),
-  deleteDebt: vi.fn(),
-  fetchDebtWhatIf: vi.fn(),
-  fetchRecurring: vi.fn(),
+  fetchDebts: vi.fn<ApiMock<'fetchDebts'>>(),
+  fetchDebtsSummary: vi.fn<ApiMock<'fetchDebtsSummary'>>(),
+  createDebt: vi.fn<ApiMock<'createDebt'>>(),
+  updateDebt: vi.fn<ApiMock<'updateDebt'>>(),
+  deleteDebt: vi.fn<ApiMock<'deleteDebt'>>(),
+  fetchDebtWhatIf: vi.fn<ApiMock<'fetchDebtWhatIf'>>(),
+  fetchRecurring: vi.fn<ApiMock<'fetchRecurring'>>(),
 }));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
@@ -74,7 +75,7 @@ describe('useDebts', () => {
 
 describe('useDebtActions', () => {
   it('creates, then tells the page to refresh', async () => {
-    const onChanged = vi.fn();
+    const onChanged = vi.fn<() => void>();
     const { result } = renderHook(() => useDebtActions('s-common', onChanged));
     const payload = debtPayload({ name: 'x', principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0 });
     await act(async () => {
@@ -144,7 +145,7 @@ describe('useDebtActions', () => {
 
   it('rejects and does not refresh when the request fails', async () => {
     api.deleteDebt.mockRejectedValue(new NetworkError());
-    const onChanged = vi.fn();
+    const onChanged = vi.fn<() => void>();
     const { result } = renderHook(() => useDebtActions('s-common', onChanged));
     await act(async () => {
       await expect(result.current.remove(debt())).rejects.toBeInstanceOf(NetworkError);

@@ -120,7 +120,7 @@ describe('buildRecurringPayload', () => {
 
   it('reports every error at once', () => {
     const result = buildRecurringPayload(values({ label: '', amount: '', dayOfMonth: '99' }), { allowAid: false });
-    expect(result.ok === false && Object.keys(result.errors).sort()).toEqual(['amount', 'dayOfMonth', 'label']);
+    expect(!result.ok && Object.keys(result.errors).sort()).toEqual(['amount', 'dayOfMonth', 'label']);
   });
 });
 

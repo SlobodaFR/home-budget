@@ -54,7 +54,7 @@ describe('help content', () => {
   it('only sends internal links to known screens', () => {
     const internal = allLinks.filter((link) => link.kind === 'internal');
     expect(internal.length).toBeGreaterThan(10);
-    internal.forEach((link) => link.kind === 'internal' && expect(isAppRoute(link.to), link.to).toBe(true));
+    internal.flatMap((link) => (link.kind === 'internal' ? [link.to] : [])).forEach((to) => expect(isAppRoute(to), to).toBe(true));
   });
 
   it('only uses https for external links', () => {

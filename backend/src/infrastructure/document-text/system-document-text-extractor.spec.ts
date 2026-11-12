@@ -561,7 +561,7 @@ describe('SystemDocumentTextExtractor', () => {
 describe('TesseractOcrEngine', () => {
   it('refuse une langue qui ressemble à un argument ou à un chemin', () => {
     for (const lang of ['', '-c', '../fra', 'fra;id', 'fra eng', '--psm']) {
-      expect(() => new TesseractOcrEngine(lang)).toThrow();
+      expect(() => new TesseractOcrEngine(lang)).toThrow(/Langue OCR invalide/);
     }
     expect(() => new TesseractOcrEngine('fra+eng')).not.toThrow();
   });

@@ -137,7 +137,7 @@ describe('flushQueue', () => {
   });
 
   it('does nothing on an empty queue', async () => {
-    const send = vi.fn();
+    const send = vi.fn<(item: PendingTransaction) => Promise<SendOutcome>>();
     expect(await flushQueue([], { send })).toEqual({ sent: [], rejected: [], remaining: [] });
     expect(send).not.toHaveBeenCalled();
   });

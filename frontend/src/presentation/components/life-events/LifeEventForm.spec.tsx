@@ -9,7 +9,7 @@ const NOW = new Date(2026, 9, 30, 12, 0, 0);
 type Props = Parameters<typeof LifeEventForm>[0];
 
 function renderForm(overrides: Partial<Props> = {}) {
-  const props: Props = { editing: null, onClose: vi.fn(), onSubmit: vi.fn().mockResolvedValue(undefined), now: () => NOW, ...overrides };
+  const props: Props = { editing: null, onClose: vi.fn<() => void>(), onSubmit: vi.fn<Props["onSubmit"]>().mockResolvedValue(undefined), now: () => NOW, ...overrides };
   render(<LifeEventForm {...props} />);
   return { props, user: userEvent.setup() };
 }
@@ -76,7 +76,7 @@ describe('LifeEventForm (new birth)', () => {
   });
 
   it('shows the error of the server and lets you try again', async () => {
-    const onSubmit = vi.fn().mockRejectedValueOnce(new Error('Pas de connexion : réessayez dès que le réseau est revenu.')).mockResolvedValue(undefined);
+    const onSubmit = vi.fn<Props["onSubmit"]>().mockRejectedValueOnce(new Error('Pas de connexion : réessayez dès que le réseau est revenu.')).mockResolvedValue(undefined);
     const { user } = renderForm({ onSubmit });
     await setDate(user, '2026-11-12');
     await user.click(screen.getByRole('button', { name: 'Afficher mes démarches' }));
@@ -98,7 +98,7 @@ describe('LifeEventForm (editing)', () => {
   const editing = lifeEvent({ label: 'Bébé de novembre', eventDate: '2026-11-12' });
 
   it('starts from the current date and label, and says that deadlines are recalculated', () => {
-    renderForm({ editing, onDelete: vi.fn() });
+    renderForm({ editing, onDelete: vi.fn<NonNullable<Props["onDelete"]>>() });
     expect(screen.getByRole('dialog', { name: 'Modifier l’événement' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Date de naissance/)).toHaveValue('2026-11-12');
     expect(screen.getByLabelText('Libellé')).toHaveValue('Bébé de novembre');
@@ -121,7 +121,7 @@ describe('LifeEventForm (editing)', () => {
   });
 
   it('asks for confirmation before deleting, and lets you keep the event', async () => {
-    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const onDelete = vi.fn<NonNullable<Props["onDelete"]>>().mockResolvedValue(undefined);
     const { user } = renderForm({ editing, onDelete });
     await user.click(screen.getByRole('button', { name: 'Supprimer cet événement' }));
     expect(screen.getByText('Supprimer cet événement et le suivi de ses démarches ?')).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe('LifeEventForm (editing)', () => {
   });
 
   it('deletes once confirmed', async () => {
-    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const onDelete = vi.fn<NonNullable<Props["onDelete"]>>().mockResolvedValue(undefined);
     const { user } = renderForm({ editing, onDelete });
     await user.click(screen.getByRole('button', { name: 'Supprimer cet événement' }));
     await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));
@@ -139,7 +139,7 @@ describe('LifeEventForm (editing)', () => {
   });
 
   it('explains a failed deletion and goes back to the first question', async () => {
-    const onDelete = vi.fn().mockRejectedValue(new Error('Suppression impossible. Réessayez.'));
+    const onDelete = vi.fn<NonNullable<Props["onDelete"]>>().mockRejectedValue(new Error('Suppression impossible. Réessayez.'));
     const { user } = renderForm({ editing, onDelete });
     await user.click(screen.getByRole('button', { name: 'Supprimer cet événement' }));
     await user.click(screen.getByRole('button', { name: 'Oui, supprimer' }));

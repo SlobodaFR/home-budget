@@ -612,7 +612,7 @@ describe('Guidance API (tranche 3, end to end, AUTH_MODE=dev, in-memory SQLite)'
         GOOD: 3,
       };
       const ranks = insights.map((i) => rank[i.severity]);
-      expect([...ranks].sort()).toEqual(ranks);
+      expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
       expect(
         insights.find((i) => i.id === 'upcoming-payments')!.detail,
       ).toContain(`Netflix (15 nov., 13,99${NBSP}€)`);

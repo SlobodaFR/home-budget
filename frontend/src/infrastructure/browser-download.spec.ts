@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { saveFile } from './browser-download';
 
 describe('saveFile', () => {
-  const createObjectURL = vi.fn(() => 'blob:fake');
-  const revokeObjectURL = vi.fn();
+  const createObjectURL = vi.fn<() => void>(() => 'blob:fake');
+  const revokeObjectURL = vi.fn<() => void>();
 
   beforeEach(() => {
     vi.useFakeTimers();
