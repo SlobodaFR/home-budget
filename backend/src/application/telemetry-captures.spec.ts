@@ -135,7 +135,9 @@ describe('télémétrie des cas d’usage (après succès, sans donnée personne
     const s = await setup();
     await s.create.execute('alice', { name: 'F' });
     s.telemetry.captured.length = 0;
-    await expect(s.commit.execute('alice', 'inconnu', [])).rejects.toThrow();
+    await expect(s.commit.execute('alice', 'inconnu', [])).rejects.toThrow(
+      'Espace introuvable',
+    );
     expect(s.telemetry.captured).toEqual([]);
   });
 
@@ -160,10 +162,10 @@ describe('télémétrie des cas d’usage (après succès, sans donnée personne
 
   it('ne rapporte pas un export refusé', async () => {
     const s = await setup();
-    await expect(s.exportData.execute('loner')).rejects.toThrow();
+    await expect(s.exportData.execute('loner')).rejects.toThrow('Aucun foyer');
     await expect(
       s.exportCsv.execute('loner', 'x', '2026-10-01', '2026-10-31'),
-    ).rejects.toThrow();
+    ).rejects.toThrow('Aucun foyer');
     expect(s.telemetry.captured).toEqual([]);
   });
 });

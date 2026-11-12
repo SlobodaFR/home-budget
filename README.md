@@ -103,7 +103,7 @@ automatiquement par `ConfigModule` en dev, et peut aussi etre passe a `docker ru
 
 ## Telemetrie
 
-Evenements produit anonymes vers PostHog (projet partage, `service=home-budget`), desactives sans `POSTHOG_API_KEY` : `household_created`, `statement_imported` (nombre de lignes), `data_exported` (`json` ou `csv`), `debt_extraction_finished` (resultat `done`/`failed`, origine du texte et nombre de champs), `http_request` (route parametree, methode, statut, duree ; pas `/healthz`). Les evenements metier ne sont emis qu'apres succes.
+Evenements produit anonymes vers PostHog (projet partage, `service=home-budget`), desactives sans `POSTHOG_API_KEY` : `household_created`, `statement_imported` (nombre de lignes), `data_exported` (`json` ou `csv`), `debt_extraction_finished` (resultat `done`/`failed`, origine du texte et nombre de champs), `http_request` (requetes arrivees jusqu'a une route : route parametree, methode, statut, duree ; ni `/healthz`, ni les refus des guards — 401, 403, 429 —, ni les 404 hors route). Les evenements metier ne sont emis qu'apres succes.
 
 Regle : jamais de donnee personnelle dans un evenement (libelle, montant, nom de foyer, e-mail, identifiant brut, nom de fichier). Le membre n'apparait que sous pseudonyme (HMAC de son id avec `PSEUDONYM_SECRET`, meme fonction que les logs) ; sans secret ou sans membre, l'evenement est anonyme (sans profil). Port `Telemetry` dans `backend/src/domain/shared/telemetry.ts`, adaptateur dans `backend/src/infrastructure/telemetry/`.
 

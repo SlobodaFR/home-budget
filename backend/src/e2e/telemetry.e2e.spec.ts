@@ -3,7 +3,13 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../app.module';
 import { configureApp } from '../configure-app';
+import { DebtExtractionJobs } from '../application/debt-extraction/debt-extraction.jobs';
+import {
+  ExportDataUseCase,
+  ExportTransactionsCsvUseCase,
+} from '../application/export/export.use-cases';
 import { CreateHouseholdUseCase } from '../application/household/create-household.use-case';
+import { CommitImportUseCase } from '../application/import/import.use-cases';
 import { NoTelemetry, Telemetry } from '../domain/shared/telemetry';
 import { PostHogTelemetry } from '../infrastructure/telemetry/posthog-telemetry';
 import { SpyTelemetry } from '../testing/spy-telemetry';
@@ -39,13 +45,19 @@ describe('Télémétrie (AppModule réel, SQLite en mémoire)', () => {
     const app = await boot();
     try {
       const telemetry = app.get(Telemetry);
-      const injected: unknown = Reflect.get(
-        app.get(CreateHouseholdUseCase),
-        'telemetry',
-      );
       expect(telemetry).toBeInstanceOf(PostHogTelemetry);
-      expect(injected).toBe(telemetry);
-      expect(injected).not.toBeInstanceOf(NoTelemetry);
+      // @Optional() masquerait un oubli de cablage : chaque capteur doit recevoir le vrai fournisseur.
+      for (const consumer of [
+        CreateHouseholdUseCase,
+        CommitImportUseCase,
+        ExportDataUseCase,
+        ExportTransactionsCsvUseCase,
+        DebtExtractionJobs,
+      ]) {
+        const injected: unknown = Reflect.get(app.get(consumer), 'telemetry');
+        expect(injected).toBe(telemetry);
+        expect(injected).not.toBeInstanceOf(NoTelemetry);
+      }
     } finally {
       await app.close();
     }

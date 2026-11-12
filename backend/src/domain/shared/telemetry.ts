@@ -15,7 +15,7 @@ export type TelemetryEvent =
       properties: {
         outcome: 'done' | 'failed';
         /** Origine du texte (couche texte ou OCR), jamais son contenu. */
-        source?: string;
+        source?: 'TEXT_LAYER' | 'OCR';
         fields?: number;
       };
     }
