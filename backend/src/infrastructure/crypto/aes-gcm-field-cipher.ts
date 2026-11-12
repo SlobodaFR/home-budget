@@ -27,7 +27,7 @@ const HKDF_INFO = 'home-budget/personal-space/v1';
  * Format : v1.<iv>.<tag>.<chiffre> (base64url).
  */
 /** Accepte 32 octets en hexadecimal (64 caracteres) ou en base64 (44 caracteres). */
-function parseMasterKey(raw: string): Buffer {
+export function parseMasterKey(raw: string): Buffer {
   const key = /^[0-9a-fA-F]{64}$/.test(raw)
     ? Buffer.from(raw, 'hex')
     : Buffer.from(raw, 'base64');

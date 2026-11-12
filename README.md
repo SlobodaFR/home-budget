@@ -91,6 +91,10 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 | `MINIO_ACCESS_KEY_ID` | non | - | Cle d'acces MinIO. |
 | `MINIO_SECRET_ACCESS_KEY` | non | - | Cle secrete MinIO. |
 
+En production (`NODE_ENV=production`), le service refuse de demarrer si `AUTH_MODE` n'est pas `oauth`,
+si `AUTH_SERVICE_URL` ou `FRONTEND_URL` n'est pas une URL https, si `AUTH_CLIENT_ID`, `AUTH_CLIENT_SECRET` ou
+`AUTH_WEBHOOK_SECRET` manque, ou si `PERSONAL_DATA_KEY` ne fait pas 32 octets.
+
 Copiez `backend/.env.example` en `backend/.env` et completez les valeurs. Ce fichier est lu
 automatiquement par `ConfigModule` en dev, et peut aussi etre passe a `docker run --env-file`.
 
