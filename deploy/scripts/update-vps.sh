@@ -61,6 +61,22 @@ df -h / | tail -n 1
 cleanup_docker "$((KEEP_VERSIONS - 1))"
 
 docker compose pull
+
+# L'image tourne en utilisateur `node` (uid 1000) : le volume de donnees doit lui appartenir. Un volume cree
+# du temps ou l'image tournait en root reste a root ; on le rend a l'uid 1000, conteneur arrete pour qu'aucun
+# fichier root n'y soit cree entre-temps. Idempotent : sans effet si le volume appartient deja a 1000.
+DATA_VOLUME="${COMPOSE_PROJECT}_budget-data"
+if docker volume inspect "$DATA_VOLUME" >/dev/null 2>&1; then
+  # Premier fichier n'appartenant pas a l'uid 1000 ; si la verification echoue, on corrige quand meme.
+  NOT_OWNED=$(docker run --rm -v "$DATA_VOLUME":/data alpine sh -c 'find /data ! -user 1000 | head -n 1') \
+    || NOT_OWNED=unknown
+  if [ -n "$NOT_OWNED" ]; then
+    echo "Volume $DATA_VOLUME : passage a l'uid 1000"
+    docker compose stop
+    docker run --rm -v "$DATA_VOLUME":/data alpine chown -R 1000:1000 /data
+  fi
+fi
+
 docker compose up -d --remove-orphans
 
 # Après le déploiement : on ne garde que la courante + les précédentes.
