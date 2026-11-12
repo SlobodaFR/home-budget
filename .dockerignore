@@ -1,6 +1,9 @@
 **/node_modules
 **/dist
 **/coverage
-**/data/*.sqlite
+# Données et secrets locaux : jamais dans le contexte de build (ni dans le cache d'une étape).
+**/data
+.env
+**/.env
 .git
 design-reference
