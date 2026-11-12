@@ -69,7 +69,7 @@ docker compose pull
 # retrouve par ses labels compose, comme compose lui-meme.
 DATA_VOLUME=$(docker volume ls -q \
   --filter "label=com.docker.compose.project=$COMPOSE_PROJECT" \
-  --filter "label=com.docker.compose.volume=budget-data")
+  --filter "label=com.docker.compose.volume=budget-data" | head -n 1)
 if [ -z "$DATA_VOLUME" ] && [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$COMPOSE_PROJECT")" ]; then
   echo "Conteneur $COMPOSE_PROJECT present mais volume budget-data introuvable : deploiement interrompu." >&2
   exit 1
