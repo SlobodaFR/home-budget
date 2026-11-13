@@ -169,7 +169,7 @@ function ImportFlow({
       toast.show(
         pluralize(created, 'opération importée', 'opérations importées'),
       );
-      navigate('/');
+      void navigate('/');
     } finally {
       submittingRef.current = false;
       setSubmitting(false);

@@ -47,7 +47,7 @@ export function WelcomePage() {
     created: Awaited<ReturnType<typeof apiClient.createHousehold>>,
   ) => {
     setHousehold(created);
-    navigate('/', { replace: true });
+    void navigate('/', { replace: true });
   };
 
   const handleCreate = async (event: FormEvent) => {
