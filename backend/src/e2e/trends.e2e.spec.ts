@@ -45,9 +45,13 @@ describe('Trends API (tranche 9, end to end, AUTH_MODE=dev, in-memory SQLite)', 
     configureApp(app);
     await app.init();
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
     const created = await alice
       .post('/api/household')

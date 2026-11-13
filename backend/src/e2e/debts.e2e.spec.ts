@@ -41,9 +41,13 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
     await app.init();
     dataSource = app.get(DataSource);
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
     const created = await alice
       .post('/api/household')
@@ -108,7 +112,10 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
   let mortgage: string;
 
   it('requires authentication on every route', async () => {
-    const anonymous = request(app.getHttpServer());
+    // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+    const anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     const base = `/api/spaces/${common}/debts`;
     await anonymous.get(base).expect(401);
     await anonymous.get(`${base}/summary`).expect(401);
@@ -1664,7 +1671,10 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         expect(JSON.stringify(await debtsOf(bob, common))).not.toContain(
           'Secrète',
         );
-        const anonymous = request(app.getHttpServer());
+        // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+        const anonymous = request
+          .agent(app.getHttpServer())
+          .set('Sec-Fetch-Site', 'same-origin');
         await anonymous.get(base).expect(401);
         await remove(alicePersonal, secretId);
       });

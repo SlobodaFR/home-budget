@@ -50,7 +50,9 @@ describe('Guidance API (tranche 3, end to end, AUTH_MODE=dev, in-memory SQLite)'
   });
 
   async function login(name: 'alice' | 'bob'): Promise<Agent> {
-    const agent = request.agent(app.getHttpServer());
+    const agent = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await agent.get(`/api/auth/dev-login?as=${name}`).expect(302);
     return agent;
   }
@@ -76,7 +78,10 @@ describe('Guidance API (tranche 3, end to end, AUTH_MODE=dev, in-memory SQLite)'
       .send({ savedCents: 1, asOf: '2026-11-01', targetMonths: 3 })
       .expect(404);
 
-    const anonymous = request(app.getHttpServer());
+    // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+    const anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     for (const path of [
       '/api/aid-rules',
       '/api/aid-rules/creche-estimate?annualResourcesCents=1&children=1&hoursPerMonth=1',

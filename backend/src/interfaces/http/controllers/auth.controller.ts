@@ -19,6 +19,7 @@ import {
   CurrentUserPayload,
 } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
+import { ServerToServer } from '../decorators/server-to-server.decorator';
 import { SessionRevokedDto } from '../dto/session-revoked.dto';
 
 @Controller('auth')
@@ -64,6 +65,7 @@ export class AuthController {
 
   /** Webhook called by the central auth service on global logout (logoutWebhookUrl). */
   @Public()
+  @ServerToServer()
   @Post('disconnect')
   @HttpCode(204)
   async disconnect(

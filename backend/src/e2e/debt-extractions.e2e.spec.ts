@@ -64,9 +64,13 @@ describe('Import de contrat par OCR (tranche 13, end to end, AUTH_MODE=dev, extr
     await app.init();
     jobs = app.get(DebtExtractionJobs);
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
     const created = await alice
       .post('/api/household')
@@ -132,7 +136,10 @@ describe('Import de contrat par OCR (tranche 13, end to end, AUTH_MODE=dev, extr
   };
 
   it('exige une authentification sur toutes les routes', async () => {
-    const anonymous = request(app.getHttpServer());
+    // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+    const anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await anonymous.get('/api/debt-extractions/capabilities').expect(401);
     await anonymous.get('/api/debt-extractions/x').expect(401);
     await anonymous.delete('/api/debt-extractions/x').expect(401);

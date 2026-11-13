@@ -38,9 +38,13 @@ describe('Monthly review and export API (tranche 7, end to end, AUTH_MODE=dev, i
     await app.init();
     dataSource = app.get(DataSource);
 
-    alice = request.agent(app.getHttpServer());
+    alice = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await alice.get('/api/auth/dev-login?as=alice').expect(302);
-    bob = request.agent(app.getHttpServer());
+    bob = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await bob.get('/api/auth/dev-login?as=bob').expect(302);
   });
 
@@ -67,7 +71,10 @@ describe('Monthly review and export API (tranche 7, end to end, AUTH_MODE=dev, i
 
   it('answers 404 to a user without household on the export, and 401 to anonymous callers on every new route', async () => {
     await bob.get('/api/export').expect(404);
-    const anonymous = request(app.getHttpServer());
+    // Agent neuf, sans cookie : anonyme, mais depuis le front (meme origine) pour tester l'authentification.
+    const anonymous = request
+      .agent(app.getHttpServer())
+      .set('Sec-Fetch-Site', 'same-origin');
     await anonymous.get('/api/export').expect(401);
     for (const path of [
       '/api/spaces/x/reviews',
