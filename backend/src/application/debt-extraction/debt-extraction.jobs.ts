@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   OnModuleDestroy,
   OnModuleInit,
   ServiceUnavailableException,
@@ -22,6 +23,7 @@ import { detectDocumentKind } from '../../domain/contract-extraction/document-ki
 import { ExtractedField } from '../../domain/contract-extraction/extraction.types';
 import { Clock } from '../../domain/shared/clock';
 import { DomainError } from '../../domain/shared/domain-error';
+import { NoTelemetry, Telemetry } from '../../domain/shared/telemetry';
 import { SpaceAccessService } from '../household/space-access.service';
 
 /** Durée de conservation d'une extraction (et de son résultat) en mémoire. */
@@ -100,6 +102,7 @@ export class DebtExtractionJobs implements OnModuleInit, OnModuleDestroy {
     private readonly extractor: DocumentTextExtractor,
     private readonly access: SpaceAccessService,
     private readonly clock: Clock,
+    @Optional() private readonly telemetry: Telemetry = new NoTelemetry(),
   ) {}
 
   onModuleInit(): void {
@@ -316,6 +319,18 @@ export class DebtExtractionJobs implements OnModuleInit, OnModuleDestroy {
       };
       job.status = 'DONE';
       job.progressPercent = 100;
+      // Origine du texte et nombre de champs : jamais le contenu ni le nom du fichier.
+      this.telemetry.capture(
+        {
+          name: 'debt_extraction_finished',
+          properties: {
+            outcome: 'done',
+            source: text.source,
+            fields: extraction.fields.length,
+          },
+        },
+        job.userId,
+      );
       this.logger.log(
         `job=${job.id} terminé source=${text.source} champs=${extraction.fields.length} durée=${Date.now() - startedAt}ms`,
       );
@@ -330,6 +345,10 @@ export class DebtExtractionJobs implements OnModuleInit, OnModuleDestroy {
             ? error.userMessage
             : GENERIC_FAILURE_MESSAGE,
       };
+      this.telemetry.capture(
+        { name: 'debt_extraction_finished', properties: { outcome: 'failed' } },
+        job.userId,
+      );
       // Le nom de la classe d'erreur suffit : le message d'un outil pourrait citer le document.
       this.logger.warn(
         `job=${job.id} échec=${error instanceof Error ? error.name : 'inconnu'} durée=${Date.now() - startedAt}ms`,

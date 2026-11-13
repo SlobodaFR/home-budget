@@ -7,6 +7,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { loggerParams } from './infrastructure/logging/logger.config';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
+import { TelemetryModule } from './infrastructure/telemetry/telemetry.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
 import { HealthController } from './interfaces/http/controllers/health.controller';
 import { SameOriginGuard } from './interfaces/http/guards/same-origin.guard';
@@ -22,6 +23,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
     ),
     DatabaseModule,
     ThrottlerModule.forRoot(throttlerOptions),
+    TelemetryModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, 'public'),
       exclude: ['/api/(.*)', '/healthz'],

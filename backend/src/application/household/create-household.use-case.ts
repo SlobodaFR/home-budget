@@ -1,8 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Optional } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Household } from '../../domain/household/household';
 import { HouseholdRepository } from '../../domain/household/household.repository';
 import { Membership } from '../../domain/household/membership';
+import { NoTelemetry, Telemetry } from '../../domain/shared/telemetry';
 import { Space } from '../../domain/space/space';
 import { HouseholdDto, HouseholdViewBuilder } from './household.dto';
 
@@ -16,6 +17,8 @@ export class CreateHouseholdUseCase {
   constructor(
     private readonly households: HouseholdRepository,
     private readonly view: HouseholdViewBuilder,
+    // @Optional : les specs unitaires n'en ont pas besoin ; l'e2e prouve le câblage réel.
+    @Optional() private readonly telemetry: Telemetry = new NoTelemetry(),
   ) {}
 
   async execute(
@@ -58,6 +61,11 @@ export class CreateHouseholdUseCase {
     ];
 
     await this.households.createHousehold(household, membership, spaces);
+
+    this.telemetry.capture(
+      { name: 'household_created', properties: {} },
+      userId,
+    );
 
     const snapshot = await this.households.findSnapshotByUserId(userId);
     return this.view.build(snapshot!, userId);

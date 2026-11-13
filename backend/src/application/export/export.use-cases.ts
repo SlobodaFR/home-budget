@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { AccountRepository } from '../../domain/account/account.repository';
 import { FiscalProfileRepository } from '../../domain/aid/fiscal-profile.repository';
 import {
@@ -12,6 +12,7 @@ import { SafetyNetRepository } from '../../domain/safety-net/safety-net.reposito
 import { addDays, parseIsoDate, toIsoDate } from '../../domain/shared/calendar';
 import { Clock } from '../../domain/shared/clock';
 import { DomainError } from '../../domain/shared/domain-error';
+import { NoTelemetry, Telemetry } from '../../domain/shared/telemetry';
 import { SpacePlan } from '../../domain/space/space-plan';
 import { SpacePlanRepository } from '../../domain/space/space-plan.repository';
 import { isVisibleTo } from '../../domain/space/space';
@@ -51,6 +52,7 @@ export class ExportDataUseCase {
     private readonly safetyNets: SafetyNetRepository,
     private readonly fiscalProfiles: FiscalProfileRepository,
     private readonly clock: Clock,
+    @Optional() private readonly telemetry: Telemetry = new NoTelemetry(),
   ) {}
 
   async execute(userId: string): Promise<{ filename: string; data: object }> {
@@ -123,6 +125,10 @@ export class ExportDataUseCase {
       this.fiscalProfiles.find(snapshot.household.id),
     ]);
 
+    this.telemetry.capture(
+      { name: 'data_exported', properties: { format: 'json' } },
+      userId,
+    );
     return {
       filename: `budget-export-${toIsoDate(now)}.json`,
       data: {
@@ -144,6 +150,7 @@ export class ExportTransactionsCsvUseCase {
     private readonly access: SpaceAccessService,
     private readonly transactions: TransactionRepository,
     private readonly accounts: AccountRepository,
+    @Optional() private readonly telemetry: Telemetry = new NoTelemetry(),
   ) {}
 
   async execute(
@@ -184,6 +191,10 @@ export class ExportTransactionsCsvUseCase {
         amountCents: t.amount.toCents(),
         accountName: t.accountId ? (accountNames.get(t.accountId) ?? '') : '',
       }));
+    this.telemetry.capture(
+      { name: 'data_exported', properties: { format: 'csv' } },
+      userId,
+    );
     return {
       filename: `operations-${from}_${to}.csv`,
       content: buildTransactionsCsv(rows),

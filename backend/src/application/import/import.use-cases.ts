@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   DEFAULT_RULES,
@@ -12,6 +12,7 @@ import { SpaceRulesRepository } from '../../domain/import/space-rules.repository
 import { parseStatement } from '../../domain/import/statement-parser';
 import { Bloc } from '../../domain/shared/bloc';
 import { Money } from '../../domain/shared/money';
+import { NoTelemetry, Telemetry } from '../../domain/shared/telemetry';
 import {
   Transaction,
   TransactionKind,
@@ -131,6 +132,7 @@ export class CommitImportUseCase {
     private readonly access: SpaceAccessService,
     private readonly transactions: TransactionRepository,
     private readonly assignment: AccountAssignmentService,
+    @Optional() private readonly telemetry: Telemetry = new NoTelemetry(),
   ) {}
 
   async execute(
@@ -155,6 +157,10 @@ export class CommitImportUseCase {
       }),
     );
     await this.transactions.saveMany(built);
+    this.telemetry.capture(
+      { name: 'statement_imported', properties: { rows: built.length } },
+      userId,
+    );
     return { created: built.length };
   }
 }

@@ -11,6 +11,9 @@ async function bootstrap() {
     bufferLogs: true,
   });
   app.useLogger(app.get(Logger));
+  // SIGTERM (docker stop, chaque deploiement) declenche onApplicationShutdown : la telemetrie
+  // vide sa file (borne a 5 s) avant l'arret.
+  app.enableShutdownHooks();
   configureApp(app);
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
