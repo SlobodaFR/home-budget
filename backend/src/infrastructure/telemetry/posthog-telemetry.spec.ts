@@ -32,7 +32,8 @@ const imported = {
 
 describe('PostHogTelemetry', () => {
   it('should create no client without POSTHOG_API_KEY', () => {
-    const factory = jest.fn<PostHogClient, [string, unknown]>();
+    const factory =
+      vi.fn<(apiKey: string, options: unknown) => PostHogClient>();
 
     createPostHogTelemetry({ PSEUDONYM_SECRET: SECRET }, factory).capture(
       imported,
@@ -43,8 +44,8 @@ describe('PostHogTelemetry', () => {
   });
 
   it('should create an EU, geoip-free client when a key is set', () => {
-    const factory = jest
-      .fn<PostHogClient, [string, unknown]>()
+    const factory = vi
+      .fn<(apiKey: string, options: unknown) => PostHogClient>()
       .mockReturnValue(new FakeClient());
 
     createPostHogTelemetry(
@@ -62,8 +63,8 @@ describe('PostHogTelemetry', () => {
   });
 
   it('should honour POSTHOG_HOST', () => {
-    const factory = jest
-      .fn<PostHogClient, [string, unknown]>()
+    const factory = vi
+      .fn<(apiKey: string, options: unknown) => PostHogClient>()
       .mockReturnValue(new FakeClient());
 
     createPostHogTelemetry(

@@ -67,7 +67,9 @@ describe('Télémétrie (AppModule réel, SQLite en mémoire)', () => {
     const spy = new SpyTelemetry();
     const app = await boot(spy);
     try {
-      const alice = request.agent(app.getHttpServer());
+      const alice = request
+        .agent(app.getHttpServer())
+        .set('Sec-Fetch-Site', 'same-origin');
       await alice.get('/api/auth/dev-login?as=alice').expect(302);
       await alice
         .post('/api/household')
