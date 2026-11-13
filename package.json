@@ -43,6 +43,7 @@
   "allowScripts": {
     "better-sqlite3": true,
     "esbuild": true,
+    "@swc/core": true,
     "@nestjs/core": false,
     "fsevents": false
   }
