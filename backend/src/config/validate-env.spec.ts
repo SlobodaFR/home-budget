@@ -9,6 +9,7 @@ const production = () => ({
   AUTH_CLIENT_SECRET: 'client-secret',
   AUTH_WEBHOOK_SECRET: 'webhook-secret',
   PERSONAL_DATA_KEY: randomBytes(32).toString('hex'),
+  PSEUDONYM_SECRET: randomBytes(32).toString('hex'),
 });
 
 describe('validateEnv', () => {
@@ -81,5 +82,14 @@ describe('validateEnv', () => {
         message: expect.not.stringContaining('deadbeef-secret'),
       }),
     );
+  });
+  it('requires a PSEUDONYM_SECRET of at least 32 bytes in production', () => {
+    for (const value of [undefined, '', 'a'.repeat(31)])
+      expect(() =>
+        validateEnv({ ...production(), PSEUDONYM_SECRET: value }),
+      ).toThrow('PSEUDONYM_SECRET');
+    expect(() =>
+      validateEnv({ ...production(), PSEUDONYM_SECRET: 'a'.repeat(32) }),
+    ).not.toThrow();
   });
 });
