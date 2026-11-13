@@ -24,7 +24,7 @@
     "prepare": "husky"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=26"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
@@ -39,5 +39,12 @@
     "*.{ts,tsx,js,mjs,json,md,yml,yaml,css,html}": [
       "oxfmt --no-error-on-unmatched-pattern"
     ]
+  },
+  "allowScripts": {
+    "better-sqlite3": true,
+    "esbuild": true,
+    "@swc/core": true,
+    "@nestjs/core": false,
+    "fsevents": false
   }
 }
