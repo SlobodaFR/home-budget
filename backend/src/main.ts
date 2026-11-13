@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { validateEnv } from './config/validate-env';
 import { configureApp } from './configure-app';
 
 async function bootstrap() {
+  validateEnv(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   configureApp(app);
 
