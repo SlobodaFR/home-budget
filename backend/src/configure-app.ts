@@ -1,9 +1,11 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { applySecurityHeaders } from './interfaces/http/security-headers';
 
 /** Configuration HTTP commune au demarrage reel et aux tests de bout en bout. */
 export function configureApp(app: NestExpressApplication): void {
+  applySecurityHeaders(app);
   // /healthz reste hors du prefixe : route interne, bloquee par Caddy.
   app.setGlobalPrefix('api', { exclude: ['healthz'] });
   // Un releve CSV d'un mois pese quelques dizaines de Ko ; 1 Mo est la limite assumee.
