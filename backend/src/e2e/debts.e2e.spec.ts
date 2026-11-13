@@ -667,8 +667,14 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         rows[0].annual_rate_hundredths,
         rows[0].monthly_payment_cents,
         rows[0].insurance_monthly_cents,
-        rows[0].secret_payload,
       ]);
+      // Le chiffré se cherche dans ses octets décodés : son texte base64url peut contenir par
+      // hasard une courte suite de chiffres (« 425 », « 987 ») sans rien révéler.
+      const decodedPayload = String(rows[0].secret_payload)
+        .split('.')
+        .slice(1)
+        .map((part) => Buffer.from(part, 'base64url').toString('latin1'))
+        .join('');
       for (const secret of [
         'famille',
         'secret',
@@ -680,6 +686,7 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         '4.25',
       ]) {
         expect(raw).not.toContain(secret);
+        expect(decodedPayload).not.toContain(secret);
       }
       // Les métadonnées de planification restent en clair.
       expect(rows[0]).toMatchObject({
