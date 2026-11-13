@@ -656,10 +656,22 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         'annual_rate_hundredths',
         'monthly_payment_cents',
         'insurance_monthly_cents',
+        'lender',
+        'contract_reference',
+        'initial_term_months',
+        'insurance_rate_hundredths',
+        'insurance_quotity_percent',
+        'fees_cents',
+        'guarantee_cents',
+        'notes',
       ]) {
         expect(rows[0][column]).toBeNull();
       }
-      expect(String(rows[0].secret_payload).startsWith('v1.')).toBe(true);
+      // Forme complète v1.<iv>.<tag>.<chiffré> en base64url : sans elle, le décodage ci-dessous
+      // ignorerait silencieusement un payload laissé en clair.
+      expect(String(rows[0].secret_payload)).toMatch(
+        /^v1(\.[A-Za-z0-9_-]+){3}$/,
+      );
       const raw = JSON.stringify([
         rows[0].name,
         rows[0].principal_cents,
@@ -667,8 +679,14 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         rows[0].annual_rate_hundredths,
         rows[0].monthly_payment_cents,
         rows[0].insurance_monthly_cents,
-        rows[0].secret_payload,
       ]);
+      // Le chiffré se cherche dans ses octets décodés : son texte base64url peut contenir par
+      // hasard une courte suite de chiffres (« 425 », « 987 ») sans rien révéler.
+      const decodedPayload = String(rows[0].secret_payload)
+        .split('.')
+        .slice(1)
+        .map((part) => Buffer.from(part, 'base64url').toString('latin1'))
+        .join('');
       for (const secret of [
         'famille',
         'secret',
@@ -680,6 +698,7 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         '4.25',
       ]) {
         expect(raw).not.toContain(secret);
+        expect(decodedPayload).not.toContain(secret);
       }
       // Les métadonnées de planification restent en clair.
       expect(rows[0]).toMatchObject({
