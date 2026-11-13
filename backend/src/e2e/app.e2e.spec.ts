@@ -48,6 +48,20 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
     await anonymous.get('/api/household').expect(401);
   });
 
+  it('answers no cross-origin request: the front is served by the same origin', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/auth/config')
+      .set('Origin', 'https://evil.example')
+      .expect(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    expect(res.headers['access-control-allow-credentials']).toBeUndefined();
+    const preflight = await request(app.getHttpServer())
+      .options('/api/household')
+      .set('Origin', 'https://evil.example')
+      .set('Access-Control-Request-Method', 'POST');
+    expect(preflight.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('plays the full couple scenario and keeps personal spaces private', async () => {
     const alice = await login('alice');
     const bob = await login('bob');
