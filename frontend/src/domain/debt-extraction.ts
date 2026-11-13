@@ -173,12 +173,12 @@ export function parseExtractionStart(raw: unknown): ExtractionStart | null {
   return { jobId: body.jobId, expiresAtMs: Number.isFinite(expires) ? expires : null };
 }
 
-/** Le texte de la valeur est-il du bon type pour ce champ ? Une valeur de mauvais type est écartée, jamais convertie. */
 /** Libellé d'une valeur brute venue de l'extraction : la valeur elle-même quand elle n'est pas dans le catalogue. */
 function labelOr(value: string, labels: Readonly<Partial<Record<string, string>>>): string {
   return labels[value] ?? value;
 }
 
+/** Le texte de la valeur est-il du bon type pour ce champ ? Une valeur de mauvais type est écartée, jamais convertie. */
 function readValue(field: ExtractionFieldKey, raw: unknown): string | number | null {
   if (TEXT_FIELDS.includes(field)) {
     return asText(raw, 200);

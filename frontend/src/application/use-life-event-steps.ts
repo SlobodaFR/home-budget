@@ -65,7 +65,7 @@ export function useLifeEventSteps(source: LifeEvent[] | undefined, onSettled: ()
         onSettled();
       }
     },
-    // oxlint-disable-next-line react/exhaustive-deps -- `findStep` ne lit que des refs (état courant) : l'inclure referait le callback à chaque rendu
+    // oxlint-disable-next-line react/exhaustive-deps -- `findStep` ne lit que des refs (état courant) : l'inclure referait le callback à chaque rendu. Oxlint la dit inutile, mais elle fait aussi ignorer ce callback par les règles du compilateur React (react/refs), qui sinon le refusent.
     [track, onSettled, now],
   );
 
@@ -82,7 +82,7 @@ export function useLifeEventSteps(source: LifeEvent[] | undefined, onSettled: ()
         onSettled();
       }
     },
-    // oxlint-disable-next-line react/exhaustive-deps -- `findStep` ne lit que des refs (état courant) : l'inclure referait le callback à chaque rendu
+    // oxlint-disable-next-line react/exhaustive-deps -- `findStep` ne lit que des refs (état courant) : l'inclure referait le callback à chaque rendu. Oxlint la dit inutile, mais elle fait aussi ignorer ce callback par les règles du compilateur React (react/refs), qui sinon le refusent.
     [track, onSettled, now],
   );
 
