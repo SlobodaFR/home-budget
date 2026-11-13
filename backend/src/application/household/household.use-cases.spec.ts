@@ -118,13 +118,13 @@ describe('household use cases', () => {
     const { create, invite, join } = setup();
     await create.execute('alice', { name: 'A' });
     const { code } = await invite.execute('alice');
-    jest.useFakeTimers().setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
+    vi.useFakeTimers().setSystemTime(Date.now() + 8 * 24 * 60 * 60 * 1000);
     try {
       await expect(join.execute('bob', code)).rejects.toBeInstanceOf(
         NotFoundException,
       );
     } finally {
-      jest.useRealTimers();
+      vi.useRealTimers();
     }
   });
 

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { Logger, NotFoundException } from '@nestjs/common';
 import { DocumentExtractionError } from '../../domain/contract-extraction/document-text-extractor';
 import { DomainError } from '../../domain/shared/domain-error';
@@ -25,8 +26,8 @@ function setup() {
   const extractor = new FakeDocumentTextExtractor();
   const clock = FakeClock.at('2026-10-31T10:00:00Z');
   const access = {
-    requireSpace: jest.fn().mockResolvedValue({}),
-  } as unknown as SpaceAccessService & { requireSpace: jest.Mock };
+    requireSpace: vi.fn().mockResolvedValue({}),
+  } as unknown as SpaceAccessService & { requireSpace: Mock };
   const jobs = new DebtExtractionJobs(extractor, access, clock);
   return { extractor, clock, access, jobs };
 }
@@ -335,7 +336,7 @@ describe('DebtExtractionJobs', () => {
 
     it('le minuteur de purge ne retient pas le processus et s’arrête avec le module', () => {
       const { jobs } = setup();
-      const spy = jest.spyOn(global, 'setInterval');
+      const spy = vi.spyOn(global, 'setInterval');
       jobs.onModuleInit();
       const timer = spy.mock.results[0].value as NodeJS.Timeout;
       expect(timer.hasRef()).toBe(false);

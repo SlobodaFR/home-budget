@@ -403,7 +403,7 @@ describe('Import de contrat par OCR (tranche 13, end to end, AUTH_MODE=dev, extr
       const calls: string[] = [];
       const spies = (['log', 'warn', 'error', 'debug', 'verbose'] as const).map(
         (level) =>
-          jest
+          vi
             .spyOn(Logger.prototype, level)
             .mockImplementation((...args: unknown[]) => {
               calls.push(JSON.stringify(args));

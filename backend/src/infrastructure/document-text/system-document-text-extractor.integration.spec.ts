@@ -146,7 +146,7 @@ function scannedPdf(jpeg: Buffer, dpi: number): Buffer {
   return Buffer.concat(parts);
 }
 
-jest.setTimeout(90_000);
+vi.setConfig({ testTimeout: 90_000 });
 
 const describeIfTools = toolsReady() ? describe : describe.skip;
 

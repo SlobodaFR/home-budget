@@ -110,7 +110,7 @@ npm run dev:frontend   # Vite on :5173, proxies /api to :3000
 ## Tests
 
 ```bash
-npm test               # backend (jest) + frontend (vitest)
+npm test               # backend + frontend (vitest)
 ```
 
 ## Build & run with Docker

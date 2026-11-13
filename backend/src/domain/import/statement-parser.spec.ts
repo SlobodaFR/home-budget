@@ -25,7 +25,7 @@ describe('parseAmountCents', () => {
   });
 
   it.each(['', 'abc', '12/10/2026', '1,234,567.891', '--5', '€'])(
-    'rejects %p',
+    'rejects %j',
     (input) => {
       expect(parseAmountCents(input)).toBeNull();
     },
