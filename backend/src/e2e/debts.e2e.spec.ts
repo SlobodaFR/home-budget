@@ -656,10 +656,22 @@ describe('Debts API (tranche 8, end to end, AUTH_MODE=dev, in-memory SQLite)', (
         'annual_rate_hundredths',
         'monthly_payment_cents',
         'insurance_monthly_cents',
+        'lender',
+        'contract_reference',
+        'initial_term_months',
+        'insurance_rate_hundredths',
+        'insurance_quotity_percent',
+        'fees_cents',
+        'guarantee_cents',
+        'notes',
       ]) {
         expect(rows[0][column]).toBeNull();
       }
-      expect(String(rows[0].secret_payload).startsWith('v1.')).toBe(true);
+      // Forme complète v1.<iv>.<tag>.<chiffré> en base64url : sans elle, le décodage ci-dessous
+      // ignorerait silencieusement un payload laissé en clair.
+      expect(String(rows[0].secret_payload)).toMatch(
+        /^v1(\.[A-Za-z0-9_-]+){3}$/,
+      );
       const raw = JSON.stringify([
         rows[0].name,
         rows[0].principal_cents,
