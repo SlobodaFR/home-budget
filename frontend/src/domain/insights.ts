@@ -11,7 +11,12 @@ export interface Insight {
 
 export const MAX_INSIGHTS = 8;
 
-export const SEVERITIES: readonly InsightSeverity[] = ['WARNING', 'ACTION', 'INFO', 'GOOD'];
+export const SEVERITIES: readonly InsightSeverity[] = [
+  'WARNING',
+  'ACTION',
+  'INFO',
+  'GOOD',
+];
 
 export const SEVERITY_LABEL: Record<InsightSeverity, string> = {
   WARNING: 'Attention',
@@ -31,9 +36,15 @@ export interface LessonReference {
   href: string | null;
 }
 
-export function lessonReference(lesson: number, template: string | null = COURSE_LESSON_URL_TEMPLATE): LessonReference {
+export function lessonReference(
+  lesson: number,
+  template: string | null = COURSE_LESSON_URL_TEMPLATE,
+): LessonReference {
   if (template) {
-    return { label: `Voir la leçon ${lesson}`, href: template.replace('{n}', String(lesson)) };
+    return {
+      label: `Voir la leçon ${lesson}`,
+      href: template.replace('{n}', String(lesson)),
+    };
   }
   return { label: `Leçon ${lesson} du cours`, href: null };
 }
@@ -61,20 +72,49 @@ const ACTION_LABELS: Record<string, string> = {
  * Conseils des tranches 5 à 11 : un libellé plus précis et, pour le gros paiement à venir, une ouverture directe sur l'onglet
  * « Provisions ». Ils ne s'appliquent que si le serveur envoie bien le lien attendu (sinon on retombe sur le bouton générique).
  */
-const INSIGHT_ACTIONS: Record<string, { link: string; to: string; label: string }> = {
-  'upcoming-big-payment': { link: '/previsionnel', to: '/previsionnel?vue=provisions', label: 'Voir mes provisions' },
-  'provision-suggestion': { link: '/plan', to: '/plan', label: 'Ajuster mon plan' },
-  'projects-exceed-savings': { link: '/plan', to: '/plan', label: 'Ajuster mon plan' },
+const INSIGHT_ACTIONS: Record<
+  string,
+  { link: string; to: string; label: string }
+> = {
+  'upcoming-big-payment': {
+    link: '/previsionnel',
+    to: '/previsionnel?vue=provisions',
+    label: 'Voir mes provisions',
+  },
+  'provision-suggestion': {
+    link: '/plan',
+    to: '/plan',
+    label: 'Ajuster mon plan',
+  },
+  'projects-exceed-savings': {
+    link: '/plan',
+    to: '/plan',
+    label: 'Ajuster mon plan',
+  },
   'review-done': { link: '/revue', to: '/revue', label: 'Voir ma revue' },
-  'contribution-pending': { link: '/foyer', to: '/foyer?verser=1', label: 'Verser ma contribution' },
+  'contribution-pending': {
+    link: '/foyer',
+    to: '/foyer?verser=1',
+    label: 'Verser ma contribution',
+  },
 };
 
 /** Seules les routes connues de l'application sont suivies ; « / » (l'accueil) n'a pas de bouton. */
-export function insightAction(link: string | null, id?: string): InsightAction | null {
-  if (link === null || !Object.prototype.hasOwnProperty.call(ACTION_LABELS, link)) {
+export function insightAction(
+  link: string | null,
+  id?: string,
+): InsightAction | null {
+  if (
+    link === null ||
+    !Object.prototype.hasOwnProperty.call(ACTION_LABELS, link)
+  ) {
     return null;
   }
-  const special = id !== undefined && Object.prototype.hasOwnProperty.call(INSIGHT_ACTIONS, id) ? INSIGHT_ACTIONS[id] : null;
+  const special =
+    id !== undefined &&
+    Object.prototype.hasOwnProperty.call(INSIGHT_ACTIONS, id)
+      ? INSIGHT_ACTIONS[id]
+      : null;
   if (special && special.link === link) {
     return { to: special.to, label: special.label };
   }
@@ -82,7 +122,10 @@ export function insightAction(link: string | null, id?: string): InsightAction |
 }
 
 function isSeverity(value: unknown): value is InsightSeverity {
-  return typeof value === 'string' && (SEVERITIES as readonly string[]).includes(value);
+  return (
+    typeof value === 'string' &&
+    (SEVERITIES as readonly string[]).includes(value)
+  );
 }
 
 /** Lit la réponse du serveur sans jamais planter : les éléments illisibles sont ignorés. */
@@ -94,7 +137,11 @@ export function parseInsights(raw: unknown): Insight[] {
   const insights: Insight[] = [];
   for (const item of list as unknown[]) {
     const entry = item as Partial<Record<keyof Insight, unknown>> | null;
-    if (!entry || typeof entry.id !== 'string' || typeof entry.title !== 'string') {
+    if (
+      !entry ||
+      typeof entry.id !== 'string' ||
+      typeof entry.title !== 'string'
+    ) {
       continue;
     }
     insights.push({
@@ -102,7 +149,12 @@ export function parseInsights(raw: unknown): Insight[] {
       severity: isSeverity(entry.severity) ? entry.severity : 'INFO',
       title: entry.title,
       detail: typeof entry.detail === 'string' ? entry.detail : '',
-      lesson: typeof entry.lesson === 'number' && Number.isInteger(entry.lesson) && entry.lesson > 0 ? entry.lesson : null,
+      lesson:
+        typeof entry.lesson === 'number' &&
+        Number.isInteger(entry.lesson) &&
+        entry.lesson > 0
+          ? entry.lesson
+          : null,
       link: typeof entry.link === 'string' ? entry.link : null,
     });
   }

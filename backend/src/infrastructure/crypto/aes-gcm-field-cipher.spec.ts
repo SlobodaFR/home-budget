@@ -27,19 +27,25 @@ describe('AesGcmFieldCipher', () => {
 
   it('does not decrypt with another owner key', () => {
     const token = cipher.encrypt('alice', 'tx:1', 'secret');
-    expect(() => cipher.decrypt('bob', 'tx:1', token)).toThrow(/authenticate data/);
+    expect(() => cipher.decrypt('bob', 'tx:1', token)).toThrow(
+      /authenticate data/,
+    );
   });
 
   it('does not decrypt when moved to another row (AAD)', () => {
     const token = cipher.encrypt('alice', 'tx:1', 'secret');
-    expect(() => cipher.decrypt('alice', 'tx:2', token)).toThrow(/authenticate data/);
+    expect(() => cipher.decrypt('alice', 'tx:2', token)).toThrow(
+      /authenticate data/,
+    );
   });
 
   it('detects tampering', () => {
     const token = cipher.encrypt('alice', 'tx:1', 'secret');
     const parts = token.split('.');
     parts[3] = Buffer.from('forged').toString('base64url');
-    expect(() => cipher.decrypt('alice', 'tx:1', parts.join('.'))).toThrow(/authenticate data/);
+    expect(() => cipher.decrypt('alice', 'tx:1', parts.join('.'))).toThrow(
+      /authenticate data/,
+    );
   });
 
   it('rejects a truncated authentication tag', () => {
@@ -48,7 +54,9 @@ describe('AesGcmFieldCipher', () => {
     parts[2] = Buffer.from(parts[2], 'base64url')
       .subarray(0, 4)
       .toString('base64url');
-    expect(() => cipher.decrypt('alice', 'tx:1', parts.join('.'))).toThrow(/authentication tag/);
+    expect(() => cipher.decrypt('alice', 'tx:1', parts.join('.'))).toThrow(
+      /authentication tag/,
+    );
   });
 
   it('does not decrypt with another master key', () => {
@@ -56,7 +64,9 @@ describe('AesGcmFieldCipher', () => {
       PERSONAL_DATA_KEY: randomBytes(32).toString('base64'),
     });
     const token = cipher.encrypt('alice', 'tx:1', 'secret');
-    expect(() => other.decrypt('alice', 'tx:1', token)).toThrow(/authenticate data/);
+    expect(() => other.decrypt('alice', 'tx:1', token)).toThrow(
+      /authenticate data/,
+    );
   });
 
   it('accepts a 32-byte key written as 64 hexadecimal characters', () => {

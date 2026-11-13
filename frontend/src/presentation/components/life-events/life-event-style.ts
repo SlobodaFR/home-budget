@@ -1,6 +1,17 @@
 import { ComponentType, SVGProps } from 'react';
 import { StepCategory, StepStatus } from '../../../domain/life-event';
-import { AlertIcon, BriefcaseIcon, CheckIcon, ClockIcon, DocumentIcon, GiftIcon, HeartIcon, CalendarIcon, FlagIcon, WalletIcon } from '../Icons';
+import {
+  AlertIcon,
+  BriefcaseIcon,
+  CheckIcon,
+  ClockIcon,
+  DocumentIcon,
+  GiftIcon,
+  HeartIcon,
+  CalendarIcon,
+  FlagIcon,
+  WalletIcon,
+} from '../Icons';
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -24,9 +35,34 @@ export interface StatusStyle {
 }
 
 export const STATUS_STYLE: Record<StepStatus, StatusStyle> = {
-  OVERDUE: { icon: AlertIcon, badge: 'bg-error/10 text-error', accent: 'border-l-error', due: 'font-semibold text-error' },
-  DUE_SOON: { icon: ClockIcon, badge: 'bg-plaisir/15 text-ink', accent: 'border-l-plaisir', due: 'font-semibold text-ink' },
-  UPCOMING: { icon: CalendarIcon, badge: 'bg-fixe/10 text-fixe', accent: 'border-l-fixe', due: 'text-mute' },
-  NO_DATE: { icon: FlagIcon, badge: 'bg-soft-cloud text-ink', accent: 'border-l-hairline', due: 'text-mute' },
-  DONE: { icon: CheckIcon, badge: 'bg-success/10 text-success', accent: 'border-l-success', due: 'text-mute' },
+  OVERDUE: {
+    icon: AlertIcon,
+    badge: 'bg-error/10 text-error',
+    accent: 'border-l-error',
+    due: 'font-semibold text-error',
+  },
+  DUE_SOON: {
+    icon: ClockIcon,
+    badge: 'bg-plaisir/15 text-ink',
+    accent: 'border-l-plaisir',
+    due: 'font-semibold text-ink',
+  },
+  UPCOMING: {
+    icon: CalendarIcon,
+    badge: 'bg-fixe/10 text-fixe',
+    accent: 'border-l-fixe',
+    due: 'text-mute',
+  },
+  NO_DATE: {
+    icon: FlagIcon,
+    badge: 'bg-soft-cloud text-ink',
+    accent: 'border-l-hairline',
+    due: 'text-mute',
+  },
+  DONE: {
+    icon: CheckIcon,
+    badge: 'bg-success/10 text-success',
+    accent: 'border-l-success',
+    due: 'text-mute',
+  },
 };

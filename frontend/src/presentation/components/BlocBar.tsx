@@ -7,14 +7,26 @@ function gapText(figure: BlocFigure): { text: string; tone: string } | null {
   const gap = describeBlocGap(figure);
   switch (gap.kind) {
     case 'over':
-      return { text: `Dépassement de ${formatCents(gap.amountCents)}`, tone: 'text-error font-semibold' };
+      return {
+        text: `Dépassement de ${formatCents(gap.amountCents)}`,
+        tone: 'text-error font-semibold',
+      };
     case 'remaining':
-      return { text: `Il reste ${formatCents(gap.amountCents)}`, tone: 'text-mute' };
+      return {
+        text: `Il reste ${formatCents(gap.amountCents)}`,
+        tone: 'text-mute',
+      };
     case 'shortfall':
-      return { text: `Manque ${formatCents(gap.amountCents)}`, tone: 'text-error font-semibold' };
+      return {
+        text: `Manque ${formatCents(gap.amountCents)}`,
+        tone: 'text-error font-semibold',
+      };
     case 'reached':
       return {
-        text: gap.amountCents > 0 ? `Objectif dépassé de ${formatCents(gap.amountCents)}` : 'Objectif atteint',
+        text:
+          gap.amountCents > 0
+            ? `Objectif dépassé de ${formatCents(gap.amountCents)}`
+            : 'Objectif atteint',
         tone: 'text-success font-semibold',
       };
     default:
@@ -33,12 +45,20 @@ export function BlocBar({ figure }: { figure: BlocFigure }) {
     <li className="py-md">
       <div className="mb-1 flex items-baseline justify-between gap-md">
         <span className="flex items-center gap-sm font-body-md text-body-md font-semibold">
-          <span className={`inline-block h-3 w-3 rounded-full ${style.dot}`} aria-hidden="true" />
+          <span
+            className={`inline-block h-3 w-3 rounded-full ${style.dot}`}
+            aria-hidden="true"
+          />
           {info.label}
         </span>
         <span className="tabular font-body-sm text-body-sm">
-          <span className="font-semibold">{formatCents(figure.actualCents)}</span>
-          <span className="text-mute"> / {formatCents(figure.plannedCents)}</span>
+          <span className="font-semibold">
+            {formatCents(figure.actualCents)}
+          </span>
+          <span className="text-mute">
+            {' '}
+            / {formatCents(figure.plannedCents)}
+          </span>
         </span>
       </div>
       <div
@@ -49,9 +69,16 @@ export function BlocBar({ figure }: { figure: BlocFigure }) {
         aria-valuenow={Math.round(ratio * 100)}
         className="h-3 overflow-hidden rounded-full bg-soft-cloud"
       >
-        <div className={`h-full rounded-full ${overrun ? 'bg-error' : style.bar}`} style={{ width: `${ratio * 100}%` }} />
+        <div
+          className={`h-full rounded-full ${overrun ? 'bg-error' : style.bar}`}
+          style={{ width: `${ratio * 100}%` }}
+        />
       </div>
-      {gap && <p className={`mt-1 font-body-sm text-body-sm ${gap.tone}`}>{gap.text}</p>}
+      {gap && (
+        <p className={`mt-1 font-body-sm text-body-sm ${gap.tone}`}>
+          {gap.text}
+        </p>
+      )}
     </li>
   );
 }

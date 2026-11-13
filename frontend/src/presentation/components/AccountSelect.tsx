@@ -12,7 +12,14 @@ interface Props {
 }
 
 /** Sélecteur de compte facultatif : absent tant que l'espace n'a aucun compte utilisable. */
-export function AccountSelect({ id, accounts, value, onChange, label = 'Compte (facultatif)', hint }: Props) {
+export function AccountSelect({
+  id,
+  accounts,
+  value,
+  onChange,
+  label = 'Compte (facultatif)',
+  hint,
+}: Props) {
   const options = selectableAccounts(accounts, value);
   if (options.length === 0) {
     return null;
@@ -25,7 +32,9 @@ export function AccountSelect({ id, accounts, value, onChange, label = 'Compte (
       <select
         id={id}
         value={value ?? ''}
-        onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
+        onChange={(event) =>
+          onChange(event.target.value === '' ? null : event.target.value)
+        }
         aria-describedby={hint ? `${id}-hint` : undefined}
         className={inputClass}
       >
@@ -37,7 +46,10 @@ export function AccountSelect({ id, accounts, value, onChange, label = 'Compte (
         ))}
       </select>
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 font-body-sm text-body-sm text-mute">
+        <p
+          id={`${id}-hint`}
+          className="mt-1 font-body-sm text-body-sm text-mute"
+        >
           {hint}
         </p>
       )}

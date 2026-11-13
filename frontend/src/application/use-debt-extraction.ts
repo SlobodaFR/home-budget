@@ -15,11 +15,18 @@ import {
   nextPollDelayMs,
   FIRST_POLL_DELAY_MS,
 } from '../domain/debt-extraction';
-import { ApiError, apiClient, NetworkError } from '../infrastructure/api-client';
+import {
+  ApiError,
+  apiClient,
+  NetworkError,
+} from '../infrastructure/api-client';
 
 /** Le bouton d'import n'est proposé que si le serveur sait lire les contrats ; toute erreur (réseau comprise) le masque. */
-export function useExtractionCapabilities(enabled: boolean): ExtractionCapabilities | null {
-  const [capabilities, setCapabilities] = useState<ExtractionCapabilities | null>(null);
+export function useExtractionCapabilities(
+  enabled: boolean,
+): ExtractionCapabilities | null {
+  const [capabilities, setCapabilities] =
+    useState<ExtractionCapabilities | null>(null);
 
   useEffect(() => {
     if (!enabled) {
@@ -49,7 +56,13 @@ export function useExtractionCapabilities(enabled: boolean): ExtractionCapabilit
 export type ImportState =
   | { phase: 'idle' }
   | { phase: 'uploading' }
-  | { phase: 'running'; status: ExtractionStatus; stage: ExtractionStage | null; progressPercent: number; connectionLost: boolean }
+  | {
+      phase: 'running';
+      status: ExtractionStatus;
+      stage: ExtractionStage | null;
+      progressPercent: number;
+      connectionLost: boolean;
+    }
   | { phase: 'review'; result: ExtractionResult }
   /** `canResume` : le travail existe peut-être encore côté serveur (coupure réseau) ; on peut reprendre le suivi. */
   | { phase: 'error'; message: string; canResume: boolean };
@@ -72,10 +85,15 @@ interface ActiveJob {
 }
 
 const failureOf = (error: unknown): ExtractionHttpFailure | null =>
-  error instanceof NetworkError ? { kind: 'network' } : error instanceof ApiError ? { kind: 'http', status: error.status } : null;
+  error instanceof NetworkError
+    ? { kind: 'network' }
+    : error instanceof ApiError
+      ? { kind: 'http', status: error.status }
+      : null;
 
 /** Un échec qui peut passer tout seul : réseau, serveur indisponible ou en erreur. */
-const isTransient = (failure: ExtractionHttpFailure | null): boolean => failure !== null && (failure.kind === 'network' || failure.status >= 500);
+const isTransient = (failure: ExtractionHttpFailure | null): boolean =>
+  failure !== null && (failure.kind === 'network' || failure.status >= 500);
 
 /**
  * L'envoi d'un contrat et le suivi de sa lecture. Garanties :
@@ -84,7 +102,10 @@ const isTransient = (failure: ExtractionHttpFailure | null): boolean => failure 
  *   disparaît, y compris quand l'annulation arrive pendant l'envoi ;
  * - plus aucun minuteur ne tourne une fois le composant démonté.
  */
-export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAULT_MAX_FILE_BYTES): DebtExtraction {
+export function useDebtExtraction(
+  spaceId: string,
+  maxFileBytes: number = DEFAULT_MAX_FILE_BYTES,
+): DebtExtraction {
   const [state, setState] = useState<ImportState>({ phase: 'idle' });
   const generation = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -136,7 +157,13 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
           fail(describeFailedJob(reading));
           return;
         }
-        setState({ phase: 'running', status: reading.status, stage: reading.stage, progressPercent: reading.progressPercent, connectionLost: false });
+        setState({
+          phase: 'running',
+          status: reading.status,
+          stage: reading.stage,
+          progressPercent: reading.progressPercent,
+          connectionLost: false,
+        });
         scheduleNext(id, gen, attempt + 1, 0);
       } catch (error) {
         if (gen !== generation.current) {
@@ -149,12 +176,23 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
           return;
         }
         if (isTransient(failure) && failures + 1 < MAX_POLL_NETWORK_FAILURES) {
-          setState((previous) => (previous.phase === 'running' ? { ...previous, connectionLost: true } : previous));
+          setState((previous) =>
+            previous.phase === 'running'
+              ? { ...previous, connectionLost: true }
+              : previous,
+          );
           scheduleNext(id, gen, attempt + 1, failures + 1);
           return;
         }
         // Coupure durable : le travail existe peut-être encore, on laisse l'utilisateur reprendre ou annuler.
-        fail(describeExtractionFailure(failure ?? { kind: 'http', status: 0 }, 'poll', maxBytes.current), isTransient(failure));
+        fail(
+          describeExtractionFailure(
+            failure ?? { kind: 'http', status: 0 },
+            'poll',
+            maxBytes.current,
+          ),
+          isTransient(failure),
+        );
       }
     },
     // `scheduleNext` et `poll` se référencent l'un l'autre : on passe par la ref ci-dessous.
@@ -165,7 +203,12 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
   const pollRef = useRef(poll);
   pollRef.current = poll;
 
-  function scheduleNext(id: string, gen: number, attempt: number, failures: number) {
+  function scheduleNext(
+    id: string,
+    gen: number,
+    attempt: number,
+    failures: number,
+  ) {
     clearTimer();
     if (job.current && Date.now() > job.current.deadlineMs) {
       deleteJob();
@@ -177,7 +220,12 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
         timer.current = null;
         void pollRef.current(id, gen, attempt, failures);
       },
-      failures > 0 ? Math.max(nextPollDelayMs(attempt), FIRST_POLL_DELAY_MS * (failures + 1)) : nextPollDelayMs(attempt),
+      failures > 0
+        ? Math.max(
+            nextPollDelayMs(attempt),
+            FIRST_POLL_DELAY_MS * (failures + 1),
+          )
+        : nextPollDelayMs(attempt),
     );
   }
 
@@ -197,13 +245,28 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
             deleteQuietly(started.jobId);
             return;
           }
-          job.current = { id: started.jobId, deadlineMs: started.expiresAtMs ?? Date.now() + MAX_FOLLOW_MS };
-          setState({ phase: 'running', status: 'PENDING', stage: null, progressPercent: 0, connectionLost: false });
+          job.current = {
+            id: started.jobId,
+            deadlineMs: started.expiresAtMs ?? Date.now() + MAX_FOLLOW_MS,
+          };
+          setState({
+            phase: 'running',
+            status: 'PENDING',
+            stage: null,
+            progressPercent: 0,
+            connectionLost: false,
+          });
           scheduleNext(started.jobId, gen, 0, 0);
         },
         (error: unknown) => {
           if (gen === generation.current) {
-            fail(describeExtractionFailure(failureOf(error) ?? { kind: 'http', status: 0 }, 'start', maxBytes.current));
+            fail(
+              describeExtractionFailure(
+                failureOf(error) ?? { kind: 'http', status: 0 },
+                'start',
+                maxBytes.current,
+              ),
+            );
           }
         },
       );
@@ -227,7 +290,13 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
     }
     active.current = true;
     const gen = ++generation.current;
-    setState({ phase: 'running', status: 'RUNNING', stage: null, progressPercent: 0, connectionLost: true });
+    setState({
+      phase: 'running',
+      status: 'RUNNING',
+      stage: null,
+      progressPercent: 0,
+      connectionLost: true,
+    });
     void pollRef.current(current.id, gen, 0, 0);
   }, []);
 
@@ -252,7 +321,9 @@ export function useDebtExtraction(spaceId: string, maxFileBytes: number = DEFAUL
 
 function deleteQuietly(jobId: string): void {
   try {
-    void Promise.resolve(apiClient.deleteDebtExtraction(jobId)).catch(() => undefined);
+    void Promise.resolve(apiClient.deleteDebtExtraction(jobId)).catch(
+      () => undefined,
+    );
   } catch {
     // Le résultat expirera de lui-même côté serveur.
   }

@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { HouseholdContext, HouseholdContextValue } from '../../application/use-household';
+import {
+  HouseholdContext,
+  HouseholdContextValue,
+} from '../../application/use-household';
 import { SpaceProvider } from '../../application/use-space';
 import { testHousehold } from '../../test/render-app';
 
@@ -17,14 +20,25 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import { FoyerPage } from './FoyerPage';
 import type { ApiMock } from '../../test/api-mock';
 
 function renderPage(offline = false) {
-  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
+  const value: HouseholdContextValue = {
+    household: testHousehold,
+    loading: false,
+    offline,
+    failed: false,
+    reload: vi.fn<() => Promise<void>>(),
+    setHousehold: vi.fn<() => void>(),
+  };
   render(
     <MemoryRouter>
       <HouseholdContext.Provider value={value}>
@@ -39,22 +53,43 @@ function renderPage(offline = false) {
 describe('FoyerPage : aide et documentation', () => {
   beforeEach(() => {
     Object.values(api).forEach((mock) => mock.mockReset());
-    api.fetchContribution.mockResolvedValue({ mode: 'EQUAL', commonNeedCents: 0, incomplete: true, shortfallCents: 0, shares: [] });
+    api.fetchContribution.mockResolvedValue({
+      mode: 'EQUAL',
+      commonNeedCents: 0,
+      incomplete: true,
+      shortfallCents: 0,
+      shares: [],
+    });
     api.fetchSafetyNet.mockResolvedValue({ safetyNet: null, progress: null });
-    api.fetchContributionStatus.mockResolvedValue({ month: '2026-11', incomplete: true, members: [], totalExpectedCents: null, totalPaidCents: 0 });
+    api.fetchContributionStatus.mockResolvedValue({
+      month: '2026-11',
+      incomplete: true,
+      members: [],
+      totalExpectedCents: null,
+      totalPaidCents: 0,
+    });
   });
 
   it('has a section that links to the help screen', () => {
     renderPage();
-    const heading = screen.getByRole('heading', { name: 'Aide et documentation' });
+    const heading = screen.getByRole('heading', {
+      name: 'Aide et documentation',
+    });
     const section = heading.closest('section') as HTMLElement;
     expect(section).toHaveTextContent('Lisible même sans réseau');
-    expect(screen.getByRole('link', { name: 'Ouvrir l’aide' })).toHaveAttribute('href', '/aide');
+    expect(screen.getByRole('link', { name: 'Ouvrir l’aide' })).toHaveAttribute(
+      'href',
+      '/aide',
+    );
   });
 
   it('keeps the link when the page itself needs a connection: the help is embedded and works offline', () => {
     renderPage(true);
-    expect(screen.getByText(/Cette page a besoin d’une connexion/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Aide et documentation' })).toHaveAttribute('href', '/aide');
+    expect(
+      screen.getByText(/Cette page a besoin d’une connexion/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Aide et documentation' }),
+    ).toHaveAttribute('href', '/aide');
   });
 });

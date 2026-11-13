@@ -1,5 +1,9 @@
 import { KeyboardEvent } from 'react';
-import { IMPORT_TARGETS, ImportTarget, TARGET_LABEL } from '../../../domain/statement-import';
+import {
+  IMPORT_TARGETS,
+  ImportTarget,
+  TARGET_LABEL,
+} from '../../../domain/statement-import';
 import { TARGET_STYLE } from './target-style';
 
 interface Props {
@@ -8,7 +12,12 @@ interface Props {
   onChange: (target: ImportTarget) => void;
 }
 
-const ARROW_STEP: Partial<Record<string, number>> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+const ARROW_STEP: Partial<Record<string, number>> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+};
 
 export function TargetChips({ label, value, onChange }: Props) {
   const tabStop = value ?? IMPORT_TARGETS[0];
@@ -20,14 +29,23 @@ export function TargetChips({ label, value, onChange }: Props) {
     }
     event.preventDefault();
     const current = IMPORT_TARGETS.indexOf(value ?? IMPORT_TARGETS[0]);
-    const next = IMPORT_TARGETS[(current + step + IMPORT_TARGETS.length) % IMPORT_TARGETS.length];
+    const next =
+      IMPORT_TARGETS[
+        (current + step + IMPORT_TARGETS.length) % IMPORT_TARGETS.length
+      ];
     onChange(next);
-    const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+    const buttons =
+      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]');
     buttons[IMPORT_TARGETS.indexOf(next)]?.focus();
   };
 
   return (
-    <div role="radiogroup" aria-label={label} onKeyDown={handleKeyDown} className="grid grid-cols-3 gap-sm lg:grid-cols-6">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      onKeyDown={handleKeyDown}
+      className="grid grid-cols-3 gap-sm lg:grid-cols-6"
+    >
       {IMPORT_TARGETS.map((target) => {
         const checked = value === target;
         const style = TARGET_STYLE[target];

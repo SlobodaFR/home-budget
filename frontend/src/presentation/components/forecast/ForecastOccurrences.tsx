@@ -13,7 +13,10 @@ import { AlertIcon, CheckIcon, ClockIcon } from '../Icons';
 import { BLOC_STYLE } from '../bloc-style';
 import { cardClass } from '../ui';
 
-const STATUS_BADGE: Record<OccurrenceStatus, { className: string; Icon: typeof CheckIcon }> = {
+const STATUS_BADGE: Record<
+  OccurrenceStatus,
+  { className: string; Icon: typeof CheckIcon }
+> = {
   PAID: { className: 'bg-success/10 text-success', Icon: CheckIcon },
   MISSING: { className: 'bg-error/10 text-error', Icon: AlertIcon },
   DUE: { className: 'bg-soft-cloud text-mute', Icon: ClockIcon },
@@ -24,7 +27,9 @@ function OccurrenceRow({ occurrence }: { occurrence: ForecastOccurrence }) {
   const missing = occurrence.status === 'MISSING';
   const badge = STATUS_BADGE[occurrence.status];
   const Icon = badge.Icon;
-  const blocLabel = occurrence.bloc ? BLOC_INFO[occurrence.bloc].label : 'Revenu';
+  const blocLabel = occurrence.bloc
+    ? BLOC_INFO[occurrence.bloc].label
+    : 'Revenu';
 
   return (
     <li
@@ -37,8 +42,12 @@ function OccurrenceRow({ occurrence }: { occurrence: ForecastOccurrence }) {
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-md">
-          <p className="min-w-0 break-words font-body-md text-body-md font-semibold">{occurrence.label}</p>
-          <p className={`tabular shrink-0 font-body-md text-body-md font-semibold ${income ? 'text-success' : 'text-ink'}`}>
+          <p className="min-w-0 break-words font-body-md text-body-md font-semibold">
+            {occurrence.label}
+          </p>
+          <p
+            className={`tabular shrink-0 font-body-md text-body-md font-semibold ${income ? 'text-success' : 'text-ink'}`}
+          >
             {income ? '+ ' : '− '}
             {formatCents(occurrence.amountCents)}
           </p>
@@ -48,7 +57,9 @@ function OccurrenceRow({ occurrence }: { occurrence: ForecastOccurrence }) {
           {formatDay(occurrence.date)}
           {occurrence.estimated ? ' (date estimée)' : ''} · {blocLabel}
         </p>
-        <p className={`mt-1 inline-flex items-center gap-1 rounded-full px-md py-0.5 font-body-sm text-body-sm font-semibold ${badge.className}`}>
+        <p
+          className={`mt-1 inline-flex items-center gap-1 rounded-full px-md py-0.5 font-body-sm text-body-sm font-semibold ${badge.className}`}
+        >
           <Icon width={16} height={16} />
           {OCCURRENCE_STATUS_INFO[occurrence.status].label}
         </p>
@@ -65,17 +76,31 @@ function OccurrenceRow({ occurrence }: { occurrence: ForecastOccurrence }) {
   );
 }
 
-export function ForecastOccurrences({ occurrences }: { occurrences: ForecastOccurrence[] }) {
+export function ForecastOccurrences({
+  occurrences,
+}: {
+  occurrences: ForecastOccurrence[];
+}) {
   const missing = missingOccurrences({ occurrences });
   return (
     <section aria-label="Paiements attendus ce mois-ci" className={cardClass}>
-      <h3 className="font-label-caps text-label-caps uppercase text-mute">Paiements attendus ce mois-ci</h3>
+      <h3 className="font-label-caps text-label-caps uppercase text-mute">
+        Paiements attendus ce mois-ci
+      </h3>
       {missing.length > 0 && (
-        <div role="status" className="mt-md rounded border border-error/40 bg-error/5 p-md font-body-sm text-body-sm">
-          <p className="font-semibold text-error">{missingBanner(missing.length)}</p>
+        <div
+          role="status"
+          className="mt-md rounded border border-error/40 bg-error/5 p-md font-body-sm text-body-sm"
+        >
+          <p className="font-semibold text-error">
+            {missingBanner(missing.length)}
+          </p>
           <p>
             Votre relevé n’est peut-être pas encore importé.{' '}
-            <Link to="/import" className="inline-flex min-h-[44px] items-center font-semibold underline">
+            <Link
+              to="/import"
+              className="inline-flex min-h-[44px] items-center font-semibold underline"
+            >
               Importer mon relevé
             </Link>
           </p>
@@ -83,12 +108,16 @@ export function ForecastOccurrences({ occurrences }: { occurrences: ForecastOccu
       )}
       {occurrences.length === 0 ? (
         <p className="mt-md font-body-sm text-body-sm text-mute">
-          Aucun paiement récurrent n’est prévu ce mois-ci. Ajoutez votre loyer, vos abonnements ou votre salaire plus bas pour affiner la prévision.
+          Aucun paiement récurrent n’est prévu ce mois-ci. Ajoutez votre loyer,
+          vos abonnements ou votre salaire plus bas pour affiner la prévision.
         </p>
       ) : (
         <ul className="mt-sm divide-y divide-hairline-soft">
           {occurrences.map((occurrence, index) => (
-            <OccurrenceRow key={`${occurrence.recurringId}-${occurrence.date}-${index}`} occurrence={occurrence} />
+            <OccurrenceRow
+              key={`${occurrence.recurringId}-${occurrence.date}-${index}`}
+              occurrence={occurrence}
+            />
           ))}
         </ul>
       )}

@@ -4,7 +4,9 @@ import { ApiError } from '../infrastructure/api-client';
 import { useTrends } from './use-trends';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchTrends: vi.fn<ApiMock<'fetchTrends'>>() }));
+const api = vi.hoisted(() => ({
+  fetchTrends: vi.fn<ApiMock<'fetchTrends'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -25,12 +27,19 @@ describe('useTrends', () => {
   });
 
   it('reloads when the window or the space changes', async () => {
-    const { result, rerender } = renderHook(({ id, months }) => useTrends(id, months), { initialProps: { id: 's-common', months: 6 } });
+    const { result, rerender } = renderHook(
+      ({ id, months }) => useTrends(id, months),
+      { initialProps: { id: 's-common', months: 6 } },
+    );
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ id: 's-common', months: 12 });
-    await waitFor(() => expect(api.fetchTrends).toHaveBeenLastCalledWith('s-common', 12));
+    await waitFor(() =>
+      expect(api.fetchTrends).toHaveBeenLastCalledWith('s-common', 12),
+    );
     rerender({ id: 's-alice', months: 12 });
-    await waitFor(() => expect(api.fetchTrends).toHaveBeenLastCalledWith('s-alice', 12));
+    await waitFor(() =>
+      expect(api.fetchTrends).toHaveBeenLastCalledWith('s-alice', 12),
+    );
   });
 
   it('turns a failing or missing client method into an error state, never a crash', async () => {
@@ -40,7 +49,9 @@ describe('useTrends', () => {
     const original = api.fetchTrends;
     api.fetchTrends = undefined as never;
     const missing = renderHook(() => useTrends('s-common', 6));
-    await waitFor(() => expect(missing.result.current.error).toBeInstanceOf(TypeError));
+    await waitFor(() =>
+      expect(missing.result.current.error).toBeInstanceOf(TypeError),
+    );
     api.fetchTrends = original;
   });
 });

@@ -21,5 +21,12 @@ export function useFiscalProfile() {
     [reload],
   );
 
-  return { profile: resource.data, loading: resource.loading, error: resource.error, reload, saving, save };
+  return {
+    profile: resource.data,
+    loading: resource.loading,
+    error: resource.error,
+    reload,
+    saving,
+    save,
+  };
 }

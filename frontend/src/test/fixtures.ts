@@ -1,13 +1,24 @@
 import { Account } from '../domain/account';
 import { Debt, DebtPayload, DebtsSummary } from '../domain/debt';
-import { LifeEvent, LifeEventDefinition, LifeEventStep, withCounts } from '../domain/life-event';
+import {
+  LifeEvent,
+  LifeEventDefinition,
+  LifeEventStep,
+  withCounts,
+} from '../domain/life-event';
 import { Project } from '../domain/project';
-import { MonthlyReview, ReviewHistoryItem, ReviewSnapshot } from '../domain/review';
+import {
+  MonthlyReview,
+  ReviewHistoryItem,
+  ReviewSnapshot,
+} from '../domain/review';
 import { PreviewRow } from '../domain/statement-import';
 
 export function previewRow(
   index: number,
-  overrides: Partial<PreviewRow> & { target?: PreviewRow['suggestion']['target'] } = {},
+  overrides: Partial<PreviewRow> & {
+    target?: PreviewRow['suggestion']['target'];
+  } = {},
 ): PreviewRow {
   const { target = null, ...rest } = overrides;
   return {
@@ -60,17 +71,39 @@ export function project(overrides: Partial<Project> = {}): Project {
   };
 }
 
-export function reviewSnapshot(overrides: Partial<ReviewSnapshot> = {}): ReviewSnapshot {
+export function reviewSnapshot(
+  overrides: Partial<ReviewSnapshot> = {},
+): ReviewSnapshot {
   return {
     incomeCents: 380000,
     expenseCents: 351000,
     balanceCents: 29000,
     savingsRatePercent: 8,
     blocs: [
-      { bloc: 'FIXE', plannedCents: 175000, actualCents: 171000, deltaCents: -4000 },
-      { bloc: 'COURANT', plannedCents: 100000, actualCents: 140000, deltaCents: 40000 },
-      { bloc: 'PLAISIR', plannedCents: 40000, actualCents: 40000, deltaCents: 0 },
-      { bloc: 'EPARGNE', plannedCents: 50000, actualCents: 30000, deltaCents: -20000 },
+      {
+        bloc: 'FIXE',
+        plannedCents: 175000,
+        actualCents: 171000,
+        deltaCents: -4000,
+      },
+      {
+        bloc: 'COURANT',
+        plannedCents: 100000,
+        actualCents: 140000,
+        deltaCents: 40000,
+      },
+      {
+        bloc: 'PLAISIR',
+        plannedCents: 40000,
+        actualCents: 40000,
+        deltaCents: 0,
+      },
+      {
+        bloc: 'EPARGNE',
+        plannedCents: 50000,
+        actualCents: 30000,
+        deltaCents: -20000,
+      },
     ],
     topExpenses: [
       { label: 'Courses', amountCents: 142300, count: 9 },
@@ -94,8 +127,16 @@ export function review(overrides: Partial<MonthlyReview> = {}): MonthlyReview {
   };
 }
 
-export function reviewHistoryItem(overrides: Partial<ReviewHistoryItem> = {}): ReviewHistoryItem {
-  return { month: '2026-09', status: 'DONE', decision: 'Fixer 400 € pour les courses', completedAt: '2026-10-03T08:00:00.000Z', ...overrides };
+export function reviewHistoryItem(
+  overrides: Partial<ReviewHistoryItem> = {},
+): ReviewHistoryItem {
+  return {
+    month: '2026-09',
+    status: 'DONE',
+    decision: 'Fixer 400 € pour les courses',
+    completedAt: '2026-10-03T08:00:00.000Z',
+    ...overrides,
+  };
 }
 
 export function debt(overrides: Partial<Debt> = {}): Debt {
@@ -126,7 +167,12 @@ export function debt(overrides: Partial<Debt> = {}): Debt {
     monthlyTotalCents: 33500,
     remainingInsuranceCents: null,
     remainingCostCents: null,
-    paymentCheck: { status: 'UNKNOWN', expectedMonthlyPaymentCents: null, differenceCents: null, differencePercent: null },
+    paymentCheck: {
+      status: 'UNKNOWN',
+      expectedMonthlyPaymentCents: null,
+      differenceCents: null,
+      differencePercent: null,
+    },
     monthsRemaining: 38,
     payoffDate: '2029-12-05',
     totalInterestRemainingCents: 96000,
@@ -166,16 +212,30 @@ export function debtPayload(overrides: Partial<DebtPayload> = {}): DebtPayload {
   };
 }
 
-export function debtsSummary(overrides: Partial<DebtsSummary> = {}): DebtsSummary {
-  return { activeCount: 2, totalRemainingCents: 2120000, totalMonthlyCents: 38500, debtToIncomePercent: 31, totalMonthlyInsuranceCents: 0, totalRemainingCostCents: null, byLender: [], ...overrides };
+export function debtsSummary(
+  overrides: Partial<DebtsSummary> = {},
+): DebtsSummary {
+  return {
+    activeCount: 2,
+    totalRemainingCents: 2120000,
+    totalMonthlyCents: 38500,
+    debtToIncomePercent: 31,
+    totalMonthlyInsuranceCents: 0,
+    totalRemainingCostCents: null,
+    byLender: [],
+    ...overrides,
+  };
 }
 
 /** Par défaut : la déclaration en mairie d'une naissance prévue le 31 octobre 2026, « bientôt due » au 30 octobre 2026. */
-export function lifeEventStep(overrides: Partial<LifeEventStep> = {}): LifeEventStep {
+export function lifeEventStep(
+  overrides: Partial<LifeEventStep> = {},
+): LifeEventStep {
   return {
     stepId: 'birth-declaration',
     title: 'Déclarer la naissance à la mairie',
-    detail: 'À faire dans les 5 jours qui suivent la naissance (jour de l’accouchement non compté).',
+    detail:
+      'À faire dans les 5 jours qui suivent la naissance (jour de l’accouchement non compté).',
     category: 'ADMIN',
     dueDate: '2026-11-05',
     dueLabel: 'Dans les 5 jours après la naissance',
@@ -208,7 +268,8 @@ export function lifeEvent(overrides: Partial<LifeEvent> = {}): LifeEvent {
         dueDate: '2026-10-15',
         dueLabel: 'Avant la fin du 3e mois de grossesse',
         status: 'OVERDUE',
-        sourceUrl: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F968',
+        sourceUrl:
+          'https://www.service-public.gouv.fr/particuliers/vosdroits/F968',
       }),
       lifeEventStep(),
       lifeEventStep({
@@ -219,7 +280,8 @@ export function lifeEvent(overrides: Partial<LifeEvent> = {}): LifeEvent {
         dueLabel: 'Dans les 60 jours après la naissance',
         status: 'UPCOMING',
         sourceLabel: 'impots.gouv.fr',
-        sourceUrl: 'https://www.impots.gouv.fr/particulier/questions/jai-eu-un-enfant-quelles-demarches-dois-je-accomplir',
+        sourceUrl:
+          'https://www.impots.gouv.fr/particulier/questions/jai-eu-un-enfant-quelles-demarches-dois-je-accomplir',
         link: '/previsionnel',
       }),
       lifeEventStep({
@@ -230,7 +292,8 @@ export function lifeEvent(overrides: Partial<LifeEvent> = {}): LifeEvent {
         dueLabel: 'Dès la naissance',
         status: 'NO_DATE',
         sourceLabel: 'caf.fr',
-        sourceUrl: 'https://www.caf.fr/allocataires/caf-du-nord/actualites-departementales/comment-declarer-la-naissance-de-mon-enfant',
+        sourceUrl:
+          'https://www.caf.fr/allocataires/caf-du-nord/actualites-departementales/comment-declarer-la-naissance-de-mon-enfant',
         link: '/aides',
       }),
       lifeEventStep({
@@ -270,8 +333,20 @@ export function lifeEventCatalog(): LifeEventDefinition[] {
 }
 
 /** Un champ extrait, tel que le serveur de la tranche 13 le renvoie (JSON brut, avant lecture tolérante). */
-export function rawExtractedField(field: string, value: unknown, confidence = 'HIGH', overrides: Record<string, unknown> = {}) {
-  return { field, value, confidence, snippet: `Extrait pour ${field}`, page: 1, ...overrides };
+export function rawExtractedField(
+  field: string,
+  value: unknown,
+  confidence = 'HIGH',
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    field,
+    value,
+    confidence,
+    snippet: `Extrait pour ${field}`,
+    page: 1,
+    ...overrides,
+  };
 }
 
 /** Un résultat d'extraction : confiance variée, un avertissement, des champs absents (donc non trouvés). */
@@ -281,13 +356,30 @@ export function rawExtractionResult(overrides: Record<string, unknown> = {}) {
     pages: 12,
     engine: 'tesseract',
     fields: [
-      rawExtractedField('lender', 'Banque Exemple', 'HIGH', { snippet: 'Établissement prêteur : Banque Exemple SA', page: 1 }),
-      rawExtractedField('principalCents', 15000000, 'HIGH', { snippet: 'Montant du crédit : 150 000,00 €', page: 2 }),
-      rawExtractedField('annualRatePercent', 3.45, 'MEDIUM', { snippet: 'Taux débiteur fixe : 3,45 %', page: 2 }),
-      rawExtractedField('initialTermMonths', 240, 'HIGH', { snippet: 'Durée : 240 mois', page: 2 }),
-      rawExtractedField('monthlyPaymentCents', 85400, 'LOW', { snippet: 'Échéance : 854,0O €', page: 3 }),
+      rawExtractedField('lender', 'Banque Exemple', 'HIGH', {
+        snippet: 'Établissement prêteur : Banque Exemple SA',
+        page: 1,
+      }),
+      rawExtractedField('principalCents', 15000000, 'HIGH', {
+        snippet: 'Montant du crédit : 150 000,00 €',
+        page: 2,
+      }),
+      rawExtractedField('annualRatePercent', 3.45, 'MEDIUM', {
+        snippet: 'Taux débiteur fixe : 3,45 %',
+        page: 2,
+      }),
+      rawExtractedField('initialTermMonths', 240, 'HIGH', {
+        snippet: 'Durée : 240 mois',
+        page: 2,
+      }),
+      rawExtractedField('monthlyPaymentCents', 85400, 'LOW', {
+        snippet: 'Échéance : 854,0O €',
+        page: 3,
+      }),
     ],
-    warnings: ['Plusieurs taux trouvés (3,45 % et 3,85 %) : vérifiez lequel est le taux débiteur.'],
+    warnings: [
+      'Plusieurs taux trouvés (3,45 % et 3,85 %) : vérifiez lequel est le taux débiteur.',
+    ],
     ...overrides,
   };
 }

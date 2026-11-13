@@ -19,11 +19,19 @@ import { LoadingScreen } from './LoadingScreen';
 import { useToast } from './Toast';
 import { buttonPrimary, cardClass, inputClass, labelClass } from './ui';
 
-function Progress({ safetyNet, progress }: { safetyNet: SafetyNet; progress: SafetyNetProgress | null }) {
+function Progress({
+  safetyNet,
+  progress,
+}: {
+  safetyNet: SafetyNet;
+  progress: SafetyNetProgress | null;
+}) {
   const coverage = safetyNetCoverage(safetyNet, progress);
   return (
     <div className="flex flex-col gap-sm" data-testid="safety-net-progress">
-      <p className="tabular font-heading-xl text-heading-xl">{formatCents(coverage.currentCents)}</p>
+      <p className="tabular font-heading-xl text-heading-xl">
+        {formatCents(coverage.currentCents)}
+      </p>
       <p className="font-body-sm text-body-sm text-mute">
         {coverage.addedCents > 0
           ? `dont ${formatCents(coverage.addedCents)} versés depuis le ${formatLongDateInput(safetyNet.asOf)}`
@@ -32,7 +40,9 @@ function Progress({ safetyNet, progress }: { safetyNet: SafetyNet; progress: Saf
       {coverage.coveredMonths === null ? (
         <p className="font-body-sm text-body-sm">
           Objectif : couvrir {safetyNet.targetMonths} mois de dépenses.
-          {progress ? ' Renseignez le plan commun pour voir où vous en êtes.' : ''}
+          {progress
+            ? ' Renseignez le plan commun pour voir où vous en êtes.'
+            : ''}
         </p>
       ) : (
         <>
@@ -41,28 +51,47 @@ function Progress({ safetyNet, progress }: { safetyNet: SafetyNet; progress: Saf
             aria-label="Épargne de sécurité"
             aria-valuemin={0}
             aria-valuemax={safetyNet.targetMonths}
-            aria-valuenow={Math.min(coverage.coveredMonths, safetyNet.targetMonths)}
+            aria-valuenow={Math.min(
+              coverage.coveredMonths,
+              safetyNet.targetMonths,
+            )}
             aria-valuetext={`${formatMonthsCount(coverage.coveredMonths)} couverts sur ${safetyNet.targetMonths}`}
             className="h-3 overflow-hidden rounded-full bg-soft-cloud"
           >
-            <div className={`h-full ${coverage.reached ? 'bg-success' : 'bg-epargne'}`} style={{ width: `${coverage.ratio * 100}%` }} />
+            <div
+              className={`h-full ${coverage.reached ? 'bg-success' : 'bg-epargne'}`}
+              style={{ width: `${coverage.ratio * 100}%` }}
+            />
           </div>
           <p className="font-body-sm text-body-sm">
-            <span className="font-semibold">{formatMonthsCount(coverage.coveredMonths)}</span> de dépenses couverts sur {safetyNet.targetMonths} visés
+            <span className="font-semibold">
+              {formatMonthsCount(coverage.coveredMonths)}
+            </span>{' '}
+            de dépenses couverts sur {safetyNet.targetMonths} visés
             {coverage.reached ? ' : objectif atteint.' : '.'}
           </p>
-          {coverage.monthlyBasisCents !== null && coverage.monthlyBasisCents > 0 && (
-            <p className="font-body-sm text-body-sm text-mute">
-              Calculé sur vos dépenses mensuelles de référence ({formatCents(coverage.monthlyBasisCents)} par mois).
-            </p>
-          )}
+          {coverage.monthlyBasisCents !== null &&
+            coverage.monthlyBasisCents > 0 && (
+              <p className="font-body-sm text-body-sm text-mute">
+                Calculé sur vos dépenses mensuelles de référence (
+                {formatCents(coverage.monthlyBasisCents)} par mois).
+              </p>
+            )}
         </>
       )}
     </div>
   );
 }
 
-function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null; saving: boolean; onSave: (payload: SafetyNet) => Promise<void> }) {
+function SafetyNetForm({
+  initial,
+  saving,
+  onSave,
+}: {
+  initial: SafetyNet | null;
+  saving: boolean;
+  onSave: (payload: SafetyNet) => Promise<void>;
+}) {
   const [values, setValues] = useState(() => safetyNetToForm(initial));
   const [errors, setErrors] = useState<SafetyNetFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -79,18 +108,28 @@ function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null;
     try {
       await onSave(result.payload);
     } catch (error) {
-      setSubmitError(describeError(error, 'Enregistrement impossible, réessayez.'));
+      setSubmitError(
+        describeError(error, 'Enregistrement impossible, réessayez.'),
+      );
     }
   };
 
   const hint = (id: string, text: string, error?: string) => (
-    <p id={id} role={error ? 'alert' : undefined} className={`mt-1 font-body-sm text-body-sm ${error ? 'text-error' : 'text-mute'}`}>
+    <p
+      id={id}
+      role={error ? 'alert' : undefined}
+      className={`mt-1 font-body-sm text-body-sm ${error ? 'text-error' : 'text-mute'}`}
+    >
       {error ?? text}
     </p>
   );
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      noValidate
+      className="flex flex-col gap-lg"
+    >
       <div>
         <label htmlFor="safety-saved" className={labelClass}>
           Montant épargné
@@ -103,14 +142,25 @@ function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null;
             autoComplete="off"
             placeholder="5 500"
             value={values.saved}
-            onChange={(event) => setValues((previous) => ({ ...previous, saved: event.target.value }))}
+            onChange={(event) =>
+              setValues((previous) => ({
+                ...previous,
+                saved: event.target.value,
+              }))
+            }
             aria-invalid={errors.saved ? true : undefined}
             aria-describedby="safety-saved-hint"
             className={`${inputClass} tabular pr-10 text-right`}
           />
-          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">€</span>
+          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+            €
+          </span>
         </div>
-        {hint('safety-saved-hint', 'Ce qui est disponible, de côté, pour les coups durs (livret…).', errors.saved)}
+        {hint(
+          'safety-saved-hint',
+          'Ce qui est disponible, de côté, pour les coups durs (livret…).',
+          errors.saved,
+        )}
       </div>
       <div>
         <label htmlFor="safety-date" className={labelClass}>
@@ -120,12 +170,18 @@ function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null;
           id="safety-date"
           type="date"
           value={values.asOf}
-          onChange={(event) => setValues((previous) => ({ ...previous, asOf: event.target.value }))}
+          onChange={(event) =>
+            setValues((previous) => ({ ...previous, asOf: event.target.value }))
+          }
           aria-invalid={errors.asOf ? true : undefined}
           aria-describedby="safety-date-hint"
           className={inputClass}
         />
-        {hint('safety-date-hint', 'Ensuite, ce que vous versez dans le bloc Épargne du commun s’ajoute tout seul.', errors.asOf)}
+        {hint(
+          'safety-date-hint',
+          'Ensuite, ce que vous versez dans le bloc Épargne du commun s’ajoute tout seul.',
+          errors.asOf,
+        )}
       </div>
       <div>
         <label htmlFor="safety-months" className={labelClass}>
@@ -139,12 +195,19 @@ function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null;
             autoComplete="off"
             maxLength={2}
             value={values.targetMonths}
-            onChange={(event) => setValues((previous) => ({ ...previous, targetMonths: event.target.value }))}
+            onChange={(event) =>
+              setValues((previous) => ({
+                ...previous,
+                targetMonths: event.target.value,
+              }))
+            }
             aria-invalid={errors.targetMonths ? true : undefined}
             aria-describedby="safety-months-hint"
             className={`${inputClass} tabular pr-16 text-right`}
           />
-          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">mois</span>
+          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+            mois
+          </span>
         </div>
         {hint(
           'safety-months-hint',
@@ -157,7 +220,11 @@ function SafetyNetForm({ initial, saving, onSave }: { initial: SafetyNet | null;
           {submitError}
         </p>
       )}
-      <button type="submit" disabled={saving} className={`${buttonPrimary} w-full`}>
+      <button
+        type="submit"
+        disabled={saving}
+        className={`${buttonPrimary} w-full`}
+      >
         {saving ? 'Enregistrement…' : 'Enregistrer l’épargne'}
       </button>
     </form>
@@ -175,20 +242,39 @@ export function SafetyNetSection() {
 
   return (
     <section className={`${cardClass} flex flex-col gap-md`}>
-      <h3 className="font-label-caps text-label-caps uppercase text-mute">Épargne de sécurité</h3>
+      <h3 className="font-label-caps text-label-caps uppercase text-mute">
+        Épargne de sécurité
+      </h3>
       <p className="font-body-sm text-body-sm text-mute">
-        Une réserve pour les imprévus, partagée par tout le foyer. Voir la leçon 2 du cours pour savoir combien viser.
+        Une réserve pour les imprévus, partagée par tout le foyer. Voir la leçon
+        2 du cours pour savoir combien viser.
       </p>
       {error ? (
-        <ErrorNotice message={describeError(error, 'Impossible de charger l’épargne de sécurité.')} onRetry={reload} />
+        <ErrorNotice
+          message={describeError(
+            error,
+            'Impossible de charger l’épargne de sécurité.',
+          )}
+          onRetry={reload}
+        />
       ) : state === undefined ? (
         <LoadingScreen />
       ) : (
         <>
-          {state.safetyNet && <Progress safetyNet={state.safetyNet} progress={state.progress} />}
-          <div className={state.safetyNet ? 'border-t border-hairline-soft pt-md' : ''}>
+          {state.safetyNet && (
+            <Progress safetyNet={state.safetyNet} progress={state.progress} />
+          )}
+          <div
+            className={
+              state.safetyNet ? 'border-t border-hairline-soft pt-md' : ''
+            }
+          >
             <SafetyNetForm
-              key={state.safetyNet ? `${state.safetyNet.savedCents}-${state.safetyNet.asOf}-${state.safetyNet.targetMonths}` : 'empty'}
+              key={
+                state.safetyNet
+                  ? `${state.safetyNet.savedCents}-${state.safetyNet.asOf}-${state.safetyNet.targetMonths}`
+                  : 'empty'
+              }
               initial={state.safetyNet}
               saving={saving}
               onSave={handleSave}

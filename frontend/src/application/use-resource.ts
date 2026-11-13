@@ -14,14 +14,22 @@ export interface Resource<T> {
   reload: () => void;
 }
 
-export function useResource<T>(load: () => Promise<T>, deps: readonly unknown[], refreshToken = 0): Resource<T> {
+export function useResource<T>(
+  load: () => Promise<T>,
+  deps: readonly unknown[],
+  refreshToken = 0,
+): Resource<T> {
   const key = JSON.stringify(deps);
   const [nonce, setNonce] = useState(0);
   const [state, setState] = useState<ResourceState<T>>({ key, loading: true });
 
   useEffect(() => {
     let cancelled = false;
-    setState((previous) => ({ key, data: previous.key === key ? previous.data : undefined, loading: true }));
+    setState((previous) => ({
+      key,
+      data: previous.key === key ? previous.data : undefined,
+      loading: true,
+    }));
     load().then(
       (data) => {
         if (!cancelled) {
@@ -30,7 +38,12 @@ export function useResource<T>(load: () => Promise<T>, deps: readonly unknown[],
       },
       (error: unknown) => {
         if (!cancelled) {
-          setState((previous) => ({ key, data: previous.key === key ? previous.data : undefined, error, loading: false }));
+          setState((previous) => ({
+            key,
+            data: previous.key === key ? previous.data : undefined,
+            error,
+            loading: false,
+          }));
         }
       },
     );

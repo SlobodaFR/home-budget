@@ -63,13 +63,18 @@ describe('parseAmountToCents', () => {
     expect(parseAmountToCents(input)).toBe(expected);
   });
 
-  it.each(['', ' ', 'abc', '12,345', '-5', '1,2,3', ',', '12,5e', '1.234,56'])('rejects %j', (input) => {
-    expect(parseAmountToCents(input)).toBeNull();
-  });
+  it.each(['', ' ', 'abc', '12,345', '-5', '1,2,3', ',', '12,5e', '1.234,56'])(
+    'rejects %j',
+    (input) => {
+      expect(parseAmountToCents(input)).toBeNull();
+    },
+  );
 
   it('rejects amounts above the maximum', () => {
     expect(parseAmountToCents(String(MAX_AMOUNT_CENTS / 100 + 1))).toBeNull();
-    expect(parseAmountToCents(String(MAX_AMOUNT_CENTS / 100))).toBe(MAX_AMOUNT_CENTS);
+    expect(parseAmountToCents(String(MAX_AMOUNT_CENTS / 100))).toBe(
+      MAX_AMOUNT_CENTS,
+    );
   });
 });
 

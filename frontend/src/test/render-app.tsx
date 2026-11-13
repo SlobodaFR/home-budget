@@ -4,7 +4,10 @@ import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { AccountsProvider } from '../application/use-accounts';
-import { HouseholdContext, HouseholdContextValue } from '../application/use-household';
+import {
+  HouseholdContext,
+  HouseholdContextValue,
+} from '../application/use-household';
 import { OfflineQueueProvider } from '../application/use-offline-queue';
 import { SelectedMonthProvider } from '../application/use-selected-month';
 import { SpaceProvider } from '../application/use-space';
@@ -17,7 +20,14 @@ export const testHousehold: Household = {
   name: 'Famille',
   role: 'OWNER',
   contributionMode: 'EQUAL',
-  members: [{ userId: 'alice', name: 'Alice', role: 'OWNER', netMonthlyIncomeCents: 350000 }],
+  members: [
+    {
+      userId: 'alice',
+      name: 'Alice',
+      role: 'OWNER',
+      netMonthlyIncomeCents: 350000,
+    },
+  ],
   spaces: [
     { id: 's-common', kind: 'COMMON', name: 'Commun' },
     { id: 's-alice', kind: 'PERSONAL', name: 'Perso' },
@@ -31,7 +41,10 @@ interface Options {
 }
 
 /** Monte une page avec tous les fournisseurs de l'application (foyer, espace, file hors ligne, mois, toasts). */
-export function renderInApp(page: ReactElement, { path = '/', month = '2026-11', kind = 'COMMON' }: Options = {}) {
+export function renderInApp(
+  page: ReactElement,
+  { path = '/', month = '2026-11', kind = 'COMMON' }: Options = {},
+) {
   preferences.setSpaceKind(kind);
   const value: HouseholdContextValue = {
     household: testHousehold,

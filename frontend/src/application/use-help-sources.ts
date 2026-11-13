@@ -1,5 +1,9 @@
 import { useEffect, useMemo } from 'react';
-import { aidRuleToHelpEntry, catalogToHelpEntries, HelpEntry } from '../domain/help';
+import {
+  aidRuleToHelpEntry,
+  catalogToHelpEntries,
+  HelpEntry,
+} from '../domain/help';
 import { isOfflineError } from './error-message';
 import { useAidRules } from './use-aid-rules';
 import { useLifeEventCatalog } from './use-life-events';
@@ -24,13 +28,22 @@ export function useHelpSources(): HelpSources {
   const { reload: reloadCatalog } = catalog;
 
   const entries = useMemo(
-    () => [...(rules.rules ?? []).map(aidRuleToHelpEntry), ...catalogToHelpEntries(catalog.data ?? [])],
+    () => [
+      ...(rules.rules ?? []).map(aidRuleToHelpEntry),
+      ...catalogToHelpEntries(catalog.data ?? []),
+    ],
     [rules.rules, catalog.data],
   );
 
   const error = rules.error ?? catalog.error;
   const loading = rules.loading || catalog.loading;
-  const status: HelpSourcesStatus = loading ? 'loading' : error ? (isOfflineError(error) ? 'offline' : 'unavailable') : 'ready';
+  const status: HelpSourcesStatus = loading
+    ? 'loading'
+    : error
+      ? isOfflineError(error)
+        ? 'offline'
+        : 'unavailable'
+      : 'ready';
 
   const reload = () => {
     reloadRules();

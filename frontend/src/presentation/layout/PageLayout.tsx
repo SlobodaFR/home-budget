@@ -16,7 +16,12 @@ interface PageIntroProps {
  * est déjà l'h1 de l'en-tête de page et le retour est dans la barre latérale : il ne reste que la phrase d'explication
  * (le titre reste lu par les lecteurs d'écran, qui y trouvent l'espace concerné).
  */
-export function PageIntro({ title, description, back, children }: PageIntroProps) {
+export function PageIntro({
+  title,
+  description,
+  back,
+  children,
+}: PageIntroProps) {
   return (
     <div className="lg:max-w-[75ch]">
       {back && (
@@ -29,7 +34,11 @@ export function PageIntro({ title, description, back, children }: PageIntroProps
         </Link>
       )}
       <h2 className="font-heading-lg text-heading-lg lg:sr-only">{title}</h2>
-      {description && <p className="font-body-sm text-body-sm text-mute lg:text-body-md">{description}</p>}
+      {description && (
+        <p className="font-body-sm text-body-sm text-mute lg:text-body-md">
+          {description}
+        </p>
+      )}
       {children}
     </div>
   );
@@ -45,7 +54,12 @@ interface CardGridProps {
 }
 
 /** Une liste de cartes : une colonne sur mobile, deux dès la tablette, trois sur grand écran si `columns` le demande. */
-export function CardGrid({ columns = 2, label, fullWidthWhenAlone = false, children }: CardGridProps) {
+export function CardGrid({
+  columns = 2,
+  label,
+  fullWidthWhenAlone = false,
+  children,
+}: CardGridProps) {
   return (
     <ul
       aria-label={label}
@@ -69,10 +83,14 @@ interface TwoColumnsProps {
   gap?: 'gutter' | 'lg';
 }
 
-const SPLIT: Record<NonNullable<TwoColumnsProps['from']>, Record<NonNullable<TwoColumnsProps['ratio']>, string>> = {
+const SPLIT: Record<
+  NonNullable<TwoColumnsProps['from']>,
+  Record<NonNullable<TwoColumnsProps['ratio']>, string>
+> = {
   md: {
     equal: 'md:grid md:grid-cols-2',
-    aside: 'md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_340px]',
+    aside:
+      'md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_340px]',
   },
   lg: {
     equal: 'lg:grid lg:grid-cols-2',
@@ -88,11 +106,27 @@ const SPLIT: Record<NonNullable<TwoColumnsProps['from']>, Record<NonNullable<Two
  * Deux colonnes sur grand écran, une pile sur mobile : l'ordre du DOM (gauche puis droite) est aussi l'ordre de lecture
  * sur mobile, donc l'ordre des cartes ne change pas d'une taille à l'autre.
  */
-export function TwoColumns({ left, right, ratio = 'equal', from = 'xl', gap = 'gutter' }: TwoColumnsProps) {
+export function TwoColumns({
+  left,
+  right,
+  ratio = 'equal',
+  from = 'xl',
+  gap = 'gutter',
+}: TwoColumnsProps) {
   return (
-    <div className={`flex flex-col ${gap === 'lg' ? 'gap-lg' : 'gap-gutter'} ${SPLIT[from][ratio]} items-start md:gap-6 xl:gap-8`}>
-      <div className={`flex w-full min-w-0 flex-col ${gap === 'lg' ? 'gap-lg' : 'gap-gutter'} lg:gap-6`}>{left}</div>
-      <div className={`flex w-full min-w-0 flex-col ${gap === 'lg' ? 'gap-lg' : 'gap-gutter'} lg:gap-6`}>{right}</div>
+    <div
+      className={`flex flex-col ${gap === 'lg' ? 'gap-lg' : 'gap-gutter'} ${SPLIT[from][ratio]} items-start md:gap-6 xl:gap-8`}
+    >
+      <div
+        className={`flex w-full min-w-0 flex-col ${gap === 'lg' ? 'gap-lg' : 'gap-gutter'} lg:gap-6`}
+      >
+        {left}
+      </div>
+      <div
+        className={`flex w-full min-w-0 flex-col ${gap === 'lg' ? 'gap-lg' : 'gap-gutter'} lg:gap-6`}
+      >
+        {right}
+      </div>
     </div>
   );
 }

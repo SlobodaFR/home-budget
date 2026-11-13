@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { InsightsState } from '../../application/use-insights';
-import { Insight, insightAction, lessonReference, SEVERITY_LABEL } from '../../domain/insights';
+import {
+  Insight,
+  insightAction,
+  lessonReference,
+  SEVERITY_LABEL,
+} from '../../domain/insights';
 import { SEVERITY_STYLE } from './severity-style';
 import { cardClass } from './ui';
 
@@ -8,17 +13,26 @@ function InsightItem({ insight }: { insight: Insight }) {
   const style = SEVERITY_STYLE[insight.severity];
   const Icon = style.icon;
   const action = insightAction(insight.link, insight.id);
-  const lesson = insight.lesson === null ? null : lessonReference(insight.lesson);
+  const lesson =
+    insight.lesson === null ? null : lessonReference(insight.lesson);
 
   return (
     <li className={`flex gap-md border-l-4 py-md pl-md ${style.accent}`}>
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${style.badge}`}>
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${style.badge}`}
+      >
         <Icon width={20} height={20} />
         <span className="sr-only">{SEVERITY_LABEL[insight.severity]} : </span>
       </span>
       <div className="min-w-0 flex-1">
-        <p className="font-body-md text-body-md font-semibold">{insight.title}</p>
-        {insight.detail && <p className="font-body-sm text-body-sm text-mute">{insight.detail}</p>}
+        <p className="font-body-md text-body-md font-semibold">
+          {insight.title}
+        </p>
+        {insight.detail && (
+          <p className="font-body-sm text-body-sm text-mute">
+            {insight.detail}
+          </p>
+        )}
         {(lesson || action) && (
           <div className="mt-sm flex flex-wrap items-center gap-x-md gap-y-sm">
             {action && (
@@ -40,7 +54,9 @@ function InsightItem({ insight }: { insight: Insight }) {
                   {lesson.label}
                 </a>
               ) : (
-                <span className="font-body-sm text-body-sm text-mute">{lesson.label}</span>
+                <span className="font-body-sm text-body-sm text-mute">
+                  {lesson.label}
+                </span>
               ))}
           </div>
         )}
@@ -55,9 +71,15 @@ export function InsightsCard({ state }: { state: InsightsState }) {
   }
   return (
     <section aria-label="Prochaines actions" className={cardClass}>
-      <h3 className="font-label-caps text-label-caps uppercase text-mute">Prochaines actions</h3>
+      <h3 className="font-label-caps text-label-caps uppercase text-mute">
+        Prochaines actions
+      </h3>
       {state.status === 'loading' ? (
-        <div role="status" aria-label="Chargement des conseils" className="mt-md flex flex-col gap-md">
+        <div
+          role="status"
+          aria-label="Chargement des conseils"
+          className="mt-md flex flex-col gap-md"
+        >
           <div className="h-12 animate-pulse rounded bg-soft-cloud" />
           <div className="h-12 animate-pulse rounded bg-soft-cloud" />
         </div>

@@ -4,7 +4,8 @@ export const pourCommencer: HelpSection = {
   id: 'pour-commencer',
   kind: 'guide',
   title: 'Pour commencer',
-  summary: 'À quoi sert l’application, le foyer, l’espace commun et l’espace perso, les 4 blocs, le plan et la saisie d’une opération.',
+  summary:
+    'À quoi sert l’application, le foyer, l’espace commun et l’espace perso, les 4 blocs, le plan et la saisie d’une opération.',
   keywords: ['débuter', 'démarrer', 'premiers pas', 'tutoriel'],
   entries: [
     {
@@ -40,7 +41,14 @@ export const pourCommencer: HelpSection = {
         },
       ],
       links: [{ kind: 'internal', label: 'Ouvrir le foyer', to: '/foyer' }],
-      keywords: ['inviter', 'invitation', 'code', 'rejoindre', 'membre', 'famille'],
+      keywords: [
+        'inviter',
+        'invitation',
+        'code',
+        'rejoindre',
+        'membre',
+        'famille',
+      ],
     },
     {
       id: 'commun-et-perso',
@@ -69,7 +77,10 @@ export const pourCommencer: HelpSection = {
       id: 'les-4-blocs',
       title: 'Les 4 blocs : Fixe, Courant, Plaisir, Épargne',
       blocks: [
-        { type: 'paragraph', text: 'Chaque dépense est rangée dans un bloc. L’idée est de donner une place à chaque euro, y compris au plaisir.' },
+        {
+          type: 'paragraph',
+          text: 'Chaque dépense est rangée dans un bloc. L’idée est de donner une place à chaque euro, y compris au plaisir.',
+        },
         {
           type: 'list',
           items: [

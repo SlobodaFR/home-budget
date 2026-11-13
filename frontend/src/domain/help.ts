@@ -52,7 +52,8 @@ export interface HelpSection {
   entries: readonly HelpEntry[];
 }
 
-export const HELP_SOURCES_DISCLAIMER = 'Ce sont des repères et des estimations, pas des conseils juridiques ou fiscaux.';
+export const HELP_SOURCES_DISCLAIMER =
+  'Ce sont des repères et des estimations, pas des conseils juridiques ou fiscaux.';
 export const HELP_SOURCES_SECTION_ID = 'regles-sources';
 
 export function helpAnchor(sectionId: string): string {
@@ -103,7 +104,9 @@ function entryText(entry: HelpEntry): string {
 }
 
 function sectionText(section: HelpSection): string {
-  return [section.title, section.summary, ...(section.keywords ?? [])].join(' ');
+  return [section.title, section.summary, ...(section.keywords ?? [])].join(
+    ' ',
+  );
 }
 
 function containsAll(text: string, tokens: readonly string[]): boolean {
@@ -112,16 +115,26 @@ function containsAll(text: string, tokens: readonly string[]): boolean {
 }
 
 /** Une entrée correspond si tous les mots se trouvent dans le titre de sa section et dans elle-même. */
-export function entryMatches(section: HelpSection, entry: HelpEntry, query: string): boolean {
+export function entryMatches(
+  section: HelpSection,
+  entry: HelpEntry,
+  query: string,
+): boolean {
   const tokens = searchTokens(query);
-  return tokens.length === 0 || containsAll(`${section.title} ${entryText(entry)}`, tokens);
+  return (
+    tokens.length === 0 ||
+    containsAll(`${section.title} ${entryText(entry)}`, tokens)
+  );
 }
 
 /**
  * Les sections à afficher pour une recherche. Sans recherche, tout. Si la recherche correspond au titre ou au résumé d'une
  * section, elle est gardée en entier ; sinon, seules ses entrées correspondantes le sont, et une section sans entrée disparaît.
  */
-export function filterSections(sections: readonly HelpSection[], query: string): HelpSection[] {
+export function filterSections(
+  sections: readonly HelpSection[],
+  query: string,
+): HelpSection[] {
   const tokens = searchTokens(query);
   if (tokens.length === 0) {
     return [...sections];
@@ -132,7 +145,9 @@ export function filterSections(sections: readonly HelpSection[], query: string):
       result.push(section);
       continue;
     }
-    const entries = section.entries.filter((entry) => entryMatches(section, entry, query));
+    const entries = section.entries.filter((entry) =>
+      entryMatches(section, entry, query),
+    );
     if (entries.length > 0) {
       result.push({ ...section, entries });
     }
@@ -184,14 +199,24 @@ export function aidRuleToHelpEntry(rule: AidRule): HelpEntry {
       { type: 'paragraph', text: rule.description },
       {
         type: 'list',
-        items: [`Taux : ${rule.ratePercent} % de crédit d’impôt.`, `Plafond : ${rule.capDescription}.`, `Quand l’argent arrive : ${rule.cashTiming}`],
+        items: [
+          `Taux : ${rule.ratePercent} % de crédit d’impôt.`,
+          `Plafond : ${rule.capDescription}.`,
+          `Quand l’argent arrive : ${rule.cashTiming}`,
+        ],
       },
     ],
-    source: { label: rule.sourceLabel, url: rule.sourceUrl, verifiedOn: rule.verifiedOn },
+    source: {
+      label: rule.sourceLabel,
+      url: rule.sourceUrl,
+      verifiedOn: rule.verifiedOn,
+    },
   };
 }
 
-export function catalogToHelpEntries(definitions: readonly LifeEventDefinition[]): HelpEntry[] {
+export function catalogToHelpEntries(
+  definitions: readonly LifeEventDefinition[],
+): HelpEntry[] {
   return definitions.flatMap((definition) =>
     definition.steps.map<HelpEntry>((step) => ({
       id: `demarche-${definition.type}-${step.id}`,
@@ -199,14 +224,32 @@ export function catalogToHelpEntries(definitions: readonly LifeEventDefinition[]
       group: `${LIFE_EVENT_GROUP_PREFIX} : ${definition.label.charAt(0).toLowerCase()}${definition.label.slice(1)}`,
       blocks: [
         { type: 'paragraph', text: step.detail },
-        ...(step.dueLabel ? [{ type: 'paragraph', text: `Échéance : ${step.dueLabel}.` } as const] : []),
+        ...(step.dueLabel
+          ? [
+              {
+                type: 'paragraph',
+                text: `Échéance : ${step.dueLabel}.`,
+              } as const,
+            ]
+          : []),
       ],
-      source: { label: step.sourceLabel, url: step.sourceUrl, verifiedOn: step.verifiedOn },
+      source: {
+        label: step.sourceLabel,
+        url: step.sourceUrl,
+        verifiedOn: step.verifiedOn,
+      },
     })),
   );
 }
 
 /** Ajoute les règles venues du serveur en tête de la section « Règles officielles » ; les autres sections ne changent pas. */
-export function withLiveSources(sections: readonly HelpSection[], live: readonly HelpEntry[]): HelpSection[] {
-  return sections.map((section) => (section.kind === 'sources' ? { ...section, entries: [...live, ...section.entries] } : section));
+export function withLiveSources(
+  sections: readonly HelpSection[],
+  live: readonly HelpEntry[],
+): HelpSection[] {
+  return sections.map((section) =>
+    section.kind === 'sources'
+      ? { ...section, entries: [...live, ...section.entries] }
+      : section,
+  );
 }

@@ -16,7 +16,11 @@ import {
 import { formatCentsRounded } from '../../domain/money';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
 import { LoadingScreen } from '../components/LoadingScreen';
-import { BalanceChart, IncomeExpenseChart, TrendsTable } from '../components/trends/TrendsCharts';
+import {
+  BalanceChart,
+  IncomeExpenseChart,
+  TrendsTable,
+} from '../components/trends/TrendsCharts';
 import { RisersSection, TopLabelsList } from '../components/trends/TrendsLists';
 import { cardClass } from '../components/ui';
 import { PageIntro } from '../layout/PageLayout';
@@ -46,7 +50,11 @@ export function TendancesPage() {
         back={{ to: '/', label: 'Accueil' }}
       />
 
-      <div role="group" aria-label="Période observée" className="grid grid-cols-3 rounded-full bg-soft-cloud p-1 lg:max-w-[520px]">
+      <div
+        role="group"
+        aria-label="Période observée"
+        className="grid grid-cols-3 rounded-full bg-soft-cloud p-1 lg:max-w-[520px]"
+      >
         {TREND_WINDOWS.map((value) => (
           <button
             key={value}
@@ -62,10 +70,22 @@ export function TendancesPage() {
 
       {data ? (
         !hasAnyActivity(data) ? (
-          <section aria-label="Pas encore de tendances" className={`${cardClass} flex flex-col items-start gap-md`}>
-            <h3 className="font-heading-lg text-heading-lg">Pas encore de tendances</h3>
-            <p className="font-body-md text-body-md">Aucune opération n’a été enregistrée sur cette période. Dès que vous aurez importé ou saisi quelques mois, vous verrez ici où va votre argent.</p>
-            <Link to="/import" className="inline-flex min-h-[44px] items-center font-body-sm text-body-sm font-semibold underline">
+          <section
+            aria-label="Pas encore de tendances"
+            className={`${cardClass} flex flex-col items-start gap-md`}
+          >
+            <h3 className="font-heading-lg text-heading-lg">
+              Pas encore de tendances
+            </h3>
+            <p className="font-body-md text-body-md">
+              Aucune opération n’a été enregistrée sur cette période. Dès que
+              vous aurez importé ou saisi quelques mois, vous verrez ici où va
+              votre argent.
+            </p>
+            <Link
+              to="/import"
+              className="inline-flex min-h-[44px] items-center font-body-sm text-body-sm font-semibold underline"
+            >
               Importer un relevé
             </Link>
           </section>
@@ -73,20 +93,27 @@ export function TendancesPage() {
           <div className="flex flex-col gap-gutter xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start xl:gap-8">
             <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
               <div className="order-2 xl:order-none">
-                  <section aria-label="Évolution mois par mois" className={`${cardClass} flex flex-col gap-lg`}>
-                    <div>
-                      <h3 className="font-label-caps text-label-caps uppercase text-mute">Revenus et dépenses</h3>
-                      <div className="mt-sm">
-                        <IncomeExpenseChart months={data.months} />
-                      </div>
+                <section
+                  aria-label="Évolution mois par mois"
+                  className={`${cardClass} flex flex-col gap-lg`}
+                >
+                  <div>
+                    <h3 className="font-label-caps text-label-caps uppercase text-mute">
+                      Revenus et dépenses
+                    </h3>
+                    <div className="mt-sm">
+                      <IncomeExpenseChart months={data.months} />
                     </div>
-                    <div className="border-t border-hairline-soft pt-md">
-                      <h3 className="font-label-caps text-label-caps uppercase text-mute">Solde de chaque mois</h3>
-                      <div className="mt-sm">
-                        <BalanceChart months={data.months} />
-                      </div>
+                  </div>
+                  <div className="border-t border-hairline-soft pt-md">
+                    <h3 className="font-label-caps text-label-caps uppercase text-mute">
+                      Solde de chaque mois
+                    </h3>
+                    <div className="mt-sm">
+                      <BalanceChart months={data.months} />
                     </div>
-                  </section>
+                  </div>
+                </section>
               </div>
               <div className="order-3 xl:order-none">
                 <TrendsTable months={data.months} />
@@ -94,38 +121,71 @@ export function TendancesPage() {
             </div>
             <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
               <div className="order-1 xl:order-none">
-                  <section aria-label="Taux d’épargne moyen" className={cardClass}>
-                    <p className="font-label-caps text-label-caps uppercase text-mute">Taux d’épargne moyen</p>
-                    <p className="tabular font-heading-xl text-heading-xl">{describeAverageSavings(data.averages)}</p>
-                    <p className="font-body-sm text-body-sm" data-testid="savings-sentence">
-                      {describeSavingsSentence(data.averages, data.months.length)}
-                    </p>
-                    <dl className="mt-md grid grid-cols-2 gap-md border-t border-hairline-soft pt-md">
-                      <div>
-                        <dt className="font-label-caps text-label-caps uppercase text-mute">Revenus par mois</dt>
-                        <dd className="tabular font-body-md text-body-md font-semibold">{formatCentsRounded(data.averages.incomeCents)}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-label-caps text-label-caps uppercase text-mute">Dépenses par mois</dt>
-                        <dd className="tabular font-body-md text-body-md font-semibold">{formatCentsRounded(data.averages.expenseCents)}</dd>
-                      </div>
-                    </dl>
-                    <p className="mt-1 font-body-sm text-body-sm text-mute">Moyennes sur {data.months.length} mois, de {longMonthLabel(data.from)} à {longMonthLabel(data.to)}.</p>
-                  </section>
+                <section
+                  aria-label="Taux d’épargne moyen"
+                  className={cardClass}
+                >
+                  <p className="font-label-caps text-label-caps uppercase text-mute">
+                    Taux d’épargne moyen
+                  </p>
+                  <p className="tabular font-heading-xl text-heading-xl">
+                    {describeAverageSavings(data.averages)}
+                  </p>
+                  <p
+                    className="font-body-sm text-body-sm"
+                    data-testid="savings-sentence"
+                  >
+                    {describeSavingsSentence(data.averages, data.months.length)}
+                  </p>
+                  <dl className="mt-md grid grid-cols-2 gap-md border-t border-hairline-soft pt-md">
+                    <div>
+                      <dt className="font-label-caps text-label-caps uppercase text-mute">
+                        Revenus par mois
+                      </dt>
+                      <dd className="tabular font-body-md text-body-md font-semibold">
+                        {formatCentsRounded(data.averages.incomeCents)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-label-caps text-label-caps uppercase text-mute">
+                        Dépenses par mois
+                      </dt>
+                      <dd className="tabular font-body-md text-body-md font-semibold">
+                        {formatCentsRounded(data.averages.expenseCents)}
+                      </dd>
+                    </div>
+                  </dl>
+                  <p className="mt-1 font-body-sm text-body-sm text-mute">
+                    Moyennes sur {data.months.length} mois, de{' '}
+                    {longMonthLabel(data.from)} à {longMonthLabel(data.to)}.
+                  </p>
+                </section>
               </div>
               <div className="order-4 xl:order-none">
                 <TopLabelsList items={data.topLabels} />
               </div>
               <div className="order-5 xl:order-none">
-                <RisersSection items={data.risers} monthsCount={data.months.length} />
+                <RisersSection
+                  items={data.risers}
+                  monthsCount={data.months.length}
+                />
               </div>
             </div>
           </div>
         )
       ) : offline ? (
-        <OfflineNotice message="Hors ligne : vos tendances reviendront avec le réseau." onRetry={reload} />
+        <OfflineNotice
+          message="Hors ligne : vos tendances reviendront avec le réseau."
+          onRetry={reload}
+        />
       ) : trends.error ? (
-        <ErrorNotice message={describeError(trends.error, 'Impossible de charger les tendances.')} onRetry={reload} />
+        <ErrorNotice
+          message={describeError(
+            trends.error,
+            'Impossible de charger les tendances.',
+          )}
+          onRetry={reload}
+        />
       ) : (
         <LoadingScreen />
       )}

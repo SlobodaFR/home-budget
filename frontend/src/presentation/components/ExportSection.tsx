@@ -2,25 +2,40 @@ import { FormEvent, useState } from 'react';
 import { describeExportError, useExport } from '../../application/use-export';
 import { useRequiredHousehold } from '../../application/use-household';
 import { useSpace } from '../../application/use-space';
-import { defaultExportRange, ExportRangeErrors, MAX_EXPORT_DAYS, validateExportRange } from '../../domain/export';
+import {
+  defaultExportRange,
+  ExportRangeErrors,
+  MAX_EXPORT_DAYS,
+  validateExportRange,
+} from '../../domain/export';
 import { Space } from '../../domain/household';
 import { ErrorNotice } from './ErrorNotice';
 import { CheckIcon, DownloadIcon } from './Icons';
 import { buttonPrimary, buttonSecondary, inputClass, labelClass } from './ui';
 
-const spaceLabel = (space: Space) => (space.kind === 'COMMON' ? 'Espace commun' : 'Mon espace perso');
+const spaceLabel = (space: Space) =>
+  space.kind === 'COMMON' ? 'Espace commun' : 'Mon espace perso';
 
 function Done({ filename }: { filename: string }) {
   return (
-    <p role="status" className="flex items-start gap-sm rounded bg-success/10 p-md font-body-sm text-body-sm font-semibold text-success">
+    <p
+      role="status"
+      className="flex items-start gap-sm rounded bg-success/10 p-md font-body-sm text-body-sm font-semibold text-success"
+    >
       <CheckIcon width={18} height={18} className="mt-0.5 shrink-0" />
-      <span className="min-w-0 break-words">Fichier téléchargé : {filename}</span>
+      <span className="min-w-0 break-words">
+        Fichier téléchargé : {filename}
+      </span>
     </p>
   );
 }
 
 /** « Mes données » : sauvegarde JSON complète et export CSV des opérations d'un espace sur une période. */
-export function ExportSection({ now = () => new Date() }: { now?: () => Date }) {
+export function ExportSection({
+  now = () => new Date(),
+}: {
+  now?: () => Date;
+}) {
   const household = useRequiredHousehold();
   const { space } = useSpace();
   const exporter = useExport();
@@ -72,25 +87,53 @@ export function ExportSection({ now = () => new Date() }: { now?: () => Date }) 
 
   return (
     <>
-      <p className="font-body-sm text-body-sm text-mute">Vos données vous appartiennent : vous pouvez en garder une copie quand vous voulez.</p>
+      <p className="font-body-sm text-body-sm text-mute">
+        Vos données vous appartiennent : vous pouvez en garder une copie quand
+        vous voulez.
+      </p>
 
       <div className="flex flex-col gap-md">
         <p className="rounded bg-soft-cloud p-md font-body-sm text-body-sm">
-          La sauvegarde contient <span className="font-semibold">uniquement les données auxquelles vous avez accès</span> : le foyer, l’espace commun et votre propre
-          espace perso. L’espace perso d’un autre membre n’en fait jamais partie.
+          La sauvegarde contient{' '}
+          <span className="font-semibold">
+            uniquement les données auxquelles vous avez accès
+          </span>{' '}
+          : le foyer, l’espace commun et votre propre espace perso. L’espace
+          perso d’un autre membre n’en fait jamais partie.
         </p>
-        <button type="button" onClick={() => void handleBackup()} disabled={busy} className={`${buttonSecondary} w-full`}>
+        <button
+          type="button"
+          onClick={() => void handleBackup()}
+          disabled={busy}
+          className={`${buttonSecondary} w-full`}
+        >
           <DownloadIcon width={18} height={18} />
-          {exporter.busy === 'backup' ? 'Téléchargement…' : 'Télécharger une sauvegarde (JSON)'}
+          {exporter.busy === 'backup'
+            ? 'Téléchargement…'
+            : 'Télécharger une sauvegarde (JSON)'}
         </button>
         {backupDone && <Done filename={backupDone} />}
-        {backupError && <ErrorNotice message={backupError} onRetry={() => void handleBackup()} />}
+        {backupError && (
+          <ErrorNotice
+            message={backupError}
+            onRetry={() => void handleBackup()}
+          />
+        )}
       </div>
 
-      <form onSubmit={(event) => void handleCsv(event)} noValidate aria-label="Exporter les opérations (CSV)" className="flex flex-col gap-md border-t border-hairline-soft pt-md">
-        <h4 className="font-body-md text-body-md font-semibold">Exporter les opérations (CSV)</h4>
+      <form
+        onSubmit={(event) => void handleCsv(event)}
+        noValidate
+        aria-label="Exporter les opérations (CSV)"
+        className="flex flex-col gap-md border-t border-hairline-soft pt-md"
+      >
+        <h4 className="font-body-md text-body-md font-semibold">
+          Exporter les opérations (CSV)
+        </h4>
         <p className="font-body-sm text-body-sm text-mute">
-          Un tableau à ouvrir dans Excel ou Numbers : date, type, bloc, libellé, montant et compte de chaque opération. {MAX_EXPORT_DAYS} jours au plus.
+          Un tableau à ouvrir dans Excel ou Numbers : date, type, bloc, libellé,
+          montant et compte de chaque opération. {MAX_EXPORT_DAYS} jours au
+          plus.
         </p>
 
         {spaces.length > 1 && (
@@ -125,13 +168,25 @@ export function ExportSection({ now = () => new Date() }: { now?: () => Date }) 
               id="export-from"
               type="date"
               value={range.from}
-              aria-invalid={rangeErrors.from || rangeErrors.range ? true : undefined}
-              aria-describedby={rangeErrors.from ? 'export-from-error' : rangeErrors.range ? 'export-range-error' : undefined}
+              aria-invalid={
+                rangeErrors.from || rangeErrors.range ? true : undefined
+              }
+              aria-describedby={
+                rangeErrors.from
+                  ? 'export-from-error'
+                  : rangeErrors.range
+                    ? 'export-range-error'
+                    : undefined
+              }
               onChange={(event) => setDate('from', event.target.value)}
               className={inputClass}
             />
             {rangeErrors.from && (
-              <p id="export-from-error" role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+              <p
+                id="export-from-error"
+                role="alert"
+                className="mt-1 font-body-sm text-body-sm text-error"
+              >
                 {rangeErrors.from}
               </p>
             )}
@@ -144,25 +199,45 @@ export function ExportSection({ now = () => new Date() }: { now?: () => Date }) 
               id="export-to"
               type="date"
               value={range.to}
-              aria-invalid={rangeErrors.to || rangeErrors.range ? true : undefined}
-              aria-describedby={rangeErrors.to ? 'export-to-error' : rangeErrors.range ? 'export-range-error' : undefined}
+              aria-invalid={
+                rangeErrors.to || rangeErrors.range ? true : undefined
+              }
+              aria-describedby={
+                rangeErrors.to
+                  ? 'export-to-error'
+                  : rangeErrors.range
+                    ? 'export-range-error'
+                    : undefined
+              }
               onChange={(event) => setDate('to', event.target.value)}
               className={inputClass}
             />
             {rangeErrors.to && (
-              <p id="export-to-error" role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+              <p
+                id="export-to-error"
+                role="alert"
+                className="mt-1 font-body-sm text-body-sm text-error"
+              >
                 {rangeErrors.to}
               </p>
             )}
           </div>
         </div>
         {rangeErrors.range && (
-          <p id="export-range-error" role="alert" className="font-body-sm text-body-sm font-semibold text-error">
+          <p
+            id="export-range-error"
+            role="alert"
+            className="font-body-sm text-body-sm font-semibold text-error"
+          >
             {rangeErrors.range}
           </p>
         )}
 
-        <button type="submit" disabled={busy} className={`${buttonPrimary} w-full`}>
+        <button
+          type="submit"
+          disabled={busy}
+          className={`${buttonPrimary} w-full`}
+        >
           <DownloadIcon width={18} height={18} />
           {exporter.busy === 'csv' ? 'Téléchargement…' : 'Télécharger le CSV'}
         </button>

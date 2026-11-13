@@ -5,7 +5,8 @@ import { ApiError, NetworkError } from '../infrastructure/api-client';
 import { rawExtractionJob, rawExtractionResult } from '../test/fixtures';
 
 const api = vi.hoisted(() => ({
-  fetchDebtExtractionCapabilities: vi.fn<ApiMock<'fetchDebtExtractionCapabilities'>>(),
+  fetchDebtExtractionCapabilities:
+    vi.fn<ApiMock<'fetchDebtExtractionCapabilities'>>(),
   startDebtExtraction: vi.fn<ApiMock<'startDebtExtraction'>>(),
   fetchDebtExtraction: vi.fn<ApiMock<'fetchDebtExtraction'>>(),
   deleteDebtExtraction: vi.fn<ApiMock<'deleteDebtExtraction'>>(),
@@ -16,7 +17,10 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   apiClient: api,
 }));
 
-import { useDebtExtraction, useExtractionCapabilities } from './use-debt-extraction';
+import {
+  useDebtExtraction,
+  useExtractionCapabilities,
+} from './use-debt-extraction';
 import type { ApiMock } from '../test/api-mock';
 
 const file = new File(['%PDF-1.4'], 'contrat.pdf', { type: 'application/pdf' });
@@ -27,11 +31,21 @@ const job = (raw: Record<string, unknown>) => {
   }
   return parsed;
 };
-const running = (progressPercent = 40, stage = 'OCR') => job(rawExtractionJob({ progressPercent, stage }));
-const done = () => job({ status: 'DONE', stage: null, progressPercent: 100, result: rawExtractionResult() });
+const running = (progressPercent = 40, stage = 'OCR') =>
+  job(rawExtractionJob({ progressPercent, stage }));
+const done = () =>
+  job({
+    status: 'DONE',
+    stage: null,
+    progressPercent: 100,
+    result: rawExtractionResult(),
+  });
 
 /** Laisse passer le temps simulé et les promesses en attente. */
-const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+const tick = (ms: number) =>
+  act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
 
 describe('useExtractionCapabilities', () => {
   beforeEach(() => {
@@ -39,28 +53,47 @@ describe('useExtractionCapabilities', () => {
   });
 
   it('gives the capabilities when the server can read contracts', async () => {
-    api.fetchDebtExtractionCapabilities.mockResolvedValue({ available: true, maxFileBytes: 1000, maxPages: 40 });
+    api.fetchDebtExtractionCapabilities.mockResolvedValue({
+      available: true,
+      maxFileBytes: 1000,
+      maxPages: 40,
+    });
     const { result } = renderHook(() => useExtractionCapabilities(true));
-    await waitFor(() => expect(result.current).toEqual({ available: true, maxFileBytes: 1000, maxPages: 40 }));
+    await waitFor(() =>
+      expect(result.current).toEqual({
+        available: true,
+        maxFileBytes: 1000,
+        maxPages: 40,
+      }),
+    );
   });
 
   it('stays hidden when the tools are missing', async () => {
-    api.fetchDebtExtractionCapabilities.mockResolvedValue({ available: false, maxFileBytes: 1000, maxPages: null });
+    api.fetchDebtExtractionCapabilities.mockResolvedValue({
+      available: false,
+      maxFileBytes: 1000,
+      maxPages: null,
+    });
     const { result } = renderHook(() => useExtractionCapabilities(true));
-    await waitFor(() => expect(api.fetchDebtExtractionCapabilities).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(api.fetchDebtExtractionCapabilities).toHaveBeenCalled(),
+    );
     expect(result.current).toBeNull();
   });
 
   it('stays hidden on a network error or an unreadable answer', async () => {
     api.fetchDebtExtractionCapabilities.mockRejectedValue(new NetworkError());
     const { result } = renderHook(() => useExtractionCapabilities(true));
-    await waitFor(() => expect(api.fetchDebtExtractionCapabilities).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(api.fetchDebtExtractionCapabilities).toHaveBeenCalled(),
+    );
     expect(result.current).toBeNull();
   });
 
   it('stays hidden when the client has no such call at all', async () => {
     const original = api.fetchDebtExtractionCapabilities;
-    (api as Record<string, unknown>).fetchDebtExtractionCapabilities = undefined;
+    (api as Record<string, unknown>).fetchDebtExtractionCapabilities =
+      undefined;
     const { result } = renderHook(() => useExtractionCapabilities(true));
     await act(async () => undefined);
     expect(result.current).toBeNull();
@@ -78,7 +111,9 @@ describe('useExtractionCapabilities', () => {
 describe('useDebtExtraction', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    api.startDebtExtraction.mockReset().mockResolvedValue({ jobId: 'job-1', expiresAtMs: null });
+    api.startDebtExtraction
+      .mockReset()
+      .mockResolvedValue({ jobId: 'job-1', expiresAtMs: null });
     api.fetchDebtExtraction.mockReset().mockResolvedValue(running());
     api.deleteDebtExtraction.mockReset().mockResolvedValue(undefined);
   });
@@ -99,14 +134,24 @@ describe('useDebtExtraction', () => {
     expect(hook.result.current.state).toEqual({ phase: 'uploading' });
     await tick(0);
     expect(api.startDebtExtraction).toHaveBeenCalledWith('s1', file);
-    expect(hook.result.current.state).toMatchObject({ phase: 'running', status: 'PENDING', progressPercent: 0 });
+    expect(hook.result.current.state).toMatchObject({
+      phase: 'running',
+      status: 'PENDING',
+      progressPercent: 0,
+    });
 
     await tick(1499);
     expect(api.fetchDebtExtraction).not.toHaveBeenCalled();
     await tick(1);
     expect(api.fetchDebtExtraction).toHaveBeenCalledTimes(1);
     expect(api.fetchDebtExtraction).toHaveBeenCalledWith('job-1');
-    expect(hook.result.current.state).toMatchObject({ phase: 'running', status: 'RUNNING', stage: 'OCR', progressPercent: 40, connectionLost: false });
+    expect(hook.result.current.state).toMatchObject({
+      phase: 'running',
+      status: 'RUNNING',
+      stage: 'OCR',
+      progressPercent: 40,
+      connectionLost: false,
+    });
 
     // 4 interrogations de plus toutes les 1,5 s, puis l'intervalle grandit sans dépasser 4 s.
     await tick(1500 * 4);
@@ -122,13 +167,24 @@ describe('useDebtExtraction', () => {
   });
 
   it('shows the stage and progress as they change, then the result, and deletes nothing yet', async () => {
-    api.fetchDebtExtraction.mockResolvedValueOnce(running(20, 'TEXT')).mockResolvedValueOnce(running(70, 'PARSING')).mockResolvedValue(done());
+    api.fetchDebtExtraction
+      .mockResolvedValueOnce(running(20, 'TEXT'))
+      .mockResolvedValueOnce(running(70, 'PARSING'))
+      .mockResolvedValue(done());
     const hook = setup();
     await begin(hook);
     await tick(1500);
-    expect(hook.result.current.state).toMatchObject({ phase: 'running', stage: 'TEXT', progressPercent: 20 });
+    expect(hook.result.current.state).toMatchObject({
+      phase: 'running',
+      stage: 'TEXT',
+      progressPercent: 20,
+    });
     await tick(1500);
-    expect(hook.result.current.state).toMatchObject({ phase: 'running', stage: 'PARSING', progressPercent: 70 });
+    expect(hook.result.current.state).toMatchObject({
+      phase: 'running',
+      stage: 'PARSING',
+      progressPercent: 70,
+    });
     await tick(1500);
     expect(hook.result.current.state.phase).toBe('review');
     const state = hook.result.current.state;
@@ -171,7 +227,9 @@ describe('useDebtExtraction', () => {
 
   it('ignores an answer that arrives after the cancellation', async () => {
     let answer: (value: unknown) => void = () => undefined;
-    api.fetchDebtExtraction.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    api.fetchDebtExtraction.mockReturnValue(
+      new Promise((resolve) => (answer = resolve)),
+    );
     const hook = setup();
     await begin(hook);
     await tick(1500);
@@ -183,7 +241,9 @@ describe('useDebtExtraction', () => {
 
   it('deletes the job as soon as it exists when cancelled during the upload', async () => {
     let finishUpload: (value: unknown) => void = () => undefined;
-    api.startDebtExtraction.mockReturnValue(new Promise((resolve) => (finishUpload = resolve)));
+    api.startDebtExtraction.mockReturnValue(
+      new Promise((resolve) => (finishUpload = resolve)),
+    );
     const hook = setup();
     act(() => hook.result.current.start(file));
     act(() => hook.result.current.cancel());
@@ -208,7 +268,10 @@ describe('useDebtExtraction', () => {
 
   describe('refusals when sending', () => {
     it.each([
-      [429, 'Une lecture est déjà en cours ou vous en avez fait trop cette heure'],
+      [
+        429,
+        'Une lecture est déjà en cours ou vous en avez fait trop cette heure',
+      ],
       [503, 'pas disponible'],
       [400, 'moins de 5 Ko'],
       [500, 'La lecture du contrat a échoué'],
@@ -228,8 +291,14 @@ describe('useDebtExtraction', () => {
       api.startDebtExtraction.mockRejectedValue(new NetworkError());
       const hook = setup();
       await begin(hook);
-      expect(hook.result.current.state).toMatchObject({ phase: 'error', message: expect.stringContaining('Pas de connexion') });
-      api.startDebtExtraction.mockResolvedValue({ jobId: 'job-2', expiresAtMs: null });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'error',
+        message: expect.stringContaining('Pas de connexion'),
+      });
+      api.startDebtExtraction.mockResolvedValue({
+        jobId: 'job-2',
+        expiresAtMs: null,
+      });
       act(() => hook.result.current.cancel());
       await begin(hook);
       expect(hook.result.current.state.phase).toBe('running');
@@ -238,11 +307,20 @@ describe('useDebtExtraction', () => {
 
   describe('failures while following', () => {
     it('shows the message of a failed job and deletes it', async () => {
-      api.fetchDebtExtraction.mockResolvedValue(job({ status: 'FAILED', error: { message: 'Le PDF est protégé par un mot de passe.' } }));
+      api.fetchDebtExtraction.mockResolvedValue(
+        job({
+          status: 'FAILED',
+          error: { message: 'Le PDF est protégé par un mot de passe.' },
+        }),
+      );
       const hook = setup();
       await begin(hook);
       await tick(1500);
-      expect(hook.result.current.state).toEqual({ phase: 'error', message: 'Le PDF est protégé par un mot de passe.', canResume: false });
+      expect(hook.result.current.state).toEqual({
+        phase: 'error',
+        message: 'Le PDF est protégé par un mot de passe.',
+        canResume: false,
+      });
       expect(api.deleteDebtExtraction).toHaveBeenCalledTimes(1);
       expect(vi.getTimerCount()).toBe(0);
     });
@@ -252,15 +330,24 @@ describe('useDebtExtraction', () => {
       const hook = setup();
       await begin(hook);
       await tick(1500);
-      expect(hook.result.current.state).toMatchObject({ phase: 'error', message: expect.stringContaining('a échoué') });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'error',
+        message: expect.stringContaining('a échoué'),
+      });
     });
 
     it('says the result expired on a 404, without trying to delete it', async () => {
-      api.fetchDebtExtraction.mockRejectedValue(new ApiError(404, 'introuvable'));
+      api.fetchDebtExtraction.mockRejectedValue(
+        new ApiError(404, 'introuvable'),
+      );
       const hook = setup();
       await begin(hook);
       await tick(1500);
-      expect(hook.result.current.state).toMatchObject({ phase: 'error', message: expect.stringContaining('n’est plus disponible'), canResume: false });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'error',
+        message: expect.stringContaining('n’est plus disponible'),
+        canResume: false,
+      });
       expect(api.deleteDebtExtraction).not.toHaveBeenCalled();
       expect(vi.getTimerCount()).toBe(0);
       hook.unmount();
@@ -268,11 +355,17 @@ describe('useDebtExtraction', () => {
     });
 
     it('stops at the expiry date announced by the server and deletes the job', async () => {
-      api.startDebtExtraction.mockResolvedValue({ jobId: 'job-1', expiresAtMs: Date.now() + 5000 });
+      api.startDebtExtraction.mockResolvedValue({
+        jobId: 'job-1',
+        expiresAtMs: Date.now() + 5000,
+      });
       const hook = setup();
       await begin(hook);
       await tick(1500 * 5);
-      expect(hook.result.current.state).toMatchObject({ phase: 'error', message: expect.stringContaining('n’est plus disponible') });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'error',
+        message: expect.stringContaining('n’est plus disponible'),
+      });
       expect(api.deleteDebtExtraction).toHaveBeenCalledWith('job-1');
       expect(vi.getTimerCount()).toBe(0);
     });
@@ -287,22 +380,37 @@ describe('useDebtExtraction', () => {
     });
 
     it('treats a finished job without a readable result as a failure and deletes it', async () => {
-      api.fetchDebtExtraction.mockResolvedValue(job({ status: 'DONE', result: 'oups' }));
+      api.fetchDebtExtraction.mockResolvedValue(
+        job({ status: 'DONE', result: 'oups' }),
+      );
       const hook = setup();
       await begin(hook);
       await tick(1500);
-      expect(hook.result.current.state).toMatchObject({ phase: 'error', message: expect.stringContaining('rien donné d’exploitable') });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'error',
+        message: expect.stringContaining('rien donné d’exploitable'),
+      });
       expect(api.deleteDebtExtraction).toHaveBeenCalledTimes(1);
     });
 
     it('keeps trying through a short network loss and says so', async () => {
-      api.fetchDebtExtraction.mockResolvedValueOnce(running(10)).mockRejectedValueOnce(new NetworkError()).mockRejectedValueOnce(new NetworkError()).mockResolvedValue(done());
+      api.fetchDebtExtraction
+        .mockResolvedValueOnce(running(10))
+        .mockRejectedValueOnce(new NetworkError())
+        .mockRejectedValueOnce(new NetworkError())
+        .mockResolvedValue(done());
       const hook = setup();
       await begin(hook);
       await tick(1500);
-      expect(hook.result.current.state).toMatchObject({ phase: 'running', connectionLost: false });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'running',
+        connectionLost: false,
+      });
       await tick(1500);
-      expect(hook.result.current.state).toMatchObject({ phase: 'running', connectionLost: true });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'running',
+        connectionLost: true,
+      });
       await tick(10_000);
       expect(hook.result.current.state.phase).toBe('review');
     });
@@ -312,7 +420,11 @@ describe('useDebtExtraction', () => {
       const hook = setup();
       await begin(hook);
       await tick(60_000);
-      expect(hook.result.current.state).toMatchObject({ phase: 'error', message: expect.stringContaining('Pas de connexion'), canResume: true });
+      expect(hook.result.current.state).toMatchObject({
+        phase: 'error',
+        message: expect.stringContaining('Pas de connexion'),
+        canResume: true,
+      });
       expect(vi.getTimerCount()).toBe(0);
       expect(api.deleteDebtExtraction).not.toHaveBeenCalled();
 
@@ -358,7 +470,9 @@ describe('useDebtExtraction', () => {
 
     it('deletes the job that comes back after an unmount during the upload', async () => {
       let finishUpload: (value: unknown) => void = () => undefined;
-      api.startDebtExtraction.mockReturnValue(new Promise((resolve) => (finishUpload = resolve)));
+      api.startDebtExtraction.mockReturnValue(
+        new Promise((resolve) => (finishUpload = resolve)),
+      );
       const hook = setup();
       act(() => hook.result.current.start(file));
       hook.unmount();

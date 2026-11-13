@@ -51,7 +51,9 @@ describe('month helpers', () => {
   });
 
   it('sends midnight UTC for another day', () => {
-    expect(toApiDate('2026-10-03', new Date(2026, 9, 20, 12))).toBe('2026-10-03T00:00:00.000Z');
+    expect(toApiDate('2026-10-03', new Date(2026, 9, 20, 12))).toBe(
+      '2026-10-03T00:00:00.000Z',
+    );
   });
 
   it('keeps the local day when the date is today', () => {
@@ -69,7 +71,9 @@ describe('month helpers', () => {
 describe('date formatting helpers', () => {
   it('formats a date input in short form', () => {
     expect(formatDateInput('2026-01-05')).toMatch(/^5 janv\.? 2026$/);
-    expect(formatDateInput('2026-01-05T10:00:00.000Z')).toMatch(/^5 janv\.? 2026$/);
+    expect(formatDateInput('2026-01-05T10:00:00.000Z')).toMatch(
+      /^5 janv\.? 2026$/,
+    );
     expect(formatDateInput('nope')).toBe('nope');
   });
 

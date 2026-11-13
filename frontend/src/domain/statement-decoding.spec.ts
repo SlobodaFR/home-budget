@@ -1,12 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { decodeStatement, MAX_STATEMENT_BYTES, statementSizeError, textByteLength } from './statement-decoding';
+import {
+  decodeStatement,
+  MAX_STATEMENT_BYTES,
+  statementSizeError,
+  textByteLength,
+} from './statement-decoding';
 
 const ascii = (text: string) => Array.from(text, (char) => char.charCodeAt(0));
 
 describe('decodeStatement', () => {
   it('reads valid UTF-8 with accents', () => {
-    const bytes = new Uint8Array([...ascii('Caf'), 0xc3, 0xa9, ...ascii(';PR'), 0xc3, 0x89, ...ascii('L'), 0xc3, 0x88, ...ascii('VEMENT')]);
-    expect(decodeStatement(bytes)).toEqual({ text: 'Café;PRÉLÈVEMENT', encoding: 'utf-8' });
+    const bytes = new Uint8Array([
+      ...ascii('Caf'),
+      0xc3,
+      0xa9,
+      ...ascii(';PR'),
+      0xc3,
+      0x89,
+      ...ascii('L'),
+      0xc3,
+      0x88,
+      ...ascii('VEMENT'),
+    ]);
+    expect(decodeStatement(bytes)).toEqual({
+      text: 'Café;PRÉLÈVEMENT',
+      encoding: 'utf-8',
+    });
   });
 
   it('falls back to windows-1252 for a real bank export', () => {
@@ -24,12 +43,17 @@ describe('decodeStatement', () => {
     ]);
     const decoded = decodeStatement(bytes);
     expect(decoded.encoding).toBe('windows-1252');
-    expect(decoded.text).toBe('Date;Libellé;Montant\n02/10/2026;PRÉLÈVEMENT CAFÉ;-12,50 €');
+    expect(decoded.text).toBe(
+      'Date;Libellé;Montant\n02/10/2026;PRÉLÈVEMENT CAFÉ;-12,50 €',
+    );
   });
 
   it('accepts an ArrayBuffer like File.arrayBuffer() returns', () => {
     const buffer = new Uint8Array([...ascii('Ren'), 0xe9]).buffer;
-    expect(decodeStatement(buffer)).toEqual({ text: 'René', encoding: 'windows-1252' });
+    expect(decodeStatement(buffer)).toEqual({
+      text: 'René',
+      encoding: 'windows-1252',
+    });
   });
 
   it('drops a UTF-8 byte order mark', () => {
@@ -38,7 +62,9 @@ describe('decodeStatement', () => {
   });
 
   it('reads plain ASCII as UTF-8', () => {
-    expect(decodeStatement(new Uint8Array(ascii('a;b;1,00'))).encoding).toBe('utf-8');
+    expect(decodeStatement(new Uint8Array(ascii('a;b;1,00'))).encoding).toBe(
+      'utf-8',
+    );
   });
 });
 

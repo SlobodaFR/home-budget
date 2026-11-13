@@ -6,7 +6,13 @@ import { AlertIcon, CheckIcon, InfoIcon } from '../Icons';
  * et invite à revérifier la saisie ou la durée, sans conseil de renégociation ni de rachat. Le reste est discret.
  * `compact` : sur la carte, seul l'écart s'affiche.
  */
-export function PaymentCheckNotice({ debt, compact = false }: { debt: Debt; compact?: boolean }) {
+export function PaymentCheckNotice({
+  debt,
+  compact = false,
+}: {
+  debt: Debt;
+  compact?: boolean;
+}) {
   const message = describePaymentCheck(debt);
   if (message.level === 'gap') {
     return (
@@ -29,7 +35,10 @@ export function PaymentCheckNotice({ debt, compact = false }: { debt: Debt; comp
   }
   const Icon = message.level === 'ok' ? CheckIcon : InfoIcon;
   return (
-    <p data-testid={message.level === 'ok' ? 'payment-ok' : 'payment-unknown'} className="flex items-start gap-sm font-body-sm text-body-sm text-mute">
+    <p
+      data-testid={message.level === 'ok' ? 'payment-ok' : 'payment-unknown'}
+      className="flex items-start gap-sm font-body-sm text-body-sm text-mute"
+    >
       <Icon width={16} height={16} className="mt-0.5 shrink-0" />
       {message.text}
     </p>

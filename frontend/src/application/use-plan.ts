@@ -21,5 +21,12 @@ export function usePlan(spaceId: string) {
     [spaceId, reload],
   );
 
-  return { plan: resource.data, loading: resource.loading, error: resource.error, saving, save, reload };
+  return {
+    plan: resource.data,
+    loading: resource.loading,
+    error: resource.error,
+    saving,
+    save,
+    reload,
+  };
 }

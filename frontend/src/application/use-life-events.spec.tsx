@@ -5,7 +5,10 @@ import { lifeEvent, lifeEventCatalog } from '../test/fixtures';
 import { useLifeEventCatalog, useLifeEvents } from './use-life-events';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchLifeEvents: vi.fn<ApiMock<'fetchLifeEvents'>>(), fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>() }));
+const api = vi.hoisted(() => ({
+  fetchLifeEvents: vi.fn<ApiMock<'fetchLifeEvents'>>(),
+  fetchLifeEventCatalog: vi.fn<ApiMock<'fetchLifeEventCatalog'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -27,7 +30,10 @@ describe('useLifeEvents', () => {
   });
 
   it('reloads when the token changes', async () => {
-    const { result, rerender } = renderHook(({ token }) => useLifeEvents(token), { initialProps: { token: 0 } });
+    const { result, rerender } = renderHook(
+      ({ token }) => useLifeEvents(token),
+      { initialProps: { token: 0 } },
+    );
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ token: 1 });
     await waitFor(() => expect(api.fetchLifeEvents).toHaveBeenCalledTimes(2));
@@ -40,7 +46,9 @@ describe('useLifeEvents', () => {
     const original = api.fetchLifeEvents;
     api.fetchLifeEvents = undefined as never;
     const missing = renderHook(() => useLifeEvents());
-    await waitFor(() => expect(missing.result.current.error).toBeInstanceOf(TypeError));
+    await waitFor(() =>
+      expect(missing.result.current.error).toBeInstanceOf(TypeError),
+    );
     api.fetchLifeEvents = original;
   });
 

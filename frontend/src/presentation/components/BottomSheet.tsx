@@ -27,7 +27,9 @@ const openSheets: symbol[] = [];
 let carriedTrigger: HTMLElement | null = null;
 
 function focusableIn(root: HTMLElement): HTMLElement[] {
-  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((element) => !element.closest('[hidden], [inert]'));
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (element) => !element.closest('[hidden], [inert]'),
+  );
 }
 
 /**
@@ -43,7 +45,9 @@ export function BottomSheet({ title, onClose, children }: Props) {
     closeRef.current = onClose;
   });
   // L'élément qui avait le focus avant l'ouverture, lu pendant le rendu : un `autoFocus` du contenu le déplace dès le montage.
-  const [openerAtMount] = useState<Element | null>(() => (typeof document === 'undefined' ? null : document.activeElement));
+  const [openerAtMount] = useState<Element | null>(() =>
+    typeof document === 'undefined' ? null : document.activeElement,
+  );
   const triggerRef = useRef<Element | null>(openerAtMount);
 
   useEffect(() => {
@@ -83,17 +87,27 @@ export function BottomSheet({ title, onClose, children }: Props) {
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
-      if (event.shiftKey && (active === first || active === dialog || !dialog.contains(active))) {
+      if (
+        event.shiftKey &&
+        (active === first || active === dialog || !dialog.contains(active))
+      ) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+      } else if (
+        !event.shiftKey &&
+        (active === last || !dialog.contains(active))
+      ) {
         event.preventDefault();
         first.focus();
       }
     };
 
     const handleFocusIn = (event: FocusEvent) => {
-      if (isTop() && event.target instanceof Node && !dialog.contains(event.target)) {
+      if (
+        isTop() &&
+        event.target instanceof Node &&
+        !dialog.contains(event.target)
+      ) {
         (focusableIn(dialog)[0] ?? dialog).focus({ preventScroll: true });
       }
     };
@@ -108,7 +122,11 @@ export function BottomSheet({ title, onClose, children }: Props) {
         openSheets.splice(index, 1);
       }
       const trigger = triggerRef.current;
-      if (trigger instanceof HTMLElement && trigger.isConnected && openSheets.length === 0) {
+      if (
+        trigger instanceof HTMLElement &&
+        trigger.isConnected &&
+        openSheets.length === 0
+      ) {
         trigger.focus({ preventScroll: true });
         carriedTrigger = trigger;
         window.setTimeout(() => {
@@ -122,7 +140,12 @@ export function BottomSheet({ title, onClose, children }: Props) {
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center md:items-center md:p-8">
-      <div data-testid="sheet-backdrop" className="animate-fade-in absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
+      <div
+        data-testid="sheet-backdrop"
+        className="animate-fade-in absolute inset-0 bg-ink/40"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <div
         ref={dialogRef}
         role="dialog"

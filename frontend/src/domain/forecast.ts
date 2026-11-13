@@ -41,17 +41,27 @@ export interface Forecast {
   occurrences: ForecastOccurrence[];
 }
 
-export const OCCURRENCE_STATUS_INFO: Record<OccurrenceStatus, { label: string; description: string }> = {
+export const OCCURRENCE_STATUS_INFO: Record<
+  OccurrenceStatus,
+  { label: string; description: string }
+> = {
   PAID: { label: 'Retrouvé', description: 'déjà dans vos opérations' },
   MISSING: { label: 'Non retrouvé', description: 'attendu mais non retrouvé' },
   DUE: { label: 'À venir', description: 'pas encore arrivé à échéance' },
 };
 
-export function balanceGapCents(forecast: Pick<Forecast, 'projectedBalanceCents' | 'cautiousBalanceCents'>): number {
-  return Math.max(forecast.projectedBalanceCents - forecast.cautiousBalanceCents, 0);
+export function balanceGapCents(
+  forecast: Pick<Forecast, 'projectedBalanceCents' | 'cautiousBalanceCents'>,
+): number {
+  return Math.max(
+    forecast.projectedBalanceCents - forecast.cautiousBalanceCents,
+    0,
+  );
 }
 
-export function describeBalanceGap(forecast: Pick<Forecast, 'projectedBalanceCents' | 'cautiousBalanceCents'>): string {
+export function describeBalanceGap(
+  forecast: Pick<Forecast, 'projectedBalanceCents' | 'cautiousBalanceCents'>,
+): string {
   const gap = balanceGapCents(forecast);
   if (gap === 0) {
     return 'Les deux soldes sont identiques : il n’y a rien de plus à prévoir que ce qui est déjà connu.';
@@ -59,12 +69,22 @@ export function describeBalanceGap(forecast: Pick<Forecast, 'projectedBalanceCen
   return `Le solde prudent est ${formatCents(gap)} plus bas : il suppose que vous dépensez au moins le prévu dans chaque bloc.`;
 }
 
-export function missingOccurrences(forecast: Pick<Forecast, 'occurrences'>): ForecastOccurrence[] {
-  return forecast.occurrences.filter((occurrence) => occurrence.status === 'MISSING');
+export function missingOccurrences(
+  forecast: Pick<Forecast, 'occurrences'>,
+): ForecastOccurrence[] {
+  return forecast.occurrences.filter(
+    (occurrence) => occurrence.status === 'MISSING',
+  );
 }
 
-export function countByStatus(occurrences: readonly ForecastOccurrence[]): Record<OccurrenceStatus, number> {
-  const counts: Record<OccurrenceStatus, number> = { PAID: 0, MISSING: 0, DUE: 0 };
+export function countByStatus(
+  occurrences: readonly ForecastOccurrence[],
+): Record<OccurrenceStatus, number> {
+  const counts: Record<OccurrenceStatus, number> = {
+    PAID: 0,
+    MISSING: 0,
+    DUE: 0,
+  };
   for (const occurrence of occurrences) {
     counts[occurrence.status] += 1;
   }
@@ -88,15 +108,22 @@ export interface ProjectionNote {
  * Compare le projeté au prévu : une dépense qui dépasserait son bloc, ou une épargne en retard sur son objectif.
  * Sans prévu pour le bloc, rien à comparer.
  */
-export function projectionNote(bloc: Bloc, figure: ForecastFigure): ProjectionNote {
+export function projectionNote(
+  bloc: Bloc,
+  figure: ForecastFigure,
+): ProjectionNote {
   if (figure.plannedCents <= 0) {
     return { status: 'ok', amountCents: 0 };
   }
   const delta = figure.projectedCents - figure.plannedCents;
   if (bloc === 'EPARGNE') {
-    return delta < 0 ? { status: 'behind', amountCents: -delta } : { status: 'ok', amountCents: 0 };
+    return delta < 0
+      ? { status: 'behind', amountCents: -delta }
+      : { status: 'ok', amountCents: 0 };
   }
-  return delta > 0 ? { status: 'over', amountCents: delta } : { status: 'ok', amountCents: 0 };
+  return delta > 0
+    ? { status: 'over', amountCents: delta }
+    : { status: 'ok', amountCents: 0 };
 }
 
 /** Garantit les 4 blocs dans l'ordre du cours, même si le serveur en oublie un. */

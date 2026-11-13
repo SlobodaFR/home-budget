@@ -24,20 +24,35 @@ interface Props {
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p id={id} role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 font-body-sm text-body-sm text-error"
+    >
       {message}
     </p>
   ) : null;
 }
 
-export function AccountForm({ editing, existing, onClose, onSubmit, now = () => new Date() }: Props) {
-  const [values, setValues] = useState(() => (editing ? accountToForm(editing) : emptyAccountForm(now())));
+export function AccountForm({
+  editing,
+  existing,
+  onClose,
+  onSubmit,
+  now = () => new Date(),
+}: Props) {
+  const [values, setValues] = useState(() =>
+    editing ? accountToForm(editing) : emptyAccountForm(now()),
+  );
   const [errors, setErrors] = useState<AccountFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => setValues((previous) => ({ ...previous, [key]: value }));
+  const set = <K extends keyof typeof values>(
+    key: K,
+    value: (typeof values)[K],
+  ) => setValues((previous) => ({ ...previous, [key]: value }));
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,15 +71,24 @@ export function AccountForm({ editing, existing, onClose, onSubmit, now = () => 
     try {
       await onSubmit(result.payload);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'L’enregistrement a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   return (
-    <BottomSheet title={editing ? 'Modifier le compte' : 'Nouveau compte'} onClose={onClose}>
-      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
+    <BottomSheet
+      title={editing ? 'Modifier le compte' : 'Nouveau compte'}
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        className="flex flex-col gap-lg"
+      >
         <div>
           <label htmlFor="account-name" className={labelClass}>
             Nom du compte
@@ -95,14 +119,18 @@ export function AccountForm({ editing, existing, onClose, onSubmit, now = () => 
                 aria-pressed={values.kind === kind}
                 onClick={() => set('kind', kind)}
                 className={`min-h-[48px] rounded-full border-2 px-md font-button-md text-body-sm font-semibold ${
-                  values.kind === kind ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
+                  values.kind === kind
+                    ? 'border-ink bg-ink text-surface'
+                    : 'border-hairline bg-white text-ink'
                 }`}
               >
                 {ACCOUNT_KIND_INFO[kind].label}
               </button>
             ))}
           </div>
-          <p className="mt-1 font-body-sm text-body-sm text-mute">{ACCOUNT_KIND_INFO[values.kind].description}</p>
+          <p className="mt-1 font-body-sm text-body-sm text-mute">
+            {ACCOUNT_KIND_INFO[values.kind].description}
+          </p>
         </div>
 
         <div>
@@ -119,15 +147,28 @@ export function AccountForm({ editing, existing, onClose, onSubmit, now = () => 
               value={values.openingBalance}
               onChange={(event) => set('openingBalance', event.target.value)}
               aria-invalid={errors.openingBalance ? true : undefined}
-              aria-describedby={errors.openingBalance ? 'account-balance-error' : 'account-balance-hint'}
+              aria-describedby={
+                errors.openingBalance
+                  ? 'account-balance-error'
+                  : 'account-balance-hint'
+              }
               className={`${inputClass} tabular pr-10 text-right`}
             />
-            <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">€</span>
+            <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+              €
+            </span>
           </div>
-          <p id="account-balance-hint" className="mt-1 font-body-sm text-body-sm text-mute">
-            Ce que contenait le compte à la date ci-dessous. Mettez un « - » devant s’il était à découvert (ex. -150).
+          <p
+            id="account-balance-hint"
+            className="mt-1 font-body-sm text-body-sm text-mute"
+          >
+            Ce que contenait le compte à la date ci-dessous. Mettez un « - »
+            devant s’il était à découvert (ex. -150).
           </p>
-          <FieldError id="account-balance-error" message={errors.openingBalance} />
+          <FieldError
+            id="account-balance-error"
+            message={errors.openingBalance}
+          />
         </div>
 
         <div>
@@ -140,10 +181,15 @@ export function AccountForm({ editing, existing, onClose, onSubmit, now = () => 
             value={values.openingDate}
             onChange={(event) => set('openingDate', event.target.value)}
             aria-invalid={errors.openingDate ? true : undefined}
-            aria-describedby={errors.openingDate ? 'account-date-error' : 'account-date-hint'}
+            aria-describedby={
+              errors.openingDate ? 'account-date-error' : 'account-date-hint'
+            }
             className={inputClass}
           />
-          <p id="account-date-hint" className="mt-1 font-body-sm text-body-sm text-mute">
+          <p
+            id="account-date-hint"
+            className="mt-1 font-body-sm text-body-sm text-mute"
+          >
             Seules les opérations à partir de ce jour comptent dans le solde.
           </p>
           <FieldError id="account-date-error" message={errors.openingDate} />
@@ -155,8 +201,16 @@ export function AccountForm({ editing, existing, onClose, onSubmit, now = () => 
           </p>
         )}
 
-        <button type="submit" disabled={submitting} className={`${buttonPrimary} w-full`}>
-          {submitting ? 'Enregistrement…' : editing ? 'Enregistrer' : 'Ajouter le compte'}
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${buttonPrimary} w-full`}
+        >
+          {submitting
+            ? 'Enregistrement…'
+            : editing
+              ? 'Enregistrer'
+              : 'Ajouter le compte'}
         </button>
       </form>
     </BottomSheet>

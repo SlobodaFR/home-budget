@@ -30,9 +30,16 @@ export function SideNav() {
     <aside className="hidden h-full w-64 shrink-0 flex-col border-r border-hairline-soft bg-white lg:flex">
       <div className="px-6 pb-md pt-5">
         <p className="font-heading-lg text-heading-lg">{APP_NAME}</p>
-        {household && <p className="mt-0.5 truncate font-body-sm text-body-sm text-mute">{household.name}</p>}
+        {household && (
+          <p className="mt-0.5 truncate font-body-sm text-body-sm text-mute">
+            {household.name}
+          </p>
+        )}
       </div>
-      <nav aria-label="Navigation latérale" className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4">
+      <nav
+        aria-label="Navigation latérale"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4"
+      >
         <ul className="flex flex-col gap-1">
           {MAIN_NAV.map((item) => (
             <Item key={item.to} item={item} />
@@ -40,10 +47,16 @@ export function SideNav() {
         </ul>
         {NAV_GROUPS.map((group) => (
           <div key={group.id} className="mt-5">
-            <p id={`side-nav-${group.id}`} className="mb-1 px-lg font-label-caps text-label-caps uppercase text-mute">
+            <p
+              id={`side-nav-${group.id}`}
+              className="mb-1 px-lg font-label-caps text-label-caps uppercase text-mute"
+            >
               {group.label}
             </p>
-            <ul aria-labelledby={`side-nav-${group.id}`} className="flex flex-col gap-1">
+            <ul
+              aria-labelledby={`side-nav-${group.id}`}
+              className="flex flex-col gap-1"
+            >
               {group.items.map((item) => (
                 <Item key={item.to} item={item} />
               ))}

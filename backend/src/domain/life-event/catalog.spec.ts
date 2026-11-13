@@ -98,11 +98,14 @@ describe('life event catalog', () => {
   it('uses integer offsets (or null), a label whenever there is a deadline, and a known category', () => {
     for (const { step } of allSteps) {
       const hasDeadline = step.dueOffsetDays !== null;
-      expect([step.id, hasDeadline ? Number.isInteger(step.dueOffsetDays) : true]).toEqual([
+      expect([
+        step.id,
+        hasDeadline ? Number.isInteger(step.dueOffsetDays) : true,
+      ]).toEqual([step.id, true]);
+      expect([step.id, hasDeadline ? step.dueLabel !== null : true]).toEqual([
         step.id,
         true,
       ]);
-      expect([step.id, hasDeadline ? step.dueLabel !== null : true]).toEqual([step.id, true]);
       expect(STEP_CATEGORIES as readonly string[]).toContain(step.category);
       expect(step.title.trim()).not.toBe('');
       expect(step.detail.trim()).not.toBe('');

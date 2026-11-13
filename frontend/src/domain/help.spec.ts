@@ -17,7 +17,12 @@ import {
 } from './help';
 import { LifeEventDefinition } from './life-event';
 
-const entry = (overrides: Partial<HelpEntry> & Pick<HelpEntry, 'id' | 'title'>): HelpEntry => ({ blocks: [{ type: 'paragraph', text: 'Texte.' }], ...overrides });
+const entry = (
+  overrides: Partial<HelpEntry> & Pick<HelpEntry, 'id' | 'title'>,
+): HelpEntry => ({
+  blocks: [{ type: 'paragraph', text: 'Texte.' }],
+  ...overrides,
+});
 
 const sections: HelpSection[] = [
   {
@@ -26,8 +31,21 @@ const sections: HelpSection[] = [
     title: 'Épargne et projets',
     summary: 'Mettre de côté pour plus tard.',
     entries: [
-      entry({ id: 'securite', title: 'L’épargne de sécurité', blocks: [{ type: 'paragraph', text: 'Une réserve pour les coups durs.' }] }),
-      entry({ id: 'provisions', title: 'Provisions', blocks: [{ type: 'list', items: ['Taxe foncière', 'Assurance annuelle'] }], keywords: ['lisser'] }),
+      entry({
+        id: 'securite',
+        title: 'L’épargne de sécurité',
+        blocks: [
+          { type: 'paragraph', text: 'Une réserve pour les coups durs.' },
+        ],
+      }),
+      entry({
+        id: 'provisions',
+        title: 'Provisions',
+        blocks: [
+          { type: 'list', items: ['Taxe foncière', 'Assurance annuelle'] },
+        ],
+        keywords: ['lisser'],
+      }),
     ],
   },
   {
@@ -36,15 +54,31 @@ const sections: HelpSection[] = [
     title: 'Mes données',
     summary: 'Confidentialité.',
     entries: [
-      entry({ id: 'chiffrement', title: 'Le chiffrement', blocks: [{ type: 'note', text: 'La clé est détenue par l’hébergeur.' }] }),
-      entry({ id: 'export', title: 'Exporter', links: [{ kind: 'external', label: 'Documentation', href: 'https://example.test/' }] }),
+      entry({
+        id: 'chiffrement',
+        title: 'Le chiffrement',
+        blocks: [{ type: 'note', text: 'La clé est détenue par l’hébergeur.' }],
+      }),
+      entry({
+        id: 'export',
+        title: 'Exporter',
+        links: [
+          {
+            kind: 'external',
+            label: 'Documentation',
+            href: 'https://example.test/',
+          },
+        ],
+      }),
     ],
   },
 ];
 
 describe('normalizeForSearch', () => {
   it('ignores case, accents and typographic apostrophes', () => {
-    expect(normalizeForSearch('  Épargne  de SÉCURITÉ ')).toBe('epargne de securite');
+    expect(normalizeForSearch('  Épargne  de SÉCURITÉ ')).toBe(
+      'epargne de securite',
+    );
     expect(normalizeForSearch('L’hébergeur')).toBe("l'hebergeur");
     expect(normalizeForSearch('Cœur')).toBe('coeur');
   });
@@ -56,7 +90,10 @@ describe('normalizeForSearch', () => {
 
 describe('searchTokens', () => {
   it('splits into accent-free words', () => {
-    expect(searchTokens('Crèche  collective')).toEqual(['creche', 'collective']);
+    expect(searchTokens('Crèche  collective')).toEqual([
+      'creche',
+      'collective',
+    ]);
   });
 
   it('drops a final plural mark on longer words so « crèches » finds « crèche »', () => {
@@ -92,17 +129,48 @@ describe('filterSections', () => {
   });
 
   it('searches list items, link labels, keywords and sources', () => {
-    expect(filterSections(sections, 'taxe fonciere')[0]?.entries.map((item) => item.id)).toEqual(['provisions']);
-    expect(filterSections(sections, 'documentation')[0]?.entries.map((item) => item.id)).toEqual(['export']);
-    expect(filterSections(sections, 'lisser')[0]?.entries.map((item) => item.id)).toEqual(['provisions']);
-    const withSource: HelpSection[] = [{ ...sections[0], entries: [entry({ id: 's', title: 'Règle', source: { label: 'impots.gouv.fr', url: null, verifiedOn: null } })] }];
-    expect(filterSections(withSource, 'impots').map((section) => section.id)).toEqual(['guide']);
+    expect(
+      filterSections(sections, 'taxe fonciere')[0]?.entries.map(
+        (item) => item.id,
+      ),
+    ).toEqual(['provisions']);
+    expect(
+      filterSections(sections, 'documentation')[0]?.entries.map(
+        (item) => item.id,
+      ),
+    ).toEqual(['export']);
+    expect(
+      filterSections(sections, 'lisser')[0]?.entries.map((item) => item.id),
+    ).toEqual(['provisions']);
+    const withSource: HelpSection[] = [
+      {
+        ...sections[0],
+        entries: [
+          entry({
+            id: 's',
+            title: 'Règle',
+            source: { label: 'impots.gouv.fr', url: null, verifiedOn: null },
+          }),
+        ],
+      },
+    ];
+    expect(
+      filterSections(withSource, 'impots').map((section) => section.id),
+    ).toEqual(['guide']);
   });
 
   it('requires every word, wherever they are in the entry or its section title', () => {
-    expect(filterSections(sections, 'cle hebergeur')[0]?.entries.map((item) => item.id)).toEqual(['chiffrement']);
+    expect(
+      filterSections(sections, 'cle hebergeur')[0]?.entries.map(
+        (item) => item.id,
+      ),
+    ).toEqual(['chiffrement']);
     expect(filterSections(sections, 'cle introuvable')).toEqual([]);
-    expect(filterSections(sections, 'donnees exporter')[0]?.entries.map((item) => item.id)).toEqual(['export']);
+    expect(
+      filterSections(sections, 'donnees exporter')[0]?.entries.map(
+        (item) => item.id,
+      ),
+    ).toEqual(['export']);
   });
 
   it('returns nothing when no word matches', () => {
@@ -117,8 +185,12 @@ describe('filterSections', () => {
 
 describe('entryMatches / countEntries', () => {
   it('uses the section title as context', () => {
-    expect(entryMatches(sections[1], sections[1].entries[1], 'mes donnees')).toBe(true);
-    expect(entryMatches(sections[0], sections[0].entries[1], 'mes donnees')).toBe(false);
+    expect(
+      entryMatches(sections[1], sections[1].entries[1], 'mes donnees'),
+    ).toBe(true);
+    expect(
+      entryMatches(sections[0], sections[0].entries[1], 'mes donnees'),
+    ).toBe(false);
   });
 
   it('counts entries across sections', () => {
@@ -135,7 +207,12 @@ describe('groupEntries', () => {
       entry({ id: 'c', title: 'C', group: 'Deux' }),
       entry({ id: 'd', title: 'D', group: 'Un' }),
     ]);
-    expect(groups.map((group) => [group.title, group.entries.map((item) => item.id)])).toEqual([
+    expect(
+      groups.map((group) => [
+        group.title,
+        group.entries.map((item) => item.id),
+      ]),
+    ).toEqual([
       ['Un', ['a', 'd']],
       [null, ['b']],
       ['Deux', ['c']],
@@ -192,7 +269,11 @@ describe('server rules as help entries', () => {
   it('turns an aid rule into an entry with its rate, cap, timing and source', () => {
     const result = aidRuleToHelpEntry(rule);
     expect(result.title).toBe('Garde d’enfants');
-    expect(result.source).toEqual({ label: 'impots.gouv.fr', url: 'https://www.impots.gouv.fr/x', verifiedOn: '2026-10-30' });
+    expect(result.source).toEqual({
+      label: 'impots.gouv.fr',
+      url: 'https://www.impots.gouv.fr/x',
+      verifiedOn: '2026-10-30',
+    });
     const text = JSON.stringify(result.blocks);
     expect(text).toContain('Taux : 50 %');
     expect(text).toContain('Plafond : 3 500 € par enfant.');
@@ -201,19 +282,40 @@ describe('server rules as help entries', () => {
 
   it('turns every catalog step into an entry, grouped under its event, with its source', () => {
     const result = catalogToHelpEntries(catalog);
-    expect(result.map((item) => item.title)).toEqual(['Déclarer la naissance', 'Poser un congé']);
+    expect(result.map((item) => item.title)).toEqual([
+      'Déclarer la naissance',
+      'Poser un congé',
+    ]);
     expect(result[0]?.group).toBe('Démarches : naissance d’un enfant');
-    expect(result[0]?.source).toEqual({ label: 'service-public.gouv.fr', url: 'https://www.service-public.gouv.fr/F1', verifiedOn: '2026-10-30' });
-    expect(JSON.stringify(result[0]?.blocks)).toContain('Échéance : Dans les 5 jours.');
+    expect(result[0]?.source).toEqual({
+      label: 'service-public.gouv.fr',
+      url: 'https://www.service-public.gouv.fr/F1',
+      verifiedOn: '2026-10-30',
+    });
+    expect(JSON.stringify(result[0]?.blocks)).toContain(
+      'Échéance : Dans les 5 jours.',
+    );
     expect(JSON.stringify(result[1]?.blocks)).not.toContain('Échéance');
     expect(new Set(result.map((item) => item.id)).size).toBe(2);
   });
 
   it('adds live entries in front of the « sources » section only', () => {
-    const base: HelpSection[] = [sections[0], { id: 'regles', kind: 'sources', title: 'Règles', summary: '.', entries: [entry({ id: 'static', title: 'Statique' })] }];
+    const base: HelpSection[] = [
+      sections[0],
+      {
+        id: 'regles',
+        kind: 'sources',
+        title: 'Règles',
+        summary: '.',
+        entries: [entry({ id: 'static', title: 'Statique' })],
+      },
+    ];
     const merged = withLiveSources(base, [aidRuleToHelpEntry(rule)]);
     expect(merged[0]).toBe(base[0]);
-    expect(merged[1]?.entries.map((item) => item.id)).toEqual(['regle-CREDIT', 'static']);
+    expect(merged[1]?.entries.map((item) => item.id)).toEqual([
+      'regle-CREDIT',
+      'static',
+    ]);
     expect(base[1]?.entries).toHaveLength(1);
   });
 });

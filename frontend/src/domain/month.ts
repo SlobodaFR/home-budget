@@ -25,9 +25,11 @@ export function formatMonthLabel(month: string): string {
   if (!match) {
     return month;
   }
-  return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
-    Date.UTC(Number(match[1]), Number(match[2]) - 1, 1),
-  );
+  return new Intl.DateTimeFormat('fr-FR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
 }
 
 export function todayInputValue(now: Date = new Date()): string {
@@ -39,9 +41,17 @@ export function isValidDateInput(value: string): boolean {
   if (!match) {
     return false;
   }
-  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const [year, month, day] = [
+    Number(match[1]),
+    Number(match[2]),
+    Number(match[3]),
+  ];
   const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 export function monthOfDateInput(value: string): string {
@@ -60,11 +70,18 @@ export function isoToDateInput(iso: string): string {
 }
 
 export function formatDay(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(iso));
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(iso));
 }
 
 export function formatLongDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(new Date(iso));
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(iso));
 }
 
 export function formatDayMonth(iso: string): string {
@@ -75,26 +92,51 @@ export function currentYear(now: Date = new Date()): number {
   return now.getFullYear();
 }
 
-const SHORT_DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-const LONG_DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const SHORT_DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+const LONG_DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
 
 /** « 2026-01-05 » (ou un ISO complet) → « 5 janv. 2026 ». Renvoie la valeur telle quelle si elle est illisible. */
 export function formatDateInput(value: string): string {
   const day = value.slice(0, 10);
-  return isValidDateInput(day) ? SHORT_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`)) : value;
+  return isValidDateInput(day)
+    ? SHORT_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`))
+    : value;
 }
 
 /** « 2026-10-30 » → « 30 octobre 2026 ». */
 export function formatLongDateInput(value: string): string {
   const day = value.slice(0, 10);
-  return isValidDateInput(day) ? LONG_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`)) : value;
+  return isValidDateInput(day)
+    ? LONG_DATE_FORMAT.format(Date.parse(`${day}T00:00:00Z`))
+    : value;
 }
 
-const MONTH_NAME_FORMAT = new Intl.DateTimeFormat('fr-FR', { month: 'long', timeZone: 'UTC' });
-const MONTH_SHORT_FORMAT = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
+const MONTH_NAME_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  month: 'long',
+  timeZone: 'UTC',
+});
+const MONTH_SHORT_FORMAT = new Intl.DateTimeFormat('fr-FR', {
+  month: 'short',
+  timeZone: 'UTC',
+});
 
 export function isMonthOfYear(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 12;
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 12
+  );
 }
 
 /** 10 → « octobre » (minuscules, pour les phrases). */

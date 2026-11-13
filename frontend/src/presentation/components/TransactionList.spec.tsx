@@ -4,7 +4,9 @@ import { Transaction } from '../../domain/budget';
 import { account } from '../../test/fixtures';
 import { renderInApp } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>() }));
+const api = vi.hoisted(() => ({
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+}));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -12,7 +14,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import { TransactionList } from './TransactionList';
@@ -30,19 +36,33 @@ const transaction = (overrides: Partial<Transaction> = {}): Transaction => ({
   ...overrides,
 });
 
-function renderList(props: Partial<Parameters<typeof TransactionList>[0]> = {}) {
-  return renderInApp(<TransactionList transactions={[transaction()]} pending={[]} onEdit={vi.fn<() => void>()} onDelete={vi.fn<(transaction: Transaction) => Promise<void>>()} {...props} />);
+function renderList(
+  props: Partial<Parameters<typeof TransactionList>[0]> = {},
+) {
+  return renderInApp(
+    <TransactionList
+      transactions={[transaction()]}
+      pending={[]}
+      onEdit={vi.fn<() => void>()}
+      onDelete={vi.fn<(transaction: Transaction) => Promise<void>>()}
+      {...props}
+    />,
+  );
 }
 
 describe('TransactionList (tableau sur ordinateur)', () => {
   beforeEach(() => {
     api.fetchAccounts.mockReset();
-    api.fetchAccounts.mockResolvedValue([account({ id: 'a1', name: 'Compte commun' })]);
+    api.fetchAccounts.mockResolvedValue([
+      account({ id: 'a1', name: 'Compte commun' }),
+    ]);
   });
 
   it('has column headings for the desktop table, hidden from screen readers (the rows stay a plain list)', () => {
     renderList();
-    const heading = document.querySelector('[aria-hidden="true"]') as HTMLElement;
+    const heading = document.querySelector(
+      '[aria-hidden="true"]',
+    ) as HTMLElement;
     expect(heading.className).toContain('hidden');
     expect(heading.className).toContain('lg:grid');
     expect(heading.textContent).toBe('DateLibelléBlocCompteMontant');
@@ -51,7 +71,9 @@ describe('TransactionList (tableau sur ordinateur)', () => {
 
   it('puts the date, the label, the bloc, the account and the amount of a row in separate cells', async () => {
     renderList({ transactions: [transaction({ accountId: 'a1' })] });
-    await waitFor(() => expect(screen.getByText('Compte commun')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText('Compte commun')).toBeInTheDocument(),
+    );
     const row = screen.getByRole('listitem');
     const edit = within(row).getByRole('button', { name: 'Modifier Courses' });
     expect(edit.className).toContain('lg:grid');
@@ -66,13 +88,27 @@ describe('TransactionList (tableau sur ordinateur)', () => {
 
   it('keeps the compact « date · bloc » line on mobile', () => {
     renderList();
-    expect(screen.getByRole('button', { name: 'Modifier Courses' })).toHaveTextContent('3 nov. · Courant');
+    expect(
+      screen.getByRole('button', { name: 'Modifier Courses' }),
+    ).toHaveTextContent('3 nov. · Courant');
   });
 
   it('shows pending operations in the same columns', () => {
     renderList({
       transactions: [],
-      pending: [{ clientId: 'c1', spaceId: 's-common', payload: { kind: 'EXPENSE', bloc: 'COURANT', label: 'Pain', amountCents: 150, date: '2026-11-04' } } as never],
+      pending: [
+        {
+          clientId: 'c1',
+          spaceId: 's-common',
+          payload: {
+            kind: 'EXPENSE',
+            bloc: 'COURANT',
+            label: 'Pain',
+            amountCents: 150,
+            date: '2026-11-04',
+          },
+        } as never,
+      ],
     });
     const row = screen.getByRole('listitem');
     expect(within(row).getByText('Pain')).toBeInTheDocument();

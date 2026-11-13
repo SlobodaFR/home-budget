@@ -7,11 +7,19 @@ export interface DecodedStatement {
   encoding: StatementEncoding;
 }
 
-export function decodeStatement(bytes: ArrayBuffer | Uint8Array): DecodedStatement {
+export function decodeStatement(
+  bytes: ArrayBuffer | Uint8Array,
+): DecodedStatement {
   try {
-    return { text: new TextDecoder('utf-8', { fatal: true }).decode(bytes), encoding: 'utf-8' };
+    return {
+      text: new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+      encoding: 'utf-8',
+    };
   } catch {
-    return { text: new TextDecoder('windows-1252').decode(bytes), encoding: 'windows-1252' };
+    return {
+      text: new TextDecoder('windows-1252').decode(bytes),
+      encoding: 'windows-1252',
+    };
   }
 }
 

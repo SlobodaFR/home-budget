@@ -6,7 +6,8 @@ import { FakeClock } from '../../testing/fake-clock';
 import {
   InMemoryHouseholdRepository,
   InMemoryTransactionRepository,
-  InMemoryUserRepository,InMemoryAccountRepository
+  InMemoryUserRepository,
+  InMemoryAccountRepository,
 } from '../../testing/in-memory-repositories';
 import { CreateHouseholdUseCase } from '../household/create-household.use-case';
 import { CreateInvitationUseCase } from '../household/create-invitation.use-case';

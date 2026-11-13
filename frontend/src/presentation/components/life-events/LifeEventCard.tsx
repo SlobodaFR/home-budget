@@ -1,5 +1,9 @@
 import { useRef } from 'react';
-import { describeEventDate, describeUrgency, LifeEvent } from '../../../domain/life-event';
+import {
+  describeEventDate,
+  describeUrgency,
+  LifeEvent,
+} from '../../../domain/life-event';
 import { BabyIcon, PencilIcon } from '../Icons';
 import { cardClass } from '../ui';
 import { LifeEventProgress } from './LifeEventProgress';
@@ -17,7 +21,14 @@ interface Props {
 const actionButton =
   'inline-flex min-h-[44px] items-center justify-center gap-1 rounded-full border border-hairline px-lg font-body-sm text-body-sm font-semibold text-ink hover:bg-soft-cloud';
 
-export function LifeEventCard({ event, isSaving, onToggle, onSaveNote, onEdit, now = () => new Date() }: Props) {
+export function LifeEventCard({
+  event,
+  isSaving,
+  onToggle,
+  onSaveNote,
+  onEdit,
+  now = () => new Date(),
+}: Props) {
   const progressRef = useRef<HTMLDivElement>(null);
   const urgency = describeUrgency(event);
 
@@ -29,25 +40,44 @@ export function LifeEventCard({ event, isSaving, onToggle, onSaveNote, onEdit, n
   };
 
   return (
-    <li className={`${cardClass} flex flex-col gap-md`} data-testid="life-event">
+    <li
+      className={`${cardClass} flex flex-col gap-md`}
+      data-testid="life-event"
+    >
       <div className="flex items-start gap-md">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-soft-cloud">
           <BabyIcon width={22} height={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="break-words font-heading-lg text-heading-lg">{event.label}</h3>
-          <p className="font-body-sm text-body-sm text-mute">{describeEventDate(event, now())}</p>
+          <h3 className="break-words font-heading-lg text-heading-lg">
+            {event.label}
+          </h3>
+          <p className="font-body-sm text-body-sm text-mute">
+            {describeEventDate(event, now())}
+          </p>
         </div>
-        <button type="button" onClick={() => onEdit(event)} aria-label={`Modifier ${event.label}`} className={actionButton}>
+        <button
+          type="button"
+          onClick={() => onEdit(event)}
+          aria-label={`Modifier ${event.label}`}
+          className={actionButton}
+        >
           <PencilIcon width={18} height={18} />
           Modifier
         </button>
       </div>
 
       <LifeEventProgress event={event} innerRef={progressRef} />
-      {urgency && <p className="font-body-sm text-body-sm font-semibold">{urgency}</p>}
+      {urgency && (
+        <p className="font-body-sm text-body-sm font-semibold">{urgency}</p>
+      )}
 
-      <StepGroupList steps={event.steps} isSaving={isSaving} onToggle={handleToggle} onSaveNote={onSaveNote} />
+      <StepGroupList
+        steps={event.steps}
+        isSaving={isSaving}
+        onToggle={handleToggle}
+        onSaveNote={onSaveNote}
+      />
     </li>
   );
 }

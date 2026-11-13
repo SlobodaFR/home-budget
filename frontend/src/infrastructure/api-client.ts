@@ -1,7 +1,24 @@
 import { Account, AccountPayload } from '../domain/account';
-import { AidRule, AidsSummary, CrecheEstimate, CrecheQuery, crecheQueryString, FiscalProfile } from '../domain/aids';
-import { Plan, Summary, Transaction, TransactionPayload } from '../domain/budget';
-import { backupFilename, csvFilename, ExportRange, filenameFromContentDisposition } from '../domain/export';
+import {
+  AidRule,
+  AidsSummary,
+  CrecheEstimate,
+  CrecheQuery,
+  crecheQueryString,
+  FiscalProfile,
+} from '../domain/aids';
+import {
+  Plan,
+  Summary,
+  Transaction,
+  TransactionPayload,
+} from '../domain/budget';
+import {
+  backupFilename,
+  csvFilename,
+  ExportRange,
+  filenameFromContentDisposition,
+} from '../domain/export';
 import {
   Debt,
   DebtPayload,
@@ -54,7 +71,11 @@ import {
   ReviewHistoryItem,
   ReviewPayload,
 } from '../domain/review';
-import { parseSafetyNetState, SafetyNet, SafetyNetState } from '../domain/safety-net';
+import {
+  parseSafetyNetState,
+  SafetyNet,
+  SafetyNetState,
+} from '../domain/safety-net';
 import {
   ContributionPaymentPayload,
   ContributionPaymentResult,
@@ -62,9 +83,19 @@ import {
   parseContributionReport,
   parsePaymentResult,
 } from '../domain/contribution-tracking';
-import { Contribution, ContributionMode, Household, Invitation } from '../domain/household';
+import {
+  Contribution,
+  ContributionMode,
+  Household,
+  Invitation,
+} from '../domain/household';
 import { parseYearForecast, YearForecast } from '../domain/year-forecast';
-import { CommitItem, ImportPreview, Rule, RuleSet } from '../domain/statement-import';
+import {
+  CommitItem,
+  ImportPreview,
+  Rule,
+  RuleSet,
+} from '../domain/statement-import';
 
 const BASE_URL = '/api';
 
@@ -74,7 +105,9 @@ export interface CurrentUser {
   name: string;
 }
 
-export type AuthConfig = { mode: 'oauth' } | { mode: 'dev'; devUsers: string[] };
+export type AuthConfig =
+  | { mode: 'oauth' }
+  | { mode: 'dev'; devUsers: string[] };
 
 export class ApiError extends Error {
   constructor(
@@ -100,22 +133,36 @@ export function onUnauthorized(listener: UnauthorizedListener | null): void {
   unauthorizedListener = listener;
 }
 
-const isFormData = (body: unknown): body is FormData => typeof FormData !== 'undefined' && body instanceof FormData;
+const isFormData = (body: unknown): body is FormData =>
+  typeof FormData !== 'undefined' && body instanceof FormData;
 
 /**
  * Envoie la requête et renvoie la réponse si elle est réussie ; sinon lève `NetworkError` ou `ApiError`.
  * Un `FormData` part tel quel, SANS `Content-Type` fixé à la main : le navigateur y met la bonne frontière (`boundary`).
  * `noStore` : la réponse ne doit jamais être gardée dans un cache (résultat d'un contrat lu).
  */
-async function send(path: string, method = 'GET', body?: unknown, noStore = false): Promise<Response> {
+async function send(
+  path: string,
+  method = 'GET',
+  body?: unknown,
+  noStore = false,
+): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       method,
       credentials: 'include',
       ...(noStore ? { cache: 'no-store' as RequestCache } : {}),
-      headers: body === undefined || isFormData(body) ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : isFormData(body) ? body : JSON.stringify(body),
+      headers:
+        body === undefined || isFormData(body)
+          ? undefined
+          : { 'Content-Type': 'application/json' },
+      body:
+        body === undefined
+          ? undefined
+          : isFormData(body)
+            ? body
+            : JSON.stringify(body),
     });
   } catch {
     throw new NetworkError();
@@ -125,14 +172,26 @@ async function send(path: string, method = 'GET', body?: unknown, noStore = fals
     if (response.status === 401 && !path.startsWith('/auth/')) {
       unauthorizedListener?.();
     }
-    const errorBody = (await response.json().catch(() => null)) as { message?: unknown } | null;
-    const message = Array.isArray(errorBody?.message) ? errorBody.message.join(', ') : errorBody?.message;
-    throw new ApiError(response.status, typeof message === 'string' ? message : `Erreur ${response.status}`);
+    const errorBody = (await response.json().catch(() => null)) as {
+      message?: unknown;
+    } | null;
+    const message = Array.isArray(errorBody?.message)
+      ? errorBody.message.join(', ')
+      : errorBody?.message;
+    throw new ApiError(
+      response.status,
+      typeof message === 'string' ? message : `Erreur ${response.status}`,
+    );
   }
   return response;
 }
 
-async function request<T>(path: string, method = 'GET', body?: unknown, noStore = false): Promise<T> {
+async function request<T>(
+  path: string,
+  method = 'GET',
+  body?: unknown,
+  noStore = false,
+): Promise<T> {
   const response = await send(path, method, body, noStore);
   if (response.status === 204) {
     return undefined as T;
@@ -146,7 +205,10 @@ export interface DownloadedFile {
   filename: string;
 }
 
-async function download(path: string, fallbackFilename: string): Promise<DownloadedFile> {
+async function download(
+  path: string,
+  fallbackFilename: string,
+): Promise<DownloadedFile> {
   const response = await send(path);
   let blob: Blob;
   try {
@@ -154,7 +216,13 @@ async function download(path: string, fallbackFilename: string): Promise<Downloa
   } catch {
     throw new NetworkError();
   }
-  return { blob, filename: filenameFromContentDisposition(response.headers.get('Content-Disposition'), fallbackFilename) };
+  return {
+    blob,
+    filename: filenameFromContentDisposition(
+      response.headers.get('Content-Disposition'),
+      fallbackFilename,
+    ),
+  };
 }
 
 const spacePath = (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}`;
@@ -178,9 +246,13 @@ export const apiClient = {
   },
 
   async fetchHousehold(): Promise<Household | null> {
-    return (await request<{ household: Household | null }>('/household')).household;
+    return (await request<{ household: Household | null }>('/household'))
+      .household;
   },
-  createHousehold(payload: { name: string; netMonthlyIncomeCents?: number }): Promise<Household> {
+  createHousehold(payload: {
+    name: string;
+    netMonthlyIncomeCents?: number;
+  }): Promise<Household> {
     return request<Household>('/household', 'POST', payload);
   },
   createInvitation(): Promise<Invitation> {
@@ -190,7 +262,9 @@ export const apiClient = {
     return request<Household>('/household/join', 'POST', { code });
   },
   updateMyIncome(netMonthlyIncomeCents: number | null): Promise<void> {
-    return request<void>('/household/me/income', 'PUT', { netMonthlyIncomeCents });
+    return request<void>('/household/me/income', 'PUT', {
+      netMonthlyIncomeCents,
+    });
   },
   updateContributionMode(mode: ContributionMode): Promise<void> {
     return request<void>('/household/contribution-mode', 'PUT', { mode });
@@ -199,11 +273,24 @@ export const apiClient = {
     return request<Contribution>('/household/contribution');
   },
   async fetchContributionStatus(month: string): Promise<ContributionReport> {
-    return parseContributionReport(await request<unknown>(`/household/contributions/status?month=${encodeURIComponent(month)}`), month);
+    return parseContributionReport(
+      await request<unknown>(
+        `/household/contributions/status?month=${encodeURIComponent(month)}`,
+      ),
+      month,
+    );
   },
   /** Jamais mis en file d'attente hors ligne : un versement de contribution touche deux espaces et doit réussir ou échouer d'un bloc. */
-  async createContributionPayment(payload: ContributionPaymentPayload): Promise<ContributionPaymentResult> {
-    return parsePaymentResult(await request<unknown>('/household/contributions/payments', 'POST', payload));
+  async createContributionPayment(
+    payload: ContributionPaymentPayload,
+  ): Promise<ContributionPaymentResult> {
+    return parsePaymentResult(
+      await request<unknown>(
+        '/household/contributions/payments',
+        'POST',
+        payload,
+      ),
+    );
   },
 
   /** Le catalogue des démarches (code versionné côté serveur) : ouvert à tout utilisateur connecté. */
@@ -213,18 +300,37 @@ export const apiClient = {
   async fetchLifeEvents(): Promise<LifeEvent[]> {
     return parseLifeEvents(await request<unknown>('/household/life-events'));
   },
-  async createLifeEvent(payload: LifeEventCreatePayload): Promise<LifeEvent | null> {
-    return parseLifeEvent(await request<unknown>('/household/life-events', 'POST', payload));
+  async createLifeEvent(
+    payload: LifeEventCreatePayload,
+  ): Promise<LifeEvent | null> {
+    return parseLifeEvent(
+      await request<unknown>('/household/life-events', 'POST', payload),
+    );
   },
   updateLifeEvent(id: string, payload: LifeEventUpdatePayload): Promise<void> {
-    return request<void>(`/household/life-events/${encodeURIComponent(id)}`, 'PUT', payload);
+    return request<void>(
+      `/household/life-events/${encodeURIComponent(id)}`,
+      'PUT',
+      payload,
+    );
   },
   deleteLifeEvent(id: string): Promise<void> {
-    return request<void>(`/household/life-events/${encodeURIComponent(id)}`, 'DELETE');
+    return request<void>(
+      `/household/life-events/${encodeURIComponent(id)}`,
+      'DELETE',
+    );
   },
   /** Jamais mis en file d'attente hors ligne : une coche doit être confirmée par le serveur (sinon elle est annulée à l'écran). */
-  setLifeEventStep(id: string, stepId: string, payload: StepChangePayload): Promise<void> {
-    return request<void>(`/household/life-events/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`, 'PUT', payload);
+  setLifeEventStep(
+    id: string,
+    stepId: string,
+    payload: StepChangePayload,
+  ): Promise<void> {
+    return request<void>(
+      `/household/life-events/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`,
+      'PUT',
+      payload,
+    );
   },
 
   fetchPlan(spaceId: string): Promise<Plan> {
@@ -234,26 +340,62 @@ export const apiClient = {
     return request<void>(`${spacePath(spaceId)}/plan`, 'PUT', plan);
   },
   fetchTransactions(spaceId: string, month: string): Promise<Transaction[]> {
-    return request<Transaction[]>(`${spacePath(spaceId)}/transactions?month=${month}`);
+    return request<Transaction[]>(
+      `${spacePath(spaceId)}/transactions?month=${month}`,
+    );
   },
-  createTransaction(spaceId: string, payload: TransactionPayload): Promise<Transaction> {
-    return request<Transaction>(`${spacePath(spaceId)}/transactions`, 'POST', payload);
+  createTransaction(
+    spaceId: string,
+    payload: TransactionPayload,
+  ): Promise<Transaction> {
+    return request<Transaction>(
+      `${spacePath(spaceId)}/transactions`,
+      'POST',
+      payload,
+    );
   },
-  updateTransaction(spaceId: string, id: string, payload: TransactionPayload): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/transactions/${encodeURIComponent(id)}`, 'PUT', payload);
+  updateTransaction(
+    spaceId: string,
+    id: string,
+    payload: TransactionPayload,
+  ): Promise<void> {
+    return request<void>(
+      `${spacePath(spaceId)}/transactions/${encodeURIComponent(id)}`,
+      'PUT',
+      payload,
+    );
   },
   deleteTransaction(spaceId: string, id: string): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/transactions/${encodeURIComponent(id)}`, 'DELETE');
+    return request<void>(
+      `${spacePath(spaceId)}/transactions/${encodeURIComponent(id)}`,
+      'DELETE',
+    );
   },
   fetchSummary(spaceId: string, month: string): Promise<Summary> {
     return request<Summary>(`${spacePath(spaceId)}/summary?month=${month}`);
   },
 
-  previewImport(spaceId: string, text: string, accountId: string | null = null): Promise<ImportPreview> {
-    return request<ImportPreview>(`${spacePath(spaceId)}/imports/preview`, 'POST', accountId ? { text, accountId } : { text });
+  previewImport(
+    spaceId: string,
+    text: string,
+    accountId: string | null = null,
+  ): Promise<ImportPreview> {
+    return request<ImportPreview>(
+      `${spacePath(spaceId)}/imports/preview`,
+      'POST',
+      accountId ? { text, accountId } : { text },
+    );
   },
-  commitImport(spaceId: string, items: CommitItem[], accountId: string | null = null): Promise<{ created: number }> {
-    return request<{ created: number }>(`${spacePath(spaceId)}/imports/commit`, 'POST', accountId ? { items, accountId } : { items });
+  commitImport(
+    spaceId: string,
+    items: CommitItem[],
+    accountId: string | null = null,
+  ): Promise<{ created: number }> {
+    return request<{ created: number }>(
+      `${spacePath(spaceId)}/imports/commit`,
+      'POST',
+      accountId ? { items, accountId } : { items },
+    );
   },
   fetchRules(spaceId: string): Promise<RuleSet> {
     return request<RuleSet>(`${spacePath(spaceId)}/rules`);
@@ -263,50 +405,98 @@ export const apiClient = {
   },
 
   async fetchInsights(spaceId: string, month: string): Promise<Insight[]> {
-    return parseInsights(await request<unknown>(`${spacePath(spaceId)}/insights?month=${month}`));
+    return parseInsights(
+      await request<unknown>(`${spacePath(spaceId)}/insights?month=${month}`),
+    );
   },
 
   async fetchReview(spaceId: string, month: string): Promise<MonthlyReview> {
-    const review = parseReview(await request<unknown>(`${spacePath(spaceId)}/reviews/${encodeURIComponent(month)}`), month);
+    const review = parseReview(
+      await request<unknown>(
+        `${spacePath(spaceId)}/reviews/${encodeURIComponent(month)}`,
+      ),
+      month,
+    );
     if (!review) {
       throw new ApiError(502, 'Réponse illisible');
     }
     return review;
   },
-  saveReview(spaceId: string, month: string, payload: ReviewPayload): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/reviews/${encodeURIComponent(month)}`, 'PUT', payload);
+  saveReview(
+    spaceId: string,
+    month: string,
+    payload: ReviewPayload,
+  ): Promise<void> {
+    return request<void>(
+      `${spacePath(spaceId)}/reviews/${encodeURIComponent(month)}`,
+      'PUT',
+      payload,
+    );
   },
-  async fetchReviews(spaceId: string, limit = 12): Promise<ReviewHistoryItem[]> {
-    return parseReviewHistory(await request<unknown>(`${spacePath(spaceId)}/reviews?limit=${limit}`));
+  async fetchReviews(
+    spaceId: string,
+    limit = 12,
+  ): Promise<ReviewHistoryItem[]> {
+    return parseReviewHistory(
+      await request<unknown>(`${spacePath(spaceId)}/reviews?limit=${limit}`),
+    );
   },
 
   /** Sauvegarde JSON de toutes les données auxquelles l'utilisateur a accès (jamais l'espace personnel d'un autre). */
   downloadExport(now: Date = new Date()): Promise<DownloadedFile> {
     return download('/export', backupFilename(now));
   },
-  downloadTransactionsCsv(spaceId: string, range: ExportRange): Promise<DownloadedFile> {
+  downloadTransactionsCsv(
+    spaceId: string,
+    range: ExportRange,
+  ): Promise<DownloadedFile> {
     const query = `from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
-    return download(`${spacePath(spaceId)}/transactions/export?${query}`, csvFilename(range));
+    return download(
+      `${spacePath(spaceId)}/transactions/export?${query}`,
+      csvFilename(range),
+    );
   },
 
   async fetchDebts(spaceId: string): Promise<Debt[]> {
     return parseDebts(await request<unknown>(`${spacePath(spaceId)}/debts`));
   },
-  async createDebt(spaceId: string, payload: DebtPayload): Promise<Debt | null> {
-    return parseDebt(await request<unknown>(`${spacePath(spaceId)}/debts`, 'POST', payload));
+  async createDebt(
+    spaceId: string,
+    payload: DebtPayload,
+  ): Promise<Debt | null> {
+    return parseDebt(
+      await request<unknown>(`${spacePath(spaceId)}/debts`, 'POST', payload),
+    );
   },
   updateDebt(spaceId: string, id: string, payload: DebtPayload): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/debts/${encodeURIComponent(id)}`, 'PUT', payload);
+    return request<void>(
+      `${spacePath(spaceId)}/debts/${encodeURIComponent(id)}`,
+      'PUT',
+      payload,
+    );
   },
   deleteDebt(spaceId: string, id: string): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/debts/${encodeURIComponent(id)}`, 'DELETE');
+    return request<void>(
+      `${spacePath(spaceId)}/debts/${encodeURIComponent(id)}`,
+      'DELETE',
+    );
   },
   async fetchDebtsSummary(spaceId: string): Promise<DebtsSummary> {
-    return parseDebtsSummary(await request<unknown>(`${spacePath(spaceId)}/debts/summary`));
+    return parseDebtsSummary(
+      await request<unknown>(`${spacePath(spaceId)}/debts/summary`),
+    );
   },
-  async fetchDebtWhatIf(spaceId: string, id: string, query: WhatIfQuery): Promise<WhatIfResult> {
+  async fetchDebtWhatIf(
+    spaceId: string,
+    id: string,
+    query: WhatIfQuery,
+  ): Promise<WhatIfResult> {
     const params = `extraMonthlyCents=${query.extraMonthlyCents}&lumpSumCents=${query.lumpSumCents}`;
-    const result = parseWhatIf(await request<unknown>(`${spacePath(spaceId)}/debts/${encodeURIComponent(id)}/what-if?${params}`));
+    const result = parseWhatIf(
+      await request<unknown>(
+        `${spacePath(spaceId)}/debts/${encodeURIComponent(id)}/what-if?${params}`,
+      ),
+    );
     if (!result) {
       throw new ApiError(502, 'Réponse illisible');
     }
@@ -314,20 +504,44 @@ export const apiClient = {
   },
   /** L'import de contrat est-il disponible sur ce serveur (outils de lecture installés) ? */
   async fetchDebtExtractionCapabilities(): Promise<ExtractionCapabilities> {
-    return parseExtractionCapabilities(await request<unknown>('/debt-extractions/capabilities', 'GET', undefined, true));
+    return parseExtractionCapabilities(
+      await request<unknown>(
+        '/debt-extractions/capabilities',
+        'GET',
+        undefined,
+        true,
+      ),
+    );
   },
   /** Envoie le contrat (multipart, champ `file`). Le fichier n'est gardé nulle part côté client. */
-  async startDebtExtraction(spaceId: string, file: File): Promise<ExtractionStart> {
+  async startDebtExtraction(
+    spaceId: string,
+    file: File,
+  ): Promise<ExtractionStart> {
     const form = new FormData();
     form.append('file', file);
-    const start = parseExtractionStart(await request<unknown>(`${spacePath(spaceId)}/debts/extract`, 'POST', form, true));
+    const start = parseExtractionStart(
+      await request<unknown>(
+        `${spacePath(spaceId)}/debts/extract`,
+        'POST',
+        form,
+        true,
+      ),
+    );
     if (!start) {
       throw new ApiError(502, 'Réponse illisible');
     }
     return start;
   },
   async fetchDebtExtraction(jobId: string): Promise<ExtractionJob> {
-    const job = parseExtractionJob(await request<unknown>(`/debt-extractions/${encodeURIComponent(jobId)}`, 'GET', undefined, true));
+    const job = parseExtractionJob(
+      await request<unknown>(
+        `/debt-extractions/${encodeURIComponent(jobId)}`,
+        'GET',
+        undefined,
+        true,
+      ),
+    );
     if (!job) {
       throw new ApiError(502, 'Réponse illisible');
     }
@@ -335,40 +549,85 @@ export const apiClient = {
   },
   /** Efface le résultat côté serveur : à appeler dès qu'il n'est plus utile. */
   deleteDebtExtraction(jobId: string): Promise<void> {
-    return request<void>(`/debt-extractions/${encodeURIComponent(jobId)}`, 'DELETE');
+    return request<void>(
+      `/debt-extractions/${encodeURIComponent(jobId)}`,
+      'DELETE',
+    );
   },
 
   /** `to` : dernier mois inclus (défaut côté serveur : le mois courant). */
-  async fetchTrends(spaceId: string, months: number, to?: string): Promise<Trends> {
+  async fetchTrends(
+    spaceId: string,
+    months: number,
+    to?: string,
+  ): Promise<Trends> {
     const query = `months=${months}${to ? `&to=${encodeURIComponent(to)}` : ''}`;
-    return parseTrends(await request<unknown>(`${spacePath(spaceId)}/trends?${query}`));
+    return parseTrends(
+      await request<unknown>(`${spacePath(spaceId)}/trends?${query}`),
+    );
   },
 
   fetchForecast(spaceId: string, month: string): Promise<Forecast> {
     return request<Forecast>(`${spacePath(spaceId)}/forecast?month=${month}`);
   },
   async fetchProjects(spaceId: string): Promise<Project[]> {
-    return parseProjects(await request<unknown>(`${spacePath(spaceId)}/projects`));
+    return parseProjects(
+      await request<unknown>(`${spacePath(spaceId)}/projects`),
+    );
   },
-  async createProject(spaceId: string, payload: ProjectPayload): Promise<Project | null> {
-    return parseProject(await request<unknown>(`${spacePath(spaceId)}/projects`, 'POST', payload));
+  async createProject(
+    spaceId: string,
+    payload: ProjectPayload,
+  ): Promise<Project | null> {
+    return parseProject(
+      await request<unknown>(`${spacePath(spaceId)}/projects`, 'POST', payload),
+    );
   },
-  updateProject(spaceId: string, id: string, payload: ProjectPayload): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/projects/${encodeURIComponent(id)}`, 'PUT', payload);
+  updateProject(
+    spaceId: string,
+    id: string,
+    payload: ProjectPayload,
+  ): Promise<void> {
+    return request<void>(
+      `${spacePath(spaceId)}/projects/${encodeURIComponent(id)}`,
+      'PUT',
+      payload,
+    );
   },
   deleteProject(spaceId: string, id: string): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/projects/${encodeURIComponent(id)}`, 'DELETE');
+    return request<void>(
+      `${spacePath(spaceId)}/projects/${encodeURIComponent(id)}`,
+      'DELETE',
+    );
   },
   async fetchProjectsSummary(spaceId: string): Promise<ProjectsSummary> {
-    return parseProjectsSummary(await request<unknown>(`${spacePath(spaceId)}/projects/summary`));
+    return parseProjectsSummary(
+      await request<unknown>(`${spacePath(spaceId)}/projects/summary`),
+    );
   },
   async fetchDeposits(spaceId: string, projectId: string): Promise<Deposit[]> {
-    return parseDeposits(await request<unknown>(`${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits`));
+    return parseDeposits(
+      await request<unknown>(
+        `${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits`,
+      ),
+    );
   },
-  createDeposit(spaceId: string, projectId: string, payload: DepositPayload): Promise<unknown> {
-    return request<unknown>(`${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits`, 'POST', payload);
+  createDeposit(
+    spaceId: string,
+    projectId: string,
+    payload: DepositPayload,
+  ): Promise<unknown> {
+    return request<unknown>(
+      `${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits`,
+      'POST',
+      payload,
+    );
   },
-  deleteDeposit(spaceId: string, projectId: string, depositId: string): Promise<void> {
+  deleteDeposit(
+    spaceId: string,
+    projectId: string,
+    depositId: string,
+  ): Promise<void> {
     return request<void>(
       `${spacePath(spaceId)}/projects/${encodeURIComponent(projectId)}/deposits/${encodeURIComponent(depositId)}`,
       'DELETE',
@@ -377,22 +636,50 @@ export const apiClient = {
 
   async fetchProvisions(spaceId: string, asOf?: string): Promise<Provisions> {
     const query = asOf ? `?asOf=${encodeURIComponent(asOf)}` : '';
-    return parseProvisions(await request<unknown>(`${spacePath(spaceId)}/provisions${query}`));
+    return parseProvisions(
+      await request<unknown>(`${spacePath(spaceId)}/provisions${query}`),
+    );
   },
-  async fetchYearForecast(spaceId: string, year: number): Promise<YearForecast> {
-    return parseYearForecast(await request<unknown>(`${spacePath(spaceId)}/forecast/year?year=${year}`), year);
+  async fetchYearForecast(
+    spaceId: string,
+    year: number,
+  ): Promise<YearForecast> {
+    return parseYearForecast(
+      await request<unknown>(
+        `${spacePath(spaceId)}/forecast/year?year=${year}`,
+      ),
+      year,
+    );
   },
   fetchRecurring(spaceId: string): Promise<RecurringPayment[]> {
     return request<RecurringPayment[]>(`${spacePath(spaceId)}/recurring`);
   },
-  createRecurring(spaceId: string, payload: RecurringPayload): Promise<RecurringPayment> {
-    return request<RecurringPayment>(`${spacePath(spaceId)}/recurring`, 'POST', payload);
+  createRecurring(
+    spaceId: string,
+    payload: RecurringPayload,
+  ): Promise<RecurringPayment> {
+    return request<RecurringPayment>(
+      `${spacePath(spaceId)}/recurring`,
+      'POST',
+      payload,
+    );
   },
-  updateRecurring(spaceId: string, id: string, payload: RecurringPayload): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/recurring/${encodeURIComponent(id)}`, 'PUT', payload);
+  updateRecurring(
+    spaceId: string,
+    id: string,
+    payload: RecurringPayload,
+  ): Promise<void> {
+    return request<void>(
+      `${spacePath(spaceId)}/recurring/${encodeURIComponent(id)}`,
+      'PUT',
+      payload,
+    );
   },
   deleteRecurring(spaceId: string, id: string): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/recurring/${encodeURIComponent(id)}`, 'DELETE');
+    return request<void>(
+      `${spacePath(spaceId)}/recurring/${encodeURIComponent(id)}`,
+      'DELETE',
+    );
   },
 
   async fetchSafetyNet(): Promise<SafetyNetState> {
@@ -406,7 +693,11 @@ export const apiClient = {
     return request<AidRule[]>('/aid-rules');
   },
   async fetchFiscalProfile(): Promise<FiscalProfile | null> {
-    return (await request<{ fiscalProfile: FiscalProfile | null }>('/household/fiscal-profile')).fiscalProfile;
+    return (
+      await request<{ fiscalProfile: FiscalProfile | null }>(
+        '/household/fiscal-profile',
+      )
+    ).fiscalProfile;
   },
   saveFiscalProfile(profile: FiscalProfile): Promise<void> {
     return request<void>('/household/fiscal-profile', 'PUT', profile);
@@ -415,7 +706,9 @@ export const apiClient = {
     return request<AidsSummary>(`${spacePath(spaceId)}/aids?year=${year}`);
   },
   fetchCrecheEstimate(query: CrecheQuery): Promise<CrecheEstimate> {
-    return request<CrecheEstimate>(`/aid-rules/creche-estimate?${crecheQueryString(query)}`);
+    return request<CrecheEstimate>(
+      `/aid-rules/creche-estimate?${crecheQueryString(query)}`,
+    );
   },
 
   fetchAccounts(spaceId: string): Promise<Account[]> {
@@ -424,10 +717,21 @@ export const apiClient = {
   createAccount(spaceId: string, payload: AccountPayload): Promise<Account> {
     return request<Account>(`${spacePath(spaceId)}/accounts`, 'POST', payload);
   },
-  updateAccount(spaceId: string, id: string, payload: AccountPayload): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/accounts/${encodeURIComponent(id)}`, 'PUT', payload);
+  updateAccount(
+    spaceId: string,
+    id: string,
+    payload: AccountPayload,
+  ): Promise<void> {
+    return request<void>(
+      `${spacePath(spaceId)}/accounts/${encodeURIComponent(id)}`,
+      'PUT',
+      payload,
+    );
   },
   deleteAccount(spaceId: string, id: string): Promise<void> {
-    return request<void>(`${spacePath(spaceId)}/accounts/${encodeURIComponent(id)}`, 'DELETE');
+    return request<void>(
+      `${spacePath(spaceId)}/accounts/${encodeURIComponent(id)}`,
+      'DELETE',
+    );
   },
 };

@@ -1,4 +1,13 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { TransactionPayload } from '../domain/budget';
 import {
   classifyFailure,
@@ -17,7 +26,10 @@ interface OfflineQueueValue {
   pending: PendingTransaction[];
   rejected: PendingTransaction[];
   dataVersion: number;
-  submit: (spaceId: string, payload: TransactionPayload) => Promise<SubmitResult>;
+  submit: (
+    spaceId: string,
+    payload: TransactionPayload,
+  ) => Promise<SubmitResult>;
   notifyChanged: () => void;
   dismissRejected: () => void;
 }
@@ -25,7 +37,8 @@ interface OfflineQueueValue {
 const OfflineQueueContext = createContext<OfflineQueueValue | null>(null);
 
 function newClientId(): string {
-  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  return typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
@@ -54,12 +67,17 @@ async function withFlushLock(task: () => Promise<void>): Promise<void> {
 export function OfflineQueueProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? '';
-  const [pending, setPending] = useState<PendingTransaction[]>(() => pendingStore.load(userId));
+  const [pending, setPending] = useState<PendingTransaction[]>(() =>
+    pendingStore.load(userId),
+  );
   const [rejected, setRejected] = useState<PendingTransaction[]>([]);
   const [dataVersion, setDataVersion] = useState(0);
   const flushing = useRef(false);
 
-  const notifyChanged = useCallback(() => setDataVersion((value) => value + 1), []);
+  const notifyChanged = useCallback(
+    () => setDataVersion((value) => value + 1),
+    [],
+  );
 
   const flush = useCallback(async () => {
     if (flushing.current || pendingStore.load(userId).length === 0) {
@@ -70,7 +88,8 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
       await withFlushLock(async () => {
         const result = await flushQueue(pendingStore.load(userId), {
           send: sendPending,
-          onSettled: (item) => setPending(pendingStore.remove(userId, item.clientId)),
+          onSettled: (item) =>
+            setPending(pendingStore.remove(userId, item.clientId)),
         });
         if (result.rejected.length > 0) {
           setRejected((previous) => [...previous, ...result.rejected]);
@@ -108,7 +127,10 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
   }, [flush, userId]);
 
   const submit = useCallback(
-    async (spaceId: string, payload: TransactionPayload): Promise<SubmitResult> => {
+    async (
+      spaceId: string,
+      payload: TransactionPayload,
+    ): Promise<SubmitResult> => {
       const item = createPendingTransaction(spaceId, payload, newClientId());
       try {
         await apiClient.createTransaction(spaceId, payload);
@@ -129,16 +151,29 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
   const dismissRejected = useCallback(() => setRejected([]), []);
 
   const value = useMemo(
-    () => ({ pending, rejected, dataVersion, submit, notifyChanged, dismissRejected }),
+    () => ({
+      pending,
+      rejected,
+      dataVersion,
+      submit,
+      notifyChanged,
+      dismissRejected,
+    }),
     [pending, rejected, dataVersion, submit, notifyChanged, dismissRejected],
   );
-  return <OfflineQueueContext.Provider value={value}>{children}</OfflineQueueContext.Provider>;
+  return (
+    <OfflineQueueContext.Provider value={value}>
+      {children}
+    </OfflineQueueContext.Provider>
+  );
 }
 
 export function useOfflineQueue(): OfflineQueueValue {
   const context = useContext(OfflineQueueContext);
   if (!context) {
-    throw new Error('useOfflineQueue must be used within an OfflineQueueProvider');
+    throw new Error(
+      'useOfflineQueue must be used within an OfflineQueueProvider',
+    );
   }
   return context;
 }

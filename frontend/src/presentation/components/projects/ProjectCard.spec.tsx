@@ -6,17 +6,24 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectProgress } from './ProjectProgress';
 import { ProjectStatusBadge } from './ProjectStatusBadge';
 
-const plain = (value: string | null | undefined) => (value ?? '').replace(/[\s  ]/g, ' ');
+const plain = (value: string | null | undefined) =>
+  (value ?? '').replace(/[\s  ]/g, ' ');
 
 describe('ProjectProgress', () => {
   it('is a progress bar whose value text says it all', () => {
     render(<ProjectProgress project={project()} />);
-    const bar = screen.getByRole('progressbar', { name: 'Progression du projet' });
+    const bar = screen.getByRole('progressbar', {
+      name: 'Progression du projet',
+    });
     expect(bar).toHaveAttribute('aria-valuenow', '13');
     expect(bar).toHaveAttribute('aria-valuemin', '0');
     expect(bar).toHaveAttribute('aria-valuemax', '100');
-    expect(plain(bar.getAttribute('aria-valuetext'))).toBe('13 % — 400 € sur 3 000 €');
-    expect(plain(screen.getByText(/13 %/).textContent)).toBe('13 % — 400 € sur 3 000 €');
+    expect(plain(bar.getAttribute('aria-valuetext'))).toBe(
+      '13 % — 400 € sur 3 000 €',
+    );
+    expect(plain(screen.getByText(/13 %/).textContent)).toBe(
+      '13 % — 400 € sur 3 000 €',
+    );
   });
 
   it('marks the expected progress only on request', () => {
@@ -27,8 +34,21 @@ describe('ProjectProgress', () => {
   });
 
   it('draws a full bar for a reached project and no marker', () => {
-    render(<ProjectProgress project={project({ status: 'DONE', progressPercent: 100, savedCents: 300000, expectedSavedCents: 300000 })} showExpected />);
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+    render(
+      <ProjectProgress
+        project={project({
+          status: 'DONE',
+          progressPercent: 100,
+          savedCents: 300000,
+          expectedSavedCents: 300000,
+        })}
+        showExpected
+      />,
+    );
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    );
     expect(screen.queryByTestId('expected-marker')).not.toBeInTheDocument();
   });
 });
@@ -47,12 +67,19 @@ describe('ProjectStatusBadge', () => {
 });
 
 describe('ProjectCard', () => {
-  const renderCard = (props: Partial<Parameters<typeof ProjectCard>[0]> = {}) => {
+  const renderCard = (
+    props: Partial<Parameters<typeof ProjectCard>[0]> = {},
+  ) => {
     const onOpen = vi.fn<() => void>();
     const onEdit = vi.fn<() => void>();
     render(
       <ul>
-        <ProjectCard project={project()} onOpen={onOpen} onEdit={onEdit} {...props} />
+        <ProjectCard
+          project={project()}
+          onOpen={onOpen}
+          onEdit={onEdit}
+          {...props}
+        />
       </ul>,
     );
     return { onOpen, onEdit };
@@ -65,20 +92,33 @@ describe('ProjectCard', () => {
     expect(card).toHaveTextContent('Vacances · Livret A');
     expect(within(card).getByText('En retard')).toBeInTheDocument();
     expect(plain(card.textContent)).toContain('13 % — 400 € sur 3 000 €');
-    expect(plain(card.textContent)).toMatch(/Échéance le 1(er)? juillet 2027 · dans 8 mois/);
-    expect(plain(card.textContent)).toContain('Il faut mettre de côté 325 € par mois.');
-    expect(plain(card.textContent)).toContain('Il manque 350 € par rapport au rythme prévu.');
+    expect(plain(card.textContent)).toMatch(
+      /Échéance le 1(er)? juillet 2027 · dans 8 mois/,
+    );
+    expect(plain(card.textContent)).toContain(
+      'Il faut mettre de côté 325 € par mois.',
+    );
+    expect(plain(card.textContent)).toContain(
+      'Il manque 350 € par rapport au rythme prévu.',
+    );
   });
 
   it('names the kind for screen readers through the icon', () => {
     renderCard();
-    expect(within(screen.getByTestId('project-card')).getAllByText('Vacances').length).toBeGreaterThan(0);
+    expect(
+      within(screen.getByTestId('project-card')).getAllByText('Vacances')
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it('has 44 px buttons wired to open and edit', async () => {
     const { onOpen, onEdit } = renderCard();
-    const open = screen.getByRole('button', { name: 'Versements de Vacances été 2027' });
-    const edit = screen.getByRole('button', { name: 'Modifier Vacances été 2027' });
+    const open = screen.getByRole('button', {
+      name: 'Versements de Vacances été 2027',
+    });
+    const edit = screen.getByRole('button', {
+      name: 'Modifier Vacances été 2027',
+    });
     expect(open.className).toContain('min-h-[44px]');
     expect(edit.className).toContain('min-h-[44px]');
     open.click();
@@ -90,11 +130,21 @@ describe('ProjectCard', () => {
   it('does not nag about the monthly need on an archived or reached project', () => {
     renderCard({ project: project({ archived: true }) });
     expect(screen.getByText('Archivé')).toBeInTheDocument();
-    expect(screen.queryByText(/Il faut mettre de côté/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Il faut mettre de côté/),
+    ).not.toBeInTheDocument();
   });
 
   it('celebrates a reached project', () => {
-    renderCard({ project: project({ status: 'DONE', remainingCents: 0, monthlyNeededCents: 0, progressPercent: 100, savedCents: 300000 }) });
+    renderCard({
+      project: project({
+        status: 'DONE',
+        remainingCents: 0,
+        monthlyNeededCents: 0,
+        progressPercent: 100,
+        savedCents: 300000,
+      }),
+    });
     expect(screen.getByText('Atteint')).toBeInTheDocument();
     expect(screen.getByText(/Objectif atteint/)).toBeInTheDocument();
     expect(screen.queryByText(/par rapport au rythme/)).not.toBeInTheDocument();

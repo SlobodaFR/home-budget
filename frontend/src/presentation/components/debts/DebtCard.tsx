@@ -34,7 +34,12 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
   const progressText = describePaidProgress(debt);
   const monthlyTotal = describeMonthlyTotal(debt);
   const warning = rateTypeWarning(debt.rateType);
-  const showInsuranceCost = !debt.neverPaidOff && !repaid && debt.remainingInsuranceCents !== null && debt.remainingInsuranceCents > 0 && debt.remainingCostCents !== null;
+  const showInsuranceCost =
+    !debt.neverPaidOff &&
+    !repaid &&
+    debt.remainingInsuranceCents !== null &&
+    debt.remainingInsuranceCents > 0 &&
+    debt.remainingCostCents !== null;
 
   return (
     <li
@@ -48,15 +53,23 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
           <span className="sr-only">{DEBT_KIND_LABEL[debt.kind]}</span>
         </span>
         <div className="min-w-0 flex-1">
-          <h4 className="break-words font-body-md text-body-md font-semibold">{debt.name}</h4>
+          <h4 className="break-words font-body-md text-body-md font-semibold">
+            {debt.name}
+          </h4>
           {debt.lender !== '' && (
-            <p className="break-words font-body-sm text-body-sm" data-testid="debt-lender">
+            <p
+              className="break-words font-body-sm text-body-sm"
+              data-testid="debt-lender"
+            >
               {debt.lender}
             </p>
           )}
           <p className="font-body-sm text-body-sm text-mute">
-            {DEBT_KIND_LABEL[debt.kind]} · Taux {formatRate(debt.annualRatePercent)}
-            {debt.rateType ? ` (${RATE_TYPE_LABEL[debt.rateType].toLowerCase()})` : ''}
+            {DEBT_KIND_LABEL[debt.kind]} · Taux{' '}
+            {formatRate(debt.annualRatePercent)}
+            {debt.rateType
+              ? ` (${RATE_TYPE_LABEL[debt.rateType].toLowerCase()})`
+              : ''}
           </p>
         </div>
       </div>
@@ -75,13 +88,21 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
               Remboursé
             </span>
           )}
-          {debt.archived && <span className="rounded-full bg-soft-cloud px-md py-0.5 font-body-sm text-body-sm font-semibold text-mute">Archivé</span>}
+          {debt.archived && (
+            <span className="rounded-full bg-soft-cloud px-md py-0.5 font-body-sm text-body-sm font-semibold text-mute">
+              Archivé
+            </span>
+          )}
         </div>
       )}
 
       <div>
-        <p className="font-label-caps text-label-caps uppercase text-mute">Capital restant</p>
-        <p className="tabular font-heading-lg text-heading-lg">{formatCentsShort(debt.remainingCents)}</p>
+        <p className="font-label-caps text-label-caps uppercase text-mute">
+          Capital restant
+        </p>
+        <p className="tabular font-heading-lg text-heading-lg">
+          {formatCentsShort(debt.remainingCents)}
+        </p>
       </div>
 
       <div>
@@ -94,29 +115,52 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
           aria-valuetext={progressText}
           className="h-3 w-full overflow-hidden rounded-full bg-soft-cloud"
         >
-          <div className="h-full rounded-full bg-success" style={{ width: `${debt.paidSharePercent}%` }} />
+          <div
+            className="h-full rounded-full bg-success"
+            style={{ width: `${debt.paidSharePercent}%` }}
+          />
         </div>
-        <p className="tabular mt-1 font-body-sm text-body-sm font-semibold">{progressText}</p>
+        <p className="tabular mt-1 font-body-sm text-body-sm font-semibold">
+          {progressText}
+        </p>
       </div>
 
       <div className="font-body-sm text-body-sm">
         {monthlyTotal && <p className="font-semibold">{monthlyTotal}</p>}
-        <p className={monthlyTotal ? 'text-mute' : 'font-semibold'}>{monthlyTotal ? `(${describeMonthly(debt)})` : describeMonthly(debt)}</p>
+        <p className={monthlyTotal ? 'text-mute' : 'font-semibold'}>
+          {monthlyTotal ? `(${describeMonthly(debt)})` : describeMonthly(debt)}
+        </p>
         {!debt.neverPaidOff && payoff && <p className="text-mute">{payoff}</p>}
-        {!debt.neverPaidOff && !repaid && debt.totalInterestRemainingCents !== null && (
-          <p className="text-mute">Intérêts restant à payer : {formatCentsShort(debt.totalInterestRemainingCents)}</p>
-        )}
+        {!debt.neverPaidOff &&
+          !repaid &&
+          debt.totalInterestRemainingCents !== null && (
+            <p className="text-mute">
+              Intérêts restant à payer :{' '}
+              {formatCentsShort(debt.totalInterestRemainingCents)}
+            </p>
+          )}
         {showInsuranceCost && (
           <>
-            <p className="text-mute">Assurance restant à payer : {formatCentsShort(debt.remainingInsuranceCents ?? 0)}</p>
-            <p className="font-semibold">Coût restant (intérêts + assurance) : {formatCentsShort(debt.remainingCostCents ?? 0)}</p>
+            <p className="text-mute">
+              Assurance restant à payer :{' '}
+              {formatCentsShort(debt.remainingInsuranceCents ?? 0)}
+            </p>
+            <p className="font-semibold">
+              Coût restant (intérêts + assurance) :{' '}
+              {formatCentsShort(debt.remainingCostCents ?? 0)}
+            </p>
           </>
         )}
-        {repaid && <p className="text-mute">Il ne reste plus rien à rembourser.</p>}
+        {repaid && (
+          <p className="text-mute">Il ne reste plus rien à rembourser.</p>
+        )}
       </div>
 
       {warning && (
-        <p className="flex items-start gap-sm font-body-sm text-body-sm text-mute" data-testid="rate-type-warning">
+        <p
+          className="flex items-start gap-sm font-body-sm text-body-sm text-mute"
+          data-testid="rate-type-warning"
+        >
           <InfoIcon width={16} height={16} className="mt-0.5 shrink-0" />
           {warning}
         </p>
@@ -125,17 +169,30 @@ export function DebtCard({ debt, onOpen, onEdit }: Props) {
       {!repaid && !debt.archived && <PaymentCheckNotice debt={debt} compact />}
 
       {debt.neverPaidOff && (
-        <p role="alert" className="flex items-start gap-sm rounded border border-error/40 bg-error/5 p-md font-body-sm text-body-sm font-semibold text-error">
+        <p
+          role="alert"
+          className="flex items-start gap-sm rounded border border-error/40 bg-error/5 p-md font-body-sm text-body-sm font-semibold text-error"
+        >
           <AlertIcon width={20} height={20} className="mt-0.5 shrink-0" />
           <span>{describeNeverPaidOff(debt)}</span>
         </p>
       )}
 
       <div className="flex flex-wrap gap-sm">
-        <button type="button" onClick={() => onOpen(debt)} aria-label={`Simuler un remboursement de ${debt.name}`} className={`${actionButton} bg-ink text-surface hover:bg-ink`}>
+        <button
+          type="button"
+          onClick={() => onOpen(debt)}
+          aria-label={`Simuler un remboursement de ${debt.name}`}
+          className={`${actionButton} bg-ink text-surface hover:bg-ink`}
+        >
           Et si je remboursais plus vite ?
         </button>
-        <button type="button" onClick={() => onEdit(debt)} aria-label={`Modifier ${debt.name}`} className={actionButton}>
+        <button
+          type="button"
+          onClick={() => onEdit(debt)}
+          aria-label={`Modifier ${debt.name}`}
+          className={actionButton}
+        >
           <PencilIcon width={18} height={18} />
           Modifier
         </button>

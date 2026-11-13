@@ -10,12 +10,20 @@ interface Props {
 /** Recherche par mot-clé : le filtre se fait au fil de la frappe, sans bouton à valider. */
 export function HelpSearch({ query, onChange }: Props) {
   return (
-    <form role="search" aria-label="Rechercher dans l’aide" onSubmit={(event: FormEvent) => event.preventDefault()}>
+    <form
+      role="search"
+      aria-label="Rechercher dans l’aide"
+      onSubmit={(event: FormEvent) => event.preventDefault()}
+    >
       <label htmlFor="help-search" className={labelClass}>
         Rechercher dans l’aide
       </label>
       <div className="relative">
-        <SearchIcon width={20} height={20} className="pointer-events-none absolute left-gutter top-1/2 -translate-y-1/2 text-mute" />
+        <SearchIcon
+          width={20}
+          height={20}
+          className="pointer-events-none absolute left-gutter top-1/2 -translate-y-1/2 text-mute"
+        />
         <input
           id="help-search"
           type="search"

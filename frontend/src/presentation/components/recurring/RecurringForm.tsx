@@ -49,39 +49,73 @@ const KINDS: { kind: TransactionKind; label: string }[] = [
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p id={id} role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 font-body-sm text-body-sm text-error"
+    >
       {message}
     </p>
   ) : null;
 }
 
-export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defaultAccountId = null, initialFrequency = 'MONTHLY', onClose, onSubmit, now = () => new Date() }: Props) {
+export function RecurringForm({
+  editing,
+  allowAid,
+  aidRules,
+  accounts = [],
+  defaultAccountId = null,
+  initialFrequency = 'MONTHLY',
+  onClose,
+  onSubmit,
+  now = () => new Date(),
+}: Props) {
   const [values, setValues] = useState(() =>
     editing
       ? recurringToForm(editing)
-      : { ...emptyRecurringForm(now()), accountId: defaultAccountId ?? '', frequency: initialFrequency },
+      : {
+          ...emptyRecurringForm(now()),
+          accountId: defaultAccountId ?? '',
+          frequency: initialFrequency,
+        },
   );
   const [errors, setErrors] = useState<RecurringFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) =>
-    setValues((previous) => ({ ...previous, [key]: value }));
+  const set = <K extends keyof typeof values>(
+    key: K,
+    value: (typeof values)[K],
+  ) => setValues((previous) => ({ ...previous, [key]: value }));
 
-  const selectedAid = aidRules?.find((rule) => rule.id === values.aidRuleId) ?? null;
+  const selectedAid =
+    aidRules?.find((rule) => rule.id === values.aidRuleId) ?? null;
   const nonMonthly = values.frequency !== 'MONTHLY';
   const monthNumber = Number(values.monthOfYear);
   const provisionCents =
-    nonMonthly && values.kind === 'EXPENSE' ? monthlyProvisionCents(parseAmountToCents(values.amount) ?? 0, values.frequency) : 0;
-  const showAid = allowAid && values.kind === 'EXPENSE' && aidRules !== null && aidRules.length > 0;
+    nonMonthly && values.kind === 'EXPENSE'
+      ? monthlyProvisionCents(
+          parseAmountToCents(values.amount) ?? 0,
+          values.frequency,
+        )
+      : 0;
+  const showAid =
+    allowAid &&
+    values.kind === 'EXPENSE' &&
+    aidRules !== null &&
+    aidRules.length > 0;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (submittingRef.current) {
       return;
     }
-    const result = buildRecurringPayload(values, { allowAid, accountSelectable: selectableAccounts(accounts, values.accountId || null).length > 0 });
+    const result = buildRecurringPayload(values, {
+      allowAid,
+      accountSelectable:
+        selectableAccounts(accounts, values.accountId || null).length > 0,
+    });
     if (!result.ok) {
       setErrors(result.errors);
       return;
@@ -93,16 +127,29 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
     try {
       await onSubmit(result.payload);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'L’enregistrement a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   return (
-    <BottomSheet title={editing ? 'Modifier le paiement' : 'Nouveau paiement récurrent'} onClose={onClose}>
-      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
-        <div role="group" aria-label="Type de paiement" className="grid grid-cols-2 rounded-full bg-soft-cloud p-1">
+    <BottomSheet
+      title={editing ? 'Modifier le paiement' : 'Nouveau paiement récurrent'}
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        className="flex flex-col gap-lg"
+      >
+        <div
+          role="group"
+          aria-label="Type de paiement"
+          className="grid grid-cols-2 rounded-full bg-soft-cloud p-1"
+        >
           {KINDS.map((option) => (
             <button
               key={option.kind}
@@ -129,14 +176,18 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
                   aria-pressed={values.bloc === option}
                   onClick={() => set('bloc', option)}
                   className={`min-h-[48px] rounded-full border-2 font-button-md text-body-md font-semibold ${
-                    values.bloc === option ? BLOC_STYLE[option].chipOn : BLOC_STYLE[option].chipOff
+                    values.bloc === option
+                      ? BLOC_STYLE[option].chipOn
+                      : BLOC_STYLE[option].chipOff
                   }`}
                 >
                   {BLOC_INFO[option].label}
                 </button>
               ))}
             </div>
-            <p className="mt-1 font-body-sm text-body-sm text-mute">{BLOC_INFO[values.bloc].description}</p>
+            <p className="mt-1 font-body-sm text-body-sm text-mute">
+              {BLOC_INFO[values.bloc].description}
+            </p>
           </div>
         )}
 
@@ -153,11 +204,17 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
             value={values.label}
             onChange={(event) => set('label', event.target.value)}
             aria-invalid={errors.label ? true : undefined}
-            aria-describedby={errors.label ? 'rec-label-error' : 'rec-label-hint'}
+            aria-describedby={
+              errors.label ? 'rec-label-error' : 'rec-label-hint'
+            }
             className={inputClass}
           />
-          <p id="rec-label-hint" className="mt-1 font-body-sm text-body-sm text-mute">
-            Prenez le nom qui apparaît sur votre relevé : c’est ainsi qu’on retrouve le paiement.
+          <p
+            id="rec-label-hint"
+            className="mt-1 font-body-sm text-body-sm text-mute"
+          >
+            Prenez le nom qui apparaît sur votre relevé : c’est ainsi qu’on
+            retrouve le paiement.
           </p>
           <FieldError id="rec-label-error" message={errors.label} />
         </div>
@@ -172,7 +229,9 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
                 aria-pressed={values.frequency === option}
                 onClick={() => set('frequency', option)}
                 className={`min-h-[48px] rounded-full border-2 px-sm font-button-md text-body-sm font-semibold leading-tight ${
-                  values.frequency === option ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
+                  values.frequency === option
+                    ? 'border-ink bg-ink text-surface'
+                    : 'border-hairline bg-white text-ink'
                 }`}
               >
                 {FREQUENCY_LABEL[option]}
@@ -181,7 +240,8 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
           </div>
           {!nonMonthly && (
             <p className="mt-1 font-body-sm text-body-sm text-mute">
-              Loyer, abonnements… Pour une taxe, une assurance annuelle ou des vacances, choisissez trimestre ou année.
+              Loyer, abonnements… Pour une taxe, une assurance annuelle ou des
+              vacances, choisissez trimestre ou année.
             </p>
           )}
         </div>
@@ -189,23 +249,32 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
         {nonMonthly && (
           <div>
             <label htmlFor="rec-month" className={labelClass}>
-              {values.frequency === 'YEARLY' ? 'Mois de l’année' : 'Mois de départ'}
+              {values.frequency === 'YEARLY'
+                ? 'Mois de l’année'
+                : 'Mois de départ'}
             </label>
             <select
               id="rec-month"
               value={values.monthOfYear}
               onChange={(event) => set('monthOfYear', event.target.value)}
               aria-invalid={errors.monthOfYear ? true : undefined}
-              aria-describedby={errors.monthOfYear ? 'rec-month-error' : 'rec-month-hint'}
+              aria-describedby={
+                errors.monthOfYear ? 'rec-month-error' : 'rec-month-hint'
+              }
               className={`${inputClass} capitalize`}
             >
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                <option key={month} value={String(month)}>
-                  {monthName(month)}
-                </option>
-              ))}
+              {Array.from({ length: 12 }, (_, index) => index + 1).map(
+                (month) => (
+                  <option key={month} value={String(month)}>
+                    {monthName(month)}
+                  </option>
+                ),
+              )}
             </select>
-            <p id="rec-month-hint" className="mt-1 font-body-sm text-body-sm text-mute">
+            <p
+              id="rec-month-hint"
+              className="mt-1 font-body-sm text-body-sm text-mute"
+            >
               {values.frequency === 'YEARLY'
                 ? `Ce paiement tombe chaque année en ${monthName(monthNumber >= 1 && monthNumber <= 12 ? monthNumber : 1)}.`
                 : `${describeQuarterlyMonths(monthNumber >= 1 && monthNumber <= 12 ? monthNumber : 1)} (tous les 3 mois).`}
@@ -231,12 +300,18 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
               aria-describedby={errors.amount ? 'rec-amount-error' : undefined}
               className={`${inputClass} tabular pr-10 text-right`}
             />
-            <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">€</span>
+            <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+              €
+            </span>
           </div>
           <FieldError id="rec-amount-error" message={errors.amount} />
           {provisionCents > 0 && (
             <p className="mt-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">
-              Pour ne pas être surpris, mettez de côté environ <span className="font-semibold">{formatCents(provisionCents)} par mois</span>.
+              Pour ne pas être surpris, mettez de côté environ{' '}
+              <span className="font-semibold">
+                {formatCents(provisionCents)} par mois
+              </span>
+              .
             </p>
           )}
         </div>
@@ -255,11 +330,17 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
             value={values.dayOfMonth}
             onChange={(event) => set('dayOfMonth', event.target.value)}
             aria-invalid={errors.dayOfMonth ? true : undefined}
-            aria-describedby={errors.dayOfMonth ? 'rec-day-error' : 'rec-day-hint'}
+            aria-describedby={
+              errors.dayOfMonth ? 'rec-day-error' : 'rec-day-hint'
+            }
             className={inputClass}
           />
-          <p id="rec-day-hint" className="mt-1 font-body-sm text-body-sm text-mute">
-            Si vous ne le connaissez pas, laissez vide : le paiement sera compté en fin de mois.
+          <p
+            id="rec-day-hint"
+            className="mt-1 font-body-sm text-body-sm text-mute"
+          >
+            Si vous ne le connaissez pas, laissez vide : le paiement sera compté
+            en fin de mois.
           </p>
           <FieldError id="rec-day-error" message={errors.dayOfMonth} />
         </div>
@@ -275,7 +356,9 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
               value={values.startDate}
               onChange={(event) => set('startDate', event.target.value)}
               aria-invalid={errors.startDate ? true : undefined}
-              aria-describedby={errors.startDate ? 'rec-start-error' : undefined}
+              aria-describedby={
+                errors.startDate ? 'rec-start-error' : undefined
+              }
               className={inputClass}
             />
             <FieldError id="rec-start-error" message={errors.startDate} />
@@ -324,7 +407,10 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
                 </option>
               ))}
             </select>
-            <p id="rec-aid-hint" className="mt-1 font-body-sm text-body-sm text-mute">
+            <p
+              id="rec-aid-hint"
+              className="mt-1 font-body-sm text-body-sm text-mute"
+            >
               {selectedAid
                 ? `${selectedAid.ratePercent} % de crédit d’impôt. ${selectedAid.capDescription}`
                 : 'Si une partie de ce paiement vous est remboursée (crédit d’impôt), choisissez la règle : on calculera son coût réel.'}
@@ -348,8 +434,16 @@ export function RecurringForm({ editing, allowAid, aidRules, accounts = [], defa
           </p>
         )}
 
-        <button type="submit" disabled={submitting} className={`${buttonPrimary} w-full`}>
-          {submitting ? 'Enregistrement…' : editing ? 'Enregistrer' : 'Ajouter le paiement'}
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${buttonPrimary} w-full`}
+        >
+          {submitting
+            ? 'Enregistrement…'
+            : editing
+              ? 'Enregistrer'
+              : 'Ajouter le paiement'}
         </button>
       </form>
     </BottomSheet>

@@ -34,27 +34,47 @@ export function InvitationCard({ full }: { full: boolean }) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2500);
     } catch {
-      setError('Copie impossible : sélectionnez le code et copiez-le à la main.');
+      setError(
+        'Copie impossible : sélectionnez le code et copiez-le à la main.',
+      );
     }
   };
 
   if (full) {
-    return <p className="font-body-sm text-body-sm text-mute">Le foyer est complet (4 membres au plus).</p>;
+    return (
+      <p className="font-body-sm text-body-sm text-mute">
+        Le foyer est complet (4 membres au plus).
+      </p>
+    );
   }
 
   return (
     <div className="flex flex-col gap-md">
       {invitation && (
         <div className="rounded bg-soft-cloud p-gutter text-center">
-          <p className="font-label-caps text-label-caps uppercase text-mute">Code d’invitation</p>
-          <p data-testid="invitation-code" className="select-all break-all py-sm font-mono text-[28px] font-bold tracking-widest">
+          <p className="font-label-caps text-label-caps uppercase text-mute">
+            Code d’invitation
+          </p>
+          <p
+            data-testid="invitation-code"
+            className="select-all break-all py-sm font-mono text-[28px] font-bold tracking-widest"
+          >
             {invitation.code}
           </p>
           <p className="font-body-sm text-body-sm text-mute">
-            Valable jusqu’au {formatLongDate(invitation.expiresAt)}, utilisable une seule fois.
+            Valable jusqu’au {formatLongDate(invitation.expiresAt)}, utilisable
+            une seule fois.
           </p>
-          <button type="button" onClick={() => void copy()} className={`${buttonSecondary} mt-md w-full bg-white`}>
-            {copied ? <CheckIcon width={20} height={20} /> : <CopyIcon width={20} height={20} />}
+          <button
+            type="button"
+            onClick={() => void copy()}
+            className={`${buttonSecondary} mt-md w-full bg-white`}
+          >
+            {copied ? (
+              <CheckIcon width={20} height={20} />
+            ) : (
+              <CopyIcon width={20} height={20} />
+            )}
             {copied ? 'Copié' : 'Copier'}
           </button>
         </div>
@@ -64,8 +84,17 @@ export function InvitationCard({ full }: { full: boolean }) {
           {error}
         </p>
       )}
-      <button type="button" onClick={() => void create()} disabled={busy} className={invitation ? buttonSecondary : buttonPrimary}>
-        {busy ? 'Création…' : invitation ? 'Générer un autre code' : 'Inviter quelqu’un'}
+      <button
+        type="button"
+        onClick={() => void create()}
+        disabled={busy}
+        className={invitation ? buttonSecondary : buttonPrimary}
+      >
+        {busy
+          ? 'Création…'
+          : invitation
+            ? 'Générer un autre code'
+            : 'Inviter quelqu’un'}
       </button>
     </div>
   );

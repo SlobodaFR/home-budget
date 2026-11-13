@@ -26,11 +26,22 @@ function ShellContent() {
   const { space } = useSpace();
   const { submit, notifyChanged } = useOfflineQueue();
   const toast = useToast();
-  const { accounts, hasSelectableAccount, defaultAccountId, rememberAccount } = useAccounts();
+  const { accounts, hasSelectableAccount, defaultAccountId, rememberAccount } =
+    useAccounts();
   const [sheet, setSheet] = useState<SheetState>(null);
 
   const closeSheet = useCallback(() => setSheet(null), []);
-  const showsSpace = ['/', '/plan', '/import', '/previsionnel', '/comptes', '/projets', '/revue', '/dettes', '/tendances'].includes(location.pathname);
+  const showsSpace = [
+    '/',
+    '/plan',
+    '/import',
+    '/previsionnel',
+    '/comptes',
+    '/projets',
+    '/revue',
+    '/dettes',
+    '/tendances',
+  ].includes(location.pathname);
   const reservesFabSpace = location.pathname !== '/import';
 
   const quickEntry = useMemo<QuickEntryValue>(
@@ -59,7 +70,12 @@ function ShellContent() {
         );
       }
     } catch (error) {
-      throw new Error(describeError(error, 'L’enregistrement a échoué. Vérifiez les informations et réessayez.'));
+      throw new Error(
+        describeError(
+          error,
+          'L’enregistrement a échoué. Vérifiez les informations et réessayez.',
+        ),
+      );
     }
     if (payload.bloc) {
       preferences.setLastBloc(payload.bloc);
@@ -71,7 +87,11 @@ function ShellContent() {
   };
 
   const title = routeTitle(location.pathname);
-  const mobileTitle = showsSpace ? null : location.pathname === HELP_ROUTE ? HELP_TITLE : 'Foyer';
+  const mobileTitle = showsSpace
+    ? null
+    : location.pathname === HELP_ROUTE
+      ? HELP_TITLE
+      : 'Foyer';
   const addButtonVisible = location.pathname === '/';
 
   return (
@@ -89,7 +109,9 @@ function ShellContent() {
             <div className="mx-auto flex w-full items-start gap-sm pt-md lg:min-h-[72px] lg:max-w-[1200px] lg:items-center lg:gap-lg lg:py-5 xl:max-w-[1280px]">
               {showsSpace ? (
                 <>
-                  <h1 className="hidden min-w-0 flex-1 truncate font-heading-xl text-heading-xl lg:block">{title}</h1>
+                  <h1 className="hidden min-w-0 flex-1 truncate font-heading-xl text-heading-xl lg:block">
+                    {title}
+                  </h1>
                   <div className="min-w-0 flex-1 lg:w-[280px] lg:flex-none">
                     <SpaceSwitcher />
                   </div>
@@ -108,7 +130,9 @@ function ShellContent() {
                       className={`${buttonPrimary} hidden shrink-0 lg:inline-flex`}
                     >
                       <PlusIcon width={20} height={20} />
-                      <span className="hidden xl:inline">Ajouter une opération</span>
+                      <span className="hidden xl:inline">
+                        Ajouter une opération
+                      </span>
                       <span className="xl:hidden">Ajouter</span>
                     </button>
                   )}
@@ -117,12 +141,18 @@ function ShellContent() {
                 <div className="min-w-0 flex-1">
                   <h1
                     className={`py-sm text-center font-heading-lg text-heading-lg ${
-                      mobileTitle === title ? 'lg:text-left lg:font-heading-xl lg:text-heading-xl' : 'lg:hidden'
+                      mobileTitle === title
+                        ? 'lg:text-left lg:font-heading-xl lg:text-heading-xl'
+                        : 'lg:hidden'
                     }`}
                   >
                     {mobileTitle}
                   </h1>
-                  {mobileTitle !== title && <h1 className="hidden truncate font-heading-xl text-heading-xl lg:block">{title}</h1>}
+                  {mobileTitle !== title && (
+                    <h1 className="hidden truncate font-heading-xl text-heading-xl lg:block">
+                      {title}
+                    </h1>
+                  )}
                 </div>
               )}
             </div>
@@ -150,14 +180,16 @@ function ShellContent() {
           <TabBar />
         </div>
       </div>
-      {sheet && <QuickEntrySheet
+      {sheet && (
+        <QuickEntrySheet
           editing={sheet.editing}
           defaultBloc={preferences.getLastBloc()}
           accounts={accounts}
           defaultAccountId={sheet.editing ? null : defaultAccountId()}
           onClose={closeSheet}
           onSubmit={handleSubmit}
-        />}
+        />
+      )}
     </QuickEntryContext.Provider>
   );
 }

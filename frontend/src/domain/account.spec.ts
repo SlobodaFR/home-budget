@@ -19,7 +19,9 @@ import {
 
 const NOW = new Date(2026, 10, 12, 9, 0, 0);
 
-const values = (overrides: Partial<ReturnType<typeof emptyAccountForm>> = {}) => ({
+const values = (
+  overrides: Partial<ReturnType<typeof emptyAccountForm>> = {},
+) => ({
   ...emptyAccountForm(NOW),
   name: ' Compte commun ',
   openingBalance: '1 200,50',
@@ -30,7 +32,12 @@ describe('buildAccountPayload', () => {
   it('builds the payload with a trimmed name and cents', () => {
     expect(buildAccountPayload(values())).toEqual({
       ok: true,
-      payload: { name: 'Compte commun', kind: 'CHECKING', openingBalanceCents: 120050, openingDate: '2026-11-12' },
+      payload: {
+        name: 'Compte commun',
+        kind: 'CHECKING',
+        openingBalanceCents: 120050,
+        openingDate: '2026-11-12',
+      },
     });
   });
 
@@ -48,19 +55,29 @@ describe('buildAccountPayload', () => {
 
   it('rejects an unreadable balance', () => {
     for (const openingBalance of ['abc', '12,345', '--5', '1 000 euros']) {
-      expect(buildAccountPayload(values({ openingBalance }))).toMatchObject({ ok: false, errors: { openingBalance: expect.any(String) } });
+      expect(buildAccountPayload(values({ openingBalance }))).toMatchObject({
+        ok: false,
+        errors: { openingBalance: expect.any(String) },
+      });
     }
   });
 
   it('requires a name of 1 to 60 characters', () => {
-    expect(buildAccountPayload(values({ name: '   ' }))).toMatchObject({ ok: false, errors: { name: expect.any(String) } });
-    expect(buildAccountPayload(values({ name: 'x'.repeat(61) }))).toMatchObject({ ok: false, errors: { name: expect.stringContaining('60') } });
+    expect(buildAccountPayload(values({ name: '   ' }))).toMatchObject({
+      ok: false,
+      errors: { name: expect.any(String) },
+    });
+    expect(buildAccountPayload(values({ name: 'x'.repeat(61) }))).toMatchObject(
+      { ok: false, errors: { name: expect.stringContaining('60') } },
+    );
     expect(buildAccountPayload(values({ name: 'x'.repeat(60) })).ok).toBe(true);
   });
 
   it('refuses a name already used in the space, ignoring case and accents', () => {
     const existing = [{ id: 'a1', name: 'Épargne Enfants' }];
-    expect(buildAccountPayload(values({ name: 'epargne enfants' }), existing)).toMatchObject({
+    expect(
+      buildAccountPayload(values({ name: 'epargne enfants' }), existing),
+    ).toMatchObject({
       ok: false,
       errors: { name: expect.stringContaining('déjà ce nom') },
     });
@@ -72,19 +89,32 @@ describe('buildAccountPayload', () => {
   });
 
   it('requires a valid opening date', () => {
-    expect(buildAccountPayload(values({ openingDate: '' }))).toMatchObject({ ok: false, errors: { openingDate: expect.any(String) } });
-    expect(buildAccountPayload(values({ openingDate: '2026-02-30' }))).toMatchObject({ ok: false });
+    expect(buildAccountPayload(values({ openingDate: '' }))).toMatchObject({
+      ok: false,
+      errors: { openingDate: expect.any(String) },
+    });
+    expect(
+      buildAccountPayload(values({ openingDate: '2026-02-30' })),
+    ).toMatchObject({ ok: false });
   });
 
   it('reports every error at once', () => {
-    const result = buildAccountPayload(values({ name: '', openingBalance: 'x', openingDate: '' }));
-    expect(!result.ok && Object.keys(result.errors).sort()).toEqual(['name', 'openingBalance', 'openingDate']);
+    const result = buildAccountPayload(
+      values({ name: '', openingBalance: 'x', openingDate: '' }),
+    );
+    expect(!result.ok && Object.keys(result.errors).sort()).toEqual([
+      'name',
+      'openingBalance',
+      'openingDate',
+    ]);
   });
 });
 
 describe('form and payload conversions', () => {
   it('fills the form from an account, with the overdraft sign', () => {
-    expect(accountToForm(account({ openingBalanceCents: -15050, kind: 'SAVINGS' }))).toEqual({
+    expect(
+      accountToForm(account({ openingBalanceCents: -15050, kind: 'SAVINGS' })),
+    ).toEqual({
       name: 'Compte commun',
       kind: 'SAVINGS',
       openingBalance: '-150,50',
@@ -95,7 +125,10 @@ describe('form and payload conversions', () => {
   it('round-trips an account through the form', () => {
     const original = account({ openingBalanceCents: -15050 });
     const result = buildAccountPayload(accountToForm(original));
-    expect(result).toMatchObject({ ok: true, payload: { openingBalanceCents: -15050, openingDate: '2026-10-01' } });
+    expect(result).toMatchObject({
+      ok: true,
+      payload: { openingBalanceCents: -15050, openingDate: '2026-10-01' },
+    });
   });
 
   it('builds a full update payload and overrides the archive flag', () => {
@@ -110,16 +143,30 @@ describe('form and payload conversions', () => {
 });
 
 describe('account lists', () => {
-  const accounts = [account({ id: 'a1' }), account({ id: 'a2', name: 'Livret', archived: true }), account({ id: 'a3', name: 'Cash' })];
+  const accounts = [
+    account({ id: 'a1' }),
+    account({ id: 'a2', name: 'Livret', archived: true }),
+    account({ id: 'a3', name: 'Cash' }),
+  ];
 
   it('splits active and archived accounts', () => {
-    expect(activeAccounts(accounts).map((item) => item.id)).toEqual(['a1', 'a3']);
+    expect(activeAccounts(accounts).map((item) => item.id)).toEqual([
+      'a1',
+      'a3',
+    ]);
     expect(archivedAccounts(accounts).map((item) => item.id)).toEqual(['a2']);
   });
 
   it('proposes non archived accounts, plus the current one even when archived', () => {
-    expect(selectableAccounts(accounts).map((item) => item.id)).toEqual(['a1', 'a3']);
-    expect(selectableAccounts(accounts, 'a2').map((item) => item.id)).toEqual(['a1', 'a2', 'a3']);
+    expect(selectableAccounts(accounts).map((item) => item.id)).toEqual([
+      'a1',
+      'a3',
+    ]);
+    expect(selectableAccounts(accounts, 'a2').map((item) => item.id)).toEqual([
+      'a1',
+      'a2',
+      'a3',
+    ]);
   });
 
   it('only remembers a default account that still exists and is not archived', () => {
@@ -145,17 +192,30 @@ describe('projection', () => {
   });
 
   it('warns when the account would go below zero before the end of the month', () => {
-    const risky = account({ balanceCents: 8000, projectedMonthEndCents: -4500 });
+    const risky = account({
+      balanceCents: 8000,
+      projectedMonthEndCents: -4500,
+    });
     expect(goesNegative(risky)).toBe(true);
-    expect(describeProjection(risky)).toMatch(/passerait sous zéro avant la fin du mois \(-45,00\s€\)/);
+    expect(describeProjection(risky)).toMatch(
+      /passerait sous zéro avant la fin du mois \(-45,00\s€\)/,
+    );
   });
 
   it('words it differently when the account is already overdrawn', () => {
-    expect(describeProjection(account({ balanceCents: -1000, projectedMonthEndCents: -5000 }))).toMatch(/déjà à découvert/);
+    expect(
+      describeProjection(
+        account({ balanceCents: -1000, projectedMonthEndCents: -5000 }),
+      ),
+    ).toMatch(/déjà à découvert/);
   });
 
   it('does not warn for an archived account', () => {
-    expect(describeProjection(account({ archived: true, projectedMonthEndCents: -4500 }))).toBeNull();
+    expect(
+      describeProjection(
+        account({ archived: true, projectedMonthEndCents: -4500 }),
+      ),
+    ).toBeNull();
   });
 });
 

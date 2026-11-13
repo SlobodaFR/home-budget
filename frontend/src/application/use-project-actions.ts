@@ -19,16 +19,37 @@ export function useProjectActions(spaceId: string, onChanged: () => void) {
     [onChanged],
   );
 
-  const create = useCallback((payload: ProjectPayload) => run(() => apiClient.createProject(spaceId, payload)), [run, spaceId]);
+  const create = useCallback(
+    (payload: ProjectPayload) =>
+      run(() => apiClient.createProject(spaceId, payload)),
+    [run, spaceId],
+  );
   const update = useCallback(
-    (project: Project, payload: ProjectPayload) => run(() => apiClient.updateProject(spaceId, project.id, { ...payload, archived: project.archived })),
+    (project: Project, payload: ProjectPayload) =>
+      run(() =>
+        apiClient.updateProject(spaceId, project.id, {
+          ...payload,
+          archived: project.archived,
+        }),
+      ),
     [run, spaceId],
   );
   const setArchived = useCallback(
-    (project: Project, archived: boolean) => run(() => apiClient.updateProject(spaceId, project.id, projectToPayload(project, { archived }))),
+    (project: Project, archived: boolean) =>
+      run(() =>
+        apiClient.updateProject(
+          spaceId,
+          project.id,
+          projectToPayload(project, { archived }),
+        ),
+      ),
     [run, spaceId],
   );
-  const remove = useCallback((project: Project) => run(() => apiClient.deleteProject(spaceId, project.id)), [run, spaceId]);
+  const remove = useCallback(
+    (project: Project) =>
+      run(() => apiClient.deleteProject(spaceId, project.id)),
+    [run, spaceId],
+  );
 
   return { busy, create, update, setArchived, remove };
 }

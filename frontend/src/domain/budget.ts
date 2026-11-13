@@ -62,7 +62,13 @@ export const PLAN_BLOC_FIELDS: Record<Bloc, keyof Plan> = {
   EPARGNE: 'epargneCents',
 };
 
-export const EMPTY_PLAN: Plan = { incomeCents: 0, fixeCents: 0, courantCents: 0, plaisirCents: 0, epargneCents: 0 };
+export const EMPTY_PLAN: Plan = {
+  incomeCents: 0,
+  fixeCents: 0,
+  courantCents: 0,
+  plaisirCents: 0,
+  epargneCents: 0,
+};
 
 export type PlanBalanceStatus = 'unassigned' | 'balanced' | 'overcommitted';
 
@@ -73,13 +79,24 @@ export interface PlanTotals {
 }
 
 export function planTotals(plan: Plan): PlanTotals {
-  const blocsCents = plan.fixeCents + plan.courantCents + plan.plaisirCents + plan.epargneCents;
+  const blocsCents =
+    plan.fixeCents + plan.courantCents + plan.plaisirCents + plan.epargneCents;
   const balanceCents = plan.incomeCents - blocsCents;
-  const status = balanceCents > 0 ? 'unassigned' : balanceCents < 0 ? 'overcommitted' : 'balanced';
+  const status =
+    balanceCents > 0
+      ? 'unassigned'
+      : balanceCents < 0
+        ? 'overcommitted'
+        : 'balanced';
   return { blocsCents, balanceCents, status };
 }
 
-export type BlocGapKind = 'none' | 'over' | 'remaining' | 'shortfall' | 'reached';
+export type BlocGapKind =
+  | 'none'
+  | 'over'
+  | 'remaining'
+  | 'shortfall'
+  | 'reached';
 
 export interface BlocGap {
   kind: BlocGapKind;
@@ -108,5 +125,8 @@ export function fillRatio(figure: FigureGap): number {
 }
 
 export function hasPlan(summary: Summary): boolean {
-  return summary.income.plannedCents > 0 || summary.blocs.some((figure) => figure.plannedCents > 0);
+  return (
+    summary.income.plannedCents > 0 ||
+    summary.blocs.some((figure) => figure.plannedCents > 0)
+  );
 }

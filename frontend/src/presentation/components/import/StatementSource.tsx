@@ -1,5 +1,9 @@
 import { ChangeEvent, useState } from 'react';
-import { decodeStatement, StatementEncoding, statementSizeError } from '../../../domain/statement-decoding';
+import {
+  decodeStatement,
+  StatementEncoding,
+  statementSizeError,
+} from '../../../domain/statement-decoding';
 import { ErrorNotice } from '../ErrorNotice';
 import { LockIcon, UploadIcon, WifiOffIcon } from '../Icons';
 import { buttonPrimary, labelClass } from '../ui';
@@ -18,7 +22,14 @@ interface LoadedFile {
   encoding: StatementEncoding;
 }
 
-export function StatementSource({ text, online, analyzing, error, onTextChange, onAnalyze }: Props) {
+export function StatementSource({
+  text,
+  online,
+  analyzing,
+  error,
+  onTextChange,
+  onAnalyze,
+}: Props) {
   const [loaded, setLoaded] = useState<LoadedFile | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
 
@@ -54,8 +65,8 @@ export function StatementSource({ text, online, analyzing, error, onTextChange, 
     <div className="flex flex-col gap-lg">
       <p className="flex items-start gap-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">
         <LockIcon width={20} height={20} className="mt-0.5 shrink-0" />
-        Le fichier est lu sur cet appareil et envoyé à votre serveur pour analyse ; seules les lignes que vous validez sont
-        enregistrées.
+        Le fichier est lu sur cet appareil et envoyé à votre serveur pour
+        analyse ; seules les lignes que vous validez sont enregistrées.
       </p>
 
       <div>
@@ -63,15 +74,29 @@ export function StatementSource({ text, online, analyzing, error, onTextChange, 
         <label className="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-sm rounded-full border border-hairline px-xl font-button-md text-button-md hover:bg-soft-cloud focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink">
           <UploadIcon width={20} height={20} />
           Choisir un fichier
-          <input type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(event) => void handleFile(event)} className="sr-only" aria-label="Fichier du relevé" />
+          <input
+            type="file"
+            accept=".csv,.txt,text/csv,text/plain"
+            onChange={(event) => void handleFile(event)}
+            className="sr-only"
+            aria-label="Fichier du relevé"
+          />
         </label>
         {loaded && (
-          <p role="status" className="mt-sm font-body-sm text-body-sm text-mute">
-            {loaded.name} lu ({loaded.encoding === 'utf-8' ? 'UTF-8' : 'Windows-1252'}). Vérifiez les accents ci-dessous.
+          <p
+            role="status"
+            className="mt-sm font-body-sm text-body-sm text-mute"
+          >
+            {loaded.name} lu (
+            {loaded.encoding === 'utf-8' ? 'UTF-8' : 'Windows-1252'}). Vérifiez
+            les accents ci-dessous.
           </p>
         )}
         {fileError && (
-          <p role="alert" className="mt-sm font-body-sm text-body-sm text-error">
+          <p
+            role="alert"
+            className="mt-sm font-body-sm text-body-sm text-error"
+          >
             {fileError}
           </p>
         )}
@@ -96,13 +121,22 @@ export function StatementSource({ text, online, analyzing, error, onTextChange, 
       {error && <ErrorNotice message={error} />}
 
       {!online && (
-        <p role="status" className="flex items-start gap-sm font-body-sm text-body-sm text-mute">
+        <p
+          role="status"
+          className="flex items-start gap-sm font-body-sm text-body-sm text-mute"
+        >
           <WifiOffIcon width={20} height={20} className="mt-0.5 shrink-0" />
-          Hors ligne : l’analyse demande une connexion. Le relevé reste ici en attendant le retour du réseau.
+          Hors ligne : l’analyse demande une connexion. Le relevé reste ici en
+          attendant le retour du réseau.
         </p>
       )}
 
-      <button type="button" disabled={!canAnalyze} onClick={onAnalyze} className={`${buttonPrimary} w-full`}>
+      <button
+        type="button"
+        disabled={!canAnalyze}
+        onClick={onAnalyze}
+        className={`${buttonPrimary} w-full`}
+      >
         {analyzing ? 'Analyse en cours…' : 'Analyser'}
       </button>
     </div>

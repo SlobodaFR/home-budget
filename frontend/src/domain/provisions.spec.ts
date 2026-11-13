@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { describeMonthsUntil, dueMonthOf, parseProvisions, ProvisionItem, sortProvisions } from './provisions';
+import {
+  describeMonthsUntil,
+  dueMonthOf,
+  parseProvisions,
+  ProvisionItem,
+  sortProvisions,
+} from './provisions';
 
 const raw = {
   asOf: '2026-10-30',
@@ -34,15 +40,40 @@ const raw = {
 describe('parseProvisions', () => {
   it('reads the contract and sorts by next due date', () => {
     const provisions = parseProvisions(raw);
-    expect(provisions.items.map((item) => item.label)).toEqual(['Taxe foncière', 'Assurance habitation']);
-    expect(provisions).toMatchObject({ asOf: '2026-10-30', totalMonthlyProvisionCents: 20000, totalNextTwelveMonthsCents: 240000 });
-    expect(provisions.items[0]).toMatchObject({ frequency: 'YEARLY', bloc: 'FIXE', provisionedSoFarCents: null });
+    expect(provisions.items.map((item) => item.label)).toEqual([
+      'Taxe foncière',
+      'Assurance habitation',
+    ]);
+    expect(provisions).toMatchObject({
+      asOf: '2026-10-30',
+      totalMonthlyProvisionCents: 20000,
+      totalNextTwelveMonthsCents: 240000,
+    });
+    expect(provisions.items[0]).toMatchObject({
+      frequency: 'YEARLY',
+      bloc: 'FIXE',
+      provisionedSoFarCents: null,
+    });
   });
 
   it('ignores unreadable lines and survives garbage', () => {
-    const provisions = parseProvisions({ items: [null, 3, { label: 'sans id', amountCents: 1 }, { recurringId: 'x', label: 'Ok', amountCents: 500 }] });
+    const provisions = parseProvisions({
+      items: [
+        null,
+        3,
+        { label: 'sans id', amountCents: 1 },
+        { recurringId: 'x', label: 'Ok', amountCents: 500 },
+      ],
+    });
     expect(provisions.items).toHaveLength(1);
-    expect(provisions.items[0]).toMatchObject({ label: 'Ok', frequency: null, bloc: null, nextDueDate: '', monthsUntilDue: 0, monthlyProvisionCents: 0 });
+    expect(provisions.items[0]).toMatchObject({
+      label: 'Ok',
+      frequency: null,
+      bloc: null,
+      nextDueDate: '',
+      monthsUntilDue: 0,
+      monthlyProvisionCents: 0,
+    });
     expect(parseProvisions(null).items).toEqual([]);
     expect(parseProvisions('nope').totalMonthlyProvisionCents).toBe(0);
   });
@@ -53,7 +84,10 @@ describe('parseProvisions', () => {
   });
 
   it('never invents a monthly frequency', () => {
-    expect(parseProvisions({ items: [{ ...raw.items[0], frequency: 'MONTHLY' }] }).items[0].frequency).toBeNull();
+    expect(
+      parseProvisions({ items: [{ ...raw.items[0], frequency: 'MONTHLY' }] })
+        .items[0].frequency,
+    ).toBeNull();
   });
 });
 
@@ -78,7 +112,12 @@ describe('sortProvisions', () => {
       line({ label: 'B', nextDueDate: '2027-01-01' }),
       line({ label: 'A', nextDueDate: '2027-01-01' }),
     ]);
-    expect(sorted.map((item) => item.label)).toEqual(['A', 'B', 'Z', 'Sans date']);
+    expect(sorted.map((item) => item.label)).toEqual([
+      'A',
+      'B',
+      'Z',
+      'Sans date',
+    ]);
   });
 });
 

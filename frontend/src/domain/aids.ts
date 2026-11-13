@@ -79,7 +79,9 @@ export interface CrecheQuery {
 export function safeExternalUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.toString() : null;
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+      ? parsed.toString()
+      : null;
   } catch {
     return null;
   }
@@ -116,7 +118,9 @@ export type FiscalProfileFormResult =
   | { ok: true; payload: FiscalProfile }
   | { ok: false; errors: FiscalProfileFormErrors };
 
-export function fiscalProfileToForm(profile: FiscalProfile | null): FiscalProfileFormValues {
+export function fiscalProfileToForm(
+  profile: FiscalProfile | null,
+): FiscalProfileFormValues {
   return {
     childrenUnderSix: String(profile?.childrenUnderSix ?? 0),
     dependentChildren: String(profile?.dependentChildren ?? 0),
@@ -133,7 +137,9 @@ function parseChildrenCount(text: string): number | null {
   return count <= MAX_CHILDREN ? count : null;
 }
 
-export function buildFiscalProfile(values: FiscalProfileFormValues): FiscalProfileFormResult {
+export function buildFiscalProfile(
+  values: FiscalProfileFormValues,
+): FiscalProfileFormResult {
   const errors: FiscalProfileFormErrors = {};
   const childrenUnderSix = parseChildrenCount(values.childrenUnderSix);
   const dependentChildren = parseChildrenCount(values.dependentChildren);
@@ -149,7 +155,11 @@ export function buildFiscalProfile(values: FiscalProfileFormValues): FiscalProfi
   }
   return {
     ok: true,
-    payload: { childrenUnderSix, dependentChildren, firstYearHomeServices: values.firstYearHomeServices },
+    payload: {
+      childrenUnderSix,
+      dependentChildren,
+      firstYearHomeServices: values.firstYearHomeServices,
+    },
   };
 }
 
@@ -165,14 +175,28 @@ export interface CapStatus {
   roomCents: number;
 }
 
-export function capStatus(rule: Pick<AidRuleSummary, 'spentCents' | 'capCents' | 'capReached'>): CapStatus {
+export function capStatus(
+  rule: Pick<AidRuleSummary, 'spentCents' | 'capCents' | 'capReached'>,
+): CapStatus {
   const overCapCents = Math.max(rule.spentCents - rule.capCents, 0);
   const roomCents = Math.max(rule.capCents - rule.spentCents, 0);
-  const ratio = rule.capCents > 0 ? Math.min(rule.spentCents / rule.capCents, 1) : rule.spentCents > 0 ? 1 : 0;
-  return { ratio, reached: rule.capReached || overCapCents > 0, overCapCents, roomCents };
+  const ratio =
+    rule.capCents > 0
+      ? Math.min(rule.spentCents / rule.capCents, 1)
+      : rule.spentCents > 0
+        ? 1
+        : 0;
+  return {
+    ratio,
+    reached: rule.capReached || overCapCents > 0,
+    overCapCents,
+    roomCents,
+  };
 }
 
-export function describeCapStatus(rule: Pick<AidRuleSummary, 'spentCents' | 'capCents' | 'capReached'>): string {
+export function describeCapStatus(
+  rule: Pick<AidRuleSummary, 'spentCents' | 'capCents' | 'capReached'>,
+): string {
   const status = capStatus(rule);
   if (status.reached) {
     return status.overCapCents > 0
@@ -182,7 +206,9 @@ export function describeCapStatus(rule: Pick<AidRuleSummary, 'spentCents' | 'cap
   return `Il reste ${formatCents(status.roomCents)} de dépenses avant le plafond.`;
 }
 
-export function monthlySaving(line: Pick<AidLine, 'monthlyCents' | 'netMonthlyCents'>): number {
+export function monthlySaving(
+  line: Pick<AidLine, 'monthlyCents' | 'netMonthlyCents'>,
+): number {
   return Math.max(line.monthlyCents - line.netMonthlyCents, 0);
 }
 
@@ -207,28 +233,40 @@ export interface CrecheFormErrors {
   hoursPerMonth?: string;
 }
 
-export type CrecheFormResult = { ok: true; query: CrecheQuery } | { ok: false; errors: CrecheFormErrors };
+export type CrecheFormResult =
+  | { ok: true; query: CrecheQuery }
+  | { ok: false; errors: CrecheFormErrors };
 
-export const EMPTY_CRECHE_FORM: CrecheFormValues = { annualResources: '', children: '1', hoursPerMonth: '' };
+export const EMPTY_CRECHE_FORM: CrecheFormValues = {
+  annualResources: '',
+  children: '1',
+  hoursPerMonth: '',
+};
 
 export function buildCrecheQuery(values: CrecheFormValues): CrecheFormResult {
   const errors: CrecheFormErrors = {};
 
   const annualResourcesCents = parseAmountToCents(values.annualResources);
   if (values.annualResources.trim() === '') {
-    errors.annualResources = 'Saisissez vos revenus annuels (voir votre avis d’impôt).';
+    errors.annualResources =
+      'Saisissez vos revenus annuels (voir votre avis d’impôt).';
   } else if (annualResourcesCents === null) {
-    errors.annualResources = 'Montant invalide : utilisez des chiffres (ex. 42 000).';
+    errors.annualResources =
+      'Montant invalide : utilisez des chiffres (ex. 42 000).';
   }
 
   const childrenText = values.children.trim();
-  const children = /^\d{1,2}$/.test(childrenText) ? Number(childrenText) : Number.NaN;
+  const children = /^\d{1,2}$/.test(childrenText)
+    ? Number(childrenText)
+    : Number.NaN;
   if (!(children >= 1 && children <= MAX_CRECHE_CHILDREN)) {
     errors.children = `Indiquez un nombre d’enfants entre 1 et ${MAX_CRECHE_CHILDREN}.`;
   }
 
   const hoursText = values.hoursPerMonth.trim().replace(',', '.');
-  const hoursPerMonth = /^\d+(?:\.\d{1,2})?$/.test(hoursText) ? Number(hoursText) : Number.NaN;
+  const hoursPerMonth = /^\d+(?:\.\d{1,2})?$/.test(hoursText)
+    ? Number(hoursText)
+    : Number.NaN;
   if (values.hoursPerMonth.trim() === '') {
     errors.hoursPerMonth = 'Saisissez le nombre d’heures facturées par mois.';
   } else if (!(hoursPerMonth >= 0 && hoursPerMonth <= MAX_CRECHE_HOURS)) {
@@ -238,7 +276,15 @@ export function buildCrecheQuery(values: CrecheFormValues): CrecheFormResult {
   if (Object.keys(errors).length > 0 || annualResourcesCents === null) {
     return { ok: false, errors };
   }
-  return { ok: true, query: { annualResourcesCents, children, hoursPerMonth, kind: 'COLLECTIVE' } };
+  return {
+    ok: true,
+    query: {
+      annualResourcesCents,
+      children,
+      hoursPerMonth,
+      kind: 'COLLECTIVE',
+    },
+  };
 }
 
 export function crecheQueryString(query: CrecheQuery): string {
@@ -251,13 +297,20 @@ export function crecheQueryString(query: CrecheQuery): string {
   return params.toString();
 }
 
-const EFFORT_FORMATTER = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 });
+const EFFORT_FORMATTER = new Intl.NumberFormat('fr-FR', {
+  maximumFractionDigits: 4,
+});
 
 export function formatEffortRate(percent: number): string {
   return `${EFFORT_FORMATTER.format(percent)} %`;
 }
 
-export function describeCrecheLimits(estimate: Pick<CrecheEstimate, 'floorApplied' | 'ceilingApplied' | 'floorCents' | 'ceilingCents'>): string | null {
+export function describeCrecheLimits(
+  estimate: Pick<
+    CrecheEstimate,
+    'floorApplied' | 'ceilingApplied' | 'floorCents' | 'ceilingCents'
+  >,
+): string | null {
   if (estimate.floorApplied) {
     return `Plancher appliqué : vos ressources sont sous le minimum retenu (${formatCents(estimate.floorCents)} par mois), c’est donc ce minimum qui sert au calcul.`;
   }

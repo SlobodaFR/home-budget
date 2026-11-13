@@ -3,7 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountsProvider } from '../../application/use-accounts';
-import { HouseholdContext, HouseholdContextValue } from '../../application/use-household';
+import {
+  HouseholdContext,
+  HouseholdContextValue,
+} from '../../application/use-household';
 import { OfflineQueueProvider } from '../../application/use-offline-queue';
 import { SelectedMonthProvider } from '../../application/use-selected-month';
 import { SpaceProvider } from '../../application/use-space';
@@ -27,7 +30,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import { HomePage } from '../pages/HomePage';
@@ -37,14 +44,26 @@ import type { ApiMock } from '../../test/api-mock';
 const summary = {
   month: '2026-11',
   income: { plannedCents: 0, actualCents: 0, gapCents: 0 },
-  blocs: ['FIXE', 'COURANT', 'PLAISIR', 'EPARGNE'].map((bloc) => ({ bloc, plannedCents: 0, actualCents: 0, gapCents: 0 })),
+  blocs: ['FIXE', 'COURANT', 'PLAISIR', 'EPARGNE'].map((bloc) => ({
+    bloc,
+    plannedCents: 0,
+    actualCents: 0,
+    gapCents: 0,
+  })),
   plannedBalanceCents: 0,
   actualBalanceCents: 0,
   savingsRate: null,
 };
 
 function renderShell() {
-  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
+  const value: HouseholdContextValue = {
+    household: testHousehold,
+    loading: false,
+    offline: false,
+    failed: false,
+    reload: vi.fn<() => Promise<void>>(),
+    setHousehold: vi.fn<() => void>(),
+  };
   render(
     <MemoryRouter initialEntries={['/']}>
       <HouseholdContext.Provider value={value}>
@@ -74,10 +93,16 @@ function renderShell() {
 const addButtons = () => {
   const header = screen.getByRole('banner');
   const all = screen.getAllByRole('button', { name: 'Ajouter une opération' });
-  return { header: all.filter((button) => header.contains(button)), floating: all.filter((button) => !header.contains(button)) };
+  return {
+    header: all.filter((button) => header.contains(button)),
+    floating: all.filter((button) => !header.contains(button)),
+  };
 };
 
-const openSheet = async (user: ReturnType<typeof userEvent.setup>, from: 'floating' | 'header' = 'floating') => {
+const openSheet = async (
+  user: ReturnType<typeof userEvent.setup>,
+  from: 'floating' | 'header' = 'floating',
+) => {
   await user.click(addButtons()[from][0]);
   return screen.findByRole('dialog', { name: 'Nouvelle opération' });
 };
@@ -89,7 +114,10 @@ describe('AppShell quick entry with bank accounts', () => {
     api.fetchTransactions.mockResolvedValue([]);
     api.fetchInsights.mockResolvedValue([]);
     api.createTransaction.mockResolvedValue({});
-    api.fetchAccounts.mockResolvedValue([account({ id: 'a1', name: 'Compte commun' }), account({ id: 'a2', name: 'Livret A' })]);
+    api.fetchAccounts.mockResolvedValue([
+      account({ id: 'a1', name: 'Compte commun' }),
+      account({ id: 'a2', name: 'Livret A' }),
+    ]);
   });
 
   it('offers « Ajouter une opération » both as the floating button (mobile) and in the page header (desktop)', async () => {
@@ -108,15 +136,31 @@ describe('AppShell quick entry with bank accounts', () => {
     const user = renderShell();
     await screen.findByRole('region', { name: 'Soldes des comptes' });
     let dialog = await openSheet(user);
-    expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue('');
+    expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue(
+      '',
+    );
     await user.type(within(dialog).getByLabelText('Montant'), '25');
-    await user.selectOptions(within(dialog).getByLabelText('Compte (facultatif)'), 'a2');
-    await user.click(within(dialog).getByRole('button', { name: 'Ajouter la dépense' }));
-    await waitFor(() => expect(api.createTransaction).toHaveBeenCalledWith('s-common', expect.objectContaining({ amountCents: 2500, accountId: 'a2' })));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await user.selectOptions(
+      within(dialog).getByLabelText('Compte (facultatif)'),
+      'a2',
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Ajouter la dépense' }),
+    );
+    await waitFor(() =>
+      expect(api.createTransaction).toHaveBeenCalledWith(
+        's-common',
+        expect.objectContaining({ amountCents: 2500, accountId: 'a2' }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
 
     dialog = await openSheet(user);
-    expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue('a2');
+    expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue(
+      'a2',
+    );
   });
 
   it('keeps the account in the operation queued while offline', async () => {
@@ -125,8 +169,13 @@ describe('AppShell quick entry with bank accounts', () => {
     await screen.findByRole('region', { name: 'Soldes des comptes' });
     const dialog = await openSheet(user);
     await user.type(within(dialog).getByLabelText('Montant'), '9');
-    await user.selectOptions(within(dialog).getByLabelText('Compte (facultatif)'), 'a1');
-    await user.click(within(dialog).getByRole('button', { name: 'Ajouter la dépense' }));
+    await user.selectOptions(
+      within(dialog).getByLabelText('Compte (facultatif)'),
+      'a1',
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Ajouter la dépense' }),
+    );
     await waitFor(() => expect(pendingStore.load('alice')).toHaveLength(1));
     expect(pendingStore.load('alice')[0].payload.accountId).toBe('a1');
   });
@@ -134,16 +183,41 @@ describe('AppShell quick entry with bank accounts', () => {
   it('does not change the remembered account when editing an operation', async () => {
     window.localStorage.setItem('foyer-budget:last-account:s-common', 'a1');
     api.fetchTransactions.mockResolvedValue([
-      { id: 't1', spaceId: 's-common', kind: 'EXPENSE', bloc: 'COURANT', label: 'Courses', amountCents: 4200, date: '2026-11-03T00:00:00.000Z', accountId: 'a2' },
+      {
+        id: 't1',
+        spaceId: 's-common',
+        kind: 'EXPENSE',
+        bloc: 'COURANT',
+        label: 'Courses',
+        amountCents: 4200,
+        date: '2026-11-03T00:00:00.000Z',
+        accountId: 'a2',
+      },
     ]);
     api.updateTransaction.mockResolvedValue(undefined);
     const user = renderShell();
-    await user.click(await screen.findByRole('button', { name: 'Modifier Courses' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Modifier l’opération' });
-    expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue('a2');
-    await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
-    await waitFor(() => expect(api.updateTransaction).toHaveBeenCalledWith('s-common', 't1', expect.objectContaining({ accountId: 'a2' })));
-    expect(window.localStorage.getItem('foyer-budget:last-account:s-common')).toBe('a1');
+    await user.click(
+      await screen.findByRole('button', { name: 'Modifier Courses' }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Modifier l’opération',
+    });
+    expect(within(dialog).getByLabelText('Compte (facultatif)')).toHaveValue(
+      'a2',
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Enregistrer' }),
+    );
+    await waitFor(() =>
+      expect(api.updateTransaction).toHaveBeenCalledWith(
+        's-common',
+        't1',
+        expect.objectContaining({ accountId: 'a2' }),
+      ),
+    );
+    expect(
+      window.localStorage.getItem('foyer-budget:last-account:s-common'),
+    ).toBe('a1');
   });
 
   it('shows no selector in the quick entry when the space has no account', async () => {
@@ -151,6 +225,8 @@ describe('AppShell quick entry with bank accounts', () => {
     const user = renderShell();
     await screen.findByRole('link', { name: 'Mes comptes' });
     const dialog = await openSheet(user);
-    expect(within(dialog).queryByLabelText('Compte (facultatif)')).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByLabelText('Compte (facultatif)'),
+    ).not.toBeInTheDocument();
   });
 });

@@ -24,7 +24,9 @@ export interface FlushHandlers {
 const RETRYABLE_STATUSES = new Set([401, 408, 429, 502, 503, 504]);
 
 export function classifyFailure(status: number | 'network'): SendOutcome {
-  return status === 'network' || RETRYABLE_STATUSES.has(status) ? 'retry' : 'rejected';
+  return status === 'network' || RETRYABLE_STATUSES.has(status)
+    ? 'retry'
+    : 'rejected';
 }
 
 export function createPendingTransaction(
@@ -36,16 +38,30 @@ export function createPendingTransaction(
   return { clientId, spaceId, payload, queuedAt: now.toISOString() };
 }
 
-export function enqueue(queue: PendingTransaction[], item: PendingTransaction): PendingTransaction[] {
-  return queue.some((existing) => existing.clientId === item.clientId) ? queue : [...queue, item];
+export function enqueue(
+  queue: PendingTransaction[],
+  item: PendingTransaction,
+): PendingTransaction[] {
+  return queue.some((existing) => existing.clientId === item.clientId)
+    ? queue
+    : [...queue, item];
 }
 
-export function removeFromQueue(queue: PendingTransaction[], clientId: string): PendingTransaction[] {
+export function removeFromQueue(
+  queue: PendingTransaction[],
+  clientId: string,
+): PendingTransaction[] {
   return queue.filter((item) => item.clientId !== clientId);
 }
 
-export function pendingForMonth(queue: PendingTransaction[], spaceId: string, month: string): PendingTransaction[] {
-  return queue.filter((item) => item.spaceId === spaceId && item.payload.date.startsWith(month));
+export function pendingForMonth(
+  queue: PendingTransaction[],
+  spaceId: string,
+  month: string,
+): PendingTransaction[] {
+  return queue.filter(
+    (item) => item.spaceId === spaceId && item.payload.date.startsWith(month),
+  );
 }
 
 function isPendingTransaction(value: unknown): value is PendingTransaction {
@@ -62,7 +78,9 @@ function isPendingTransaction(value: unknown): value is PendingTransaction {
     payload !== null &&
     (payload.kind === 'INCOME' || payload.kind === 'EXPENSE') &&
     (payload.bloc === undefined || isBloc(payload.bloc)) &&
-    (payload.accountId === undefined || payload.accountId === null || typeof payload.accountId === 'string') &&
+    (payload.accountId === undefined ||
+      payload.accountId === null ||
+      typeof payload.accountId === 'string') &&
     typeof payload.label === 'string' &&
     Number.isInteger(payload.amountCents) &&
     typeof payload.date === 'string'
@@ -78,7 +96,9 @@ export function parseQueue(raw: string | null): PendingTransaction[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed.filter(isPendingTransaction).reduce<PendingTransaction[]>(enqueue, []);
+    return parsed
+      .filter(isPendingTransaction)
+      .reduce<PendingTransaction[]>(enqueue, []);
   } catch {
     return [];
   }
@@ -88,7 +108,10 @@ export function serializeQueue(queue: PendingTransaction[]): string {
   return JSON.stringify(queue);
 }
 
-export async function flushQueue(queue: PendingTransaction[], handlers: FlushHandlers): Promise<FlushResult> {
+export async function flushQueue(
+  queue: PendingTransaction[],
+  handlers: FlushHandlers,
+): Promise<FlushResult> {
   const result: FlushResult = { sent: [], rejected: [], remaining: [] };
   for (let index = 0; index < queue.length; index += 1) {
     const item = queue[index];

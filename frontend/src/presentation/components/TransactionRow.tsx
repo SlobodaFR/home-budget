@@ -21,11 +21,18 @@ interface Props {
   onDelete: (transaction: Transaction) => Promise<void>;
 }
 
-export function TransactionRow({ transaction, accountName = null, onEdit, onDelete }: Props) {
+export function TransactionRow({
+  transaction,
+  accountName = null,
+  onEdit,
+  onDelete,
+}: Props) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const income = transaction.kind === 'INCOME';
-  const blocLabel = transaction.bloc ? BLOC_INFO[transaction.bloc].label : 'Revenu';
+  const blocLabel = transaction.bloc
+    ? BLOC_INFO[transaction.bloc].label
+    : 'Revenu';
 
   const confirmDelete = async () => {
     setBusy(true);
@@ -74,13 +81,24 @@ export function TransactionRow({ transaction, accountName = null, onEdit, onDele
             className={`flex min-h-[48px] min-w-0 flex-1 cursor-pointer items-center justify-between gap-md text-left ${ROW_GRID}`}
           >
             <span className="min-w-0 lg:contents">
-              <span className="block truncate font-body-md text-body-md font-semibold lg:col-start-2 lg:row-start-1">{transaction.label}</span>
-              <span className="block font-body-sm text-body-sm text-mute lg:contents">
-                <span className="lg:col-start-1 lg:row-start-1">{formatDay(transaction.date)}</span>
-                <span className="lg:hidden"> · </span>
-                <span className="lg:col-start-3 lg:row-start-1">{blocLabel}</span>
+              <span className="block truncate font-body-md text-body-md font-semibold lg:col-start-2 lg:row-start-1">
+                {transaction.label}
               </span>
-              {accountName && <AccountChip name={accountName} className={`lg:col-start-2 lg:row-start-2 lg:mt-0 lg:justify-self-start lg:[@container(min-width:680px)]:col-start-4 lg:[@container(min-width:680px)]:row-start-1`} />}
+              <span className="block font-body-sm text-body-sm text-mute lg:contents">
+                <span className="lg:col-start-1 lg:row-start-1">
+                  {formatDay(transaction.date)}
+                </span>
+                <span className="lg:hidden"> · </span>
+                <span className="lg:col-start-3 lg:row-start-1">
+                  {blocLabel}
+                </span>
+              </span>
+              {accountName && (
+                <AccountChip
+                  name={accountName}
+                  className={`lg:col-start-2 lg:row-start-2 lg:mt-0 lg:justify-self-start lg:[@container(min-width:680px)]:col-start-4 lg:[@container(min-width:680px)]:row-start-1`}
+                />
+              )}
             </span>
             <span
               className={`tabular shrink-0 font-body-md text-body-md font-semibold lg:col-start-4 lg:row-start-1 lg:text-right lg:[@container(min-width:680px)]:col-start-5 ${
@@ -105,13 +123,22 @@ export function TransactionRow({ transaction, accountName = null, onEdit, onDele
   );
 }
 
-export function AccountChip({ name, className = '' }: { name: string; className?: string }) {
+export function AccountChip({
+  name,
+  className = '',
+}: {
+  name: string;
+  className?: string;
+}) {
   return (
     <span
       title={`Compte : ${name}`}
       className={`mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full bg-soft-cloud px-2 py-0.5 font-body-sm text-[12px] leading-tight text-ink ${className}`.trim()}
     >
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink" aria-hidden="true" />
+      <span
+        className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink"
+        aria-hidden="true"
+      />
       <span className="sr-only">Compte : </span>
       <span className="truncate">{name}</span>
     </span>
@@ -130,14 +157,27 @@ export function PendingRow({
   accountName?: string | null;
 }) {
   return (
-    <li className={`flex min-h-[64px] items-center gap-md py-sm opacity-80 lg:pl-[18px] lg:pr-[56px] ${ROW_GRID}`}>
+    <li
+      className={`flex min-h-[64px] items-center gap-md py-sm opacity-80 lg:pl-[18px] lg:pr-[56px] ${ROW_GRID}`}
+    >
       <ClockIcon className="h-5 w-5 shrink-0 text-mute lg:col-start-1 lg:row-start-1" />
       <span className="min-w-0 flex-1 lg:contents">
-        <span className="block truncate font-body-md text-body-md font-semibold lg:col-start-2 lg:row-start-1">{label}</span>
-        <span className="block font-body-sm text-body-sm text-mute lg:col-start-3 lg:row-start-1 lg:truncate">En attente d’envoi</span>
-        {accountName && <AccountChip name={accountName} className={`lg:col-start-2 lg:row-start-2 lg:mt-0 lg:justify-self-start lg:[@container(min-width:680px)]:col-start-4 lg:[@container(min-width:680px)]:row-start-1`} />}
+        <span className="block truncate font-body-md text-body-md font-semibold lg:col-start-2 lg:row-start-1">
+          {label}
+        </span>
+        <span className="block font-body-sm text-body-sm text-mute lg:col-start-3 lg:row-start-1 lg:truncate">
+          En attente d’envoi
+        </span>
+        {accountName && (
+          <AccountChip
+            name={accountName}
+            className={`lg:col-start-2 lg:row-start-2 lg:mt-0 lg:justify-self-start lg:[@container(min-width:680px)]:col-start-4 lg:[@container(min-width:680px)]:row-start-1`}
+          />
+        )}
       </span>
-      <span className={`tabular shrink-0 font-body-md text-body-md font-semibold lg:col-start-4 lg:row-start-1 lg:text-right lg:[@container(min-width:680px)]:col-start-5`}>
+      <span
+        className={`tabular shrink-0 font-body-md text-body-md font-semibold lg:col-start-4 lg:row-start-1 lg:text-right lg:[@container(min-width:680px)]:col-start-5`}
+      >
         {income ? '+ ' : '− '}
         {formatCents(amountCents)}
       </span>

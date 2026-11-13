@@ -1,5 +1,17 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { apiClient, CurrentUser, onUnauthorized } from '../../infrastructure/api-client';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import {
+  apiClient,
+  CurrentUser,
+  onUnauthorized,
+} from '../../infrastructure/api-client';
 import { sessionCache } from '../../infrastructure/local-store';
 
 interface AuthContextValue {
@@ -55,7 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ user, loading, logout }), [user, loading, logout]);
+  const value = useMemo(
+    () => ({ user, loading, logout }),
+    [user, loading, logout],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

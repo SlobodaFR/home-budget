@@ -2,13 +2,23 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { REPOSITORY_URL } from '../../domain/app-info';
-import { HELP_SOURCES_DISCLAIMER, HelpBlock, HelpEntry, HelpLink } from '../../domain/help';
+import {
+  HELP_SOURCES_DISCLAIMER,
+  HelpBlock,
+  HelpEntry,
+  HelpLink,
+} from '../../domain/help';
 import { APP_ROUTES, isAppRoute } from '../../domain/routes';
 import { HELP_SECTIONS } from './index';
 
-const allEntries: HelpEntry[] = HELP_SECTIONS.flatMap((section) => [...section.entries]);
-const allLinks: HelpLink[] = allEntries.flatMap((entry) => [...(entry.links ?? [])]);
-const textOf = (block: HelpBlock): string[] => (block.type === 'list' ? [...block.items] : [block.text]);
+const allEntries: HelpEntry[] = HELP_SECTIONS.flatMap((section) => [
+  ...section.entries,
+]);
+const allLinks: HelpLink[] = allEntries.flatMap((entry) => [
+  ...(entry.links ?? []),
+]);
+const textOf = (block: HelpBlock): string[] =>
+  block.type === 'list' ? [...block.items] : [block.text];
 
 describe('help content', () => {
   it('has the nine sections, in the order of the table of contents', () => {
@@ -46,32 +56,52 @@ describe('help content', () => {
     allEntries.forEach((entry) => {
       expect(entry.title.trim()).not.toBe('');
       expect(entry.blocks.length).toBeGreaterThan(0);
-      entry.blocks.flatMap(textOf).forEach((text) => expect(text.trim()).not.toBe(''));
-      (entry.links ?? []).forEach((link) => expect(link.label.trim()).not.toBe(''));
+      entry.blocks
+        .flatMap(textOf)
+        .forEach((text) => expect(text.trim()).not.toBe(''));
+      (entry.links ?? []).forEach((link) =>
+        expect(link.label.trim()).not.toBe(''),
+      );
     });
   });
 
   it('only sends internal links to known screens', () => {
     const internal = allLinks.filter((link) => link.kind === 'internal');
     expect(internal.length).toBeGreaterThan(10);
-    internal.flatMap((link) => (link.kind === 'internal' ? [link.to] : [])).forEach((to) => expect(isAppRoute(to), to).toBe(true));
+    internal
+      .flatMap((link) => (link.kind === 'internal' ? [link.to] : []))
+      .forEach((to) => expect(isAppRoute(to), to).toBe(true));
   });
 
   it('only uses https for external links', () => {
-    [...allLinks.filter((link) => link.kind === 'external').map((link) => (link.kind === 'external' ? link.href : '')), ...allEntries.map((entry) => entry.source?.url ?? 'https://ok.test')].forEach(
-      (href) => expect(new URL(href).protocol, href).toBe('https:'),
-    );
+    [
+      ...allLinks
+        .filter((link) => link.kind === 'external')
+        .map((link) => (link.kind === 'external' ? link.href : '')),
+      ...allEntries.map((entry) => entry.source?.url ?? 'https://ok.test'),
+    ].forEach((href) => expect(new URL(href).protocol, href).toBe('https:'));
   });
 
   it('keeps the list of known screens identical to the routes declared in App.tsx', () => {
-    const source = readFileSync(resolve(__dirname, '../../presentation/App.tsx'), 'utf8');
-    const declared = [...source.matchAll(/<Route\s+(?:index|path="([^"]+)")/g)].map((match) => (match[1] ? `/${match[1].replace(/^\//, '')}` : '/'));
-    expect([...new Set(declared)].filter((path) => path !== '/login' && path !== '/*').sort()).toEqual([...APP_ROUTES].sort());
+    const source = readFileSync(
+      resolve(__dirname, '../../presentation/App.tsx'),
+      'utf8',
+    );
+    const declared = [
+      ...source.matchAll(/<Route\s+(?:index|path="([^"]+)")/g),
+    ].map((match) => (match[1] ? `/${match[1].replace(/^\//, '')}` : '/'));
+    expect(
+      [...new Set(declared)]
+        .filter((path) => path !== '/login' && path !== '/*')
+        .sort(),
+    ).toEqual([...APP_ROUTES].sort());
   });
 
   it('shows the banner on the official rules section and gives it the two static rows', () => {
     const rules = HELP_SECTIONS.find((section) => section.kind === 'sources');
-    expect(rules?.disclaimer).toBe('Ce sont des repères et des estimations, pas des conseils juridiques ou fiscaux.');
+    expect(rules?.disclaimer).toBe(
+      'Ce sont des repères et des estimations, pas des conseils juridiques ou fiscaux.',
+    );
     expect(rules?.disclaimer).toBe(HELP_SOURCES_DISCLAIMER);
     const titles = rules?.entries.map((entry) => entry.title) ?? [];
     expect(titles).toContain('Seuil d’endettement de 35 %');
@@ -81,8 +111,12 @@ describe('help content', () => {
 
   it('says honestly that the 35 % threshold is not a rule of law and that the crèche scale must be confirmed every year', () => {
     const rules = HELP_SECTIONS.find((section) => section.kind === 'sources');
-    const debt = JSON.stringify(rules?.entries.find((entry) => entry.id === 'repere-endettement-35'));
-    const creche = JSON.stringify(rules?.entries.find((entry) => entry.id === 'bareme-creche-psu'));
+    const debt = JSON.stringify(
+      rules?.entries.find((entry) => entry.id === 'repere-endettement-35'),
+    );
+    const creche = JSON.stringify(
+      rules?.entries.find((entry) => entry.id === 'bareme-creche-psu'),
+    );
     expect(debt).toContain('pas une règle de droit');
     expect(creche).toContain('À confirmer chaque année');
     expect(creche).toMatch(/verifiedOn":"\d{4}-\d{2}-\d{2}/);
@@ -91,14 +125,23 @@ describe('help content', () => {
   it('has at least ten frequently asked questions, including the four the owner asked for', () => {
     const faq = HELP_SECTIONS.find((section) => section.kind === 'faq');
     expect(faq?.entries.length).toBeGreaterThanOrEqual(10);
-    ['Pourquoi mon solde de fin de mois est-il négatif ?', 'Pourquoi le commun a 0 € de revenus ?', 'Ma contribution est-elle obligatoire ?', 'Puis-je supprimer mes données ?'].forEach((question) =>
+    [
+      'Pourquoi mon solde de fin de mois est-il négatif ?',
+      'Pourquoi le commun a 0 € de revenus ?',
+      'Ma contribution est-elle obligatoire ?',
+      'Puis-je supprimer mes données ?',
+    ].forEach((question) =>
       expect(faq?.entries.map((entry) => entry.title)).toContain(question),
     );
   });
 
   it('states the encryption limit plainly: the host holds the key', () => {
-    const privacy = JSON.stringify(HELP_SECTIONS.find((section) => section.id === 'donnees-confidentialite'));
-    expect(privacy).toContain('la clé de chiffrement est détenue par l’hébergeur');
+    const privacy = JSON.stringify(
+      HELP_SECTIONS.find((section) => section.id === 'donnees-confidentialite'),
+    );
+    expect(privacy).toContain(
+      'la clé de chiffrement est détenue par l’hébergeur',
+    );
     expect(privacy).toContain('Il ne cache pas vos données à l’hébergeur');
   });
 
@@ -106,49 +149,85 @@ describe('help content', () => {
     const start = JSON.stringify(HELP_SECTIONS[0]);
     expect(start).toContain('cours de finances familiales');
     expect(start).toContain('Leçon N du cours');
-    expect(allLinks.filter((link) => link.kind === 'external' && /cours|lecon|leçon/i.test(link.label))).toEqual([]);
+    expect(
+      allLinks.filter(
+        (link) =>
+          link.kind === 'external' && /cours|lecon|leçon/i.test(link.label),
+      ),
+    ).toEqual([]);
   });
 
   it('ends with an « À propos » that shows the version, and a repository link only when its address is known', () => {
     const about = HELP_SECTIONS[HELP_SECTIONS.length - 1];
     expect(about?.kind).toBe('about');
     expect(JSON.stringify(about)).toMatch(/Version \d+\.\d+\.\d+/);
-    const external = (about?.entries[0]?.links ?? []).filter((link) => link.kind === 'external');
+    const external = (about?.entries[0]?.links ?? []).filter(
+      (link) => link.kind === 'external',
+    );
     expect(external).toHaveLength(REPOSITORY_URL ? 1 : 0);
   });
 
   it('contains no markup that would show up as raw characters', () => {
-    allEntries.flatMap((entry) => [entry.title, ...entry.blocks.flatMap(textOf)]).forEach((text) => {
-      expect(text).not.toMatch(/\*\*|<\/?[a-z]+>|\[[^\]]+\]\(/);
-    });
+    allEntries
+      .flatMap((entry) => [entry.title, ...entry.blocks.flatMap(textOf)])
+      .forEach((text) => {
+        expect(text).not.toMatch(/\*\*|<\/?[a-z]+>|\[[^\]]+\]\(/);
+      });
   });
 
   it('describes the extended credits: lender, insurance, fees, payment gap and the fixed-rate limit', () => {
-    const credits = allEntries.find((entry) => entry.id === 'credits-et-dettes');
+    const credits = allEntries.find(
+      (entry) => entry.id === 'credits-et-dettes',
+    );
     expect(credits).toBeDefined();
     const text = (credits?.blocks ?? []).flatMap(textOf).join(' ');
-    for (const word of ['prêteur', 'assurance', 'quotité', 'frais de dossier', 'écart', 'durée', 'Par prêteur', 'coût restant']) {
+    for (const word of [
+      'prêteur',
+      'assurance',
+      'quotité',
+      'frais de dossier',
+      'écart',
+      'durée',
+      'Par prêteur',
+      'coût restant',
+    ]) {
       expect(text.toLowerCase(), word).toContain(word.toLowerCase());
     }
     expect(text).toContain('Les calculs supposent un taux fixe');
     expect(text).toContain('variable ou révisable');
     expect(text).toContain('numéro de compte');
     expect(text).not.toMatch(/renégoci|rachat de cr/i);
-    expect(credits?.links).toContainEqual({ kind: 'internal', label: 'Ouvrir les crédits', to: '/dettes' });
+    expect(credits?.links).toContainEqual({
+      kind: 'internal',
+      label: 'Ouvrir les crédits',
+      to: '/dettes',
+    });
   });
 
   it('explains the contract import: how it works, deletion, validation and limits', () => {
-    const credits = allEntries.find((entry) => entry.id === 'credits-et-dettes');
+    const credits = allEntries.find(
+      (entry) => entry.id === 'credits-et-dettes',
+    );
     const text = (credits?.blocks ?? []).flatMap(textOf).join(' ');
     expect(text).toContain('Importer un contrat');
     expect(text).toContain('Importer depuis un contrat (PDF ou photo)');
-    expect(text).toContain('lu sur le serveur de l’application, puis supprimé immédiatement');
+    expect(text).toContain(
+      'lu sur le serveur de l’application, puis supprimé immédiatement',
+    );
     expect(text).toContain('Il n’est pas conservé');
     expect(text).toContain('Rien n’est enregistré sans votre validation');
     expect(text).toContain('Ce qui n’a pas été trouvé reste vide');
-    for (const word of ['Sûr', 'À vérifier', 'Douteux', 'qualité du document', 'Vérifiez toujours le taux']) {
+    for (const word of [
+      'Sûr',
+      'À vérifier',
+      'Douteux',
+      'qualité du document',
+      'Vérifiez toujours le taux',
+    ]) {
       expect(text, word).toContain(word);
     }
-    expect(credits?.keywords).toEqual(expect.arrayContaining(['importer un contrat', 'ocr', 'pdf']));
+    expect(credits?.keywords).toEqual(
+      expect.arrayContaining(['importer un contrat', 'ocr', 'pdf']),
+    );
   });
 });

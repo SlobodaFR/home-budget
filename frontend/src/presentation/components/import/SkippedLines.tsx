@@ -9,7 +9,10 @@ export function SkippedLines({ skipped }: { skipped: SkippedLine[] }) {
   if (skipped.length === 0) {
     return null;
   }
-  const label = skipped.length === 1 ? '1 ligne non lue' : `${skipped.length} lignes non lues`;
+  const label =
+    skipped.length === 1
+      ? '1 ligne non lue'
+      : `${skipped.length} lignes non lues`;
 
   return (
     <div className="rounded bg-soft-cloud px-gutter">
@@ -20,7 +23,11 @@ export function SkippedLines({ skipped }: { skipped: SkippedLine[] }) {
         className="flex min-h-[44px] w-full items-center justify-between gap-md font-body-sm text-body-sm font-semibold"
       >
         {label}
-        <ChevronRightIcon width={18} height={18} className={open ? 'rotate-90' : ''} />
+        <ChevronRightIcon
+          width={18}
+          height={18}
+          className={open ? 'rotate-90' : ''}
+        />
       </button>
       {open && (
         <ul className="pb-md font-body-sm text-body-sm text-mute">
@@ -29,7 +36,9 @@ export function SkippedLines({ skipped }: { skipped: SkippedLine[] }) {
               Ligne {line.line} : {line.reason}
             </li>
           ))}
-          {skipped.length > MAX_SHOWN && <li>… et {skipped.length - MAX_SHOWN} autres.</li>}
+          {skipped.length > MAX_SHOWN && (
+            <li>… et {skipped.length - MAX_SHOWN} autres.</li>
+          )}
         </ul>
       )}
     </div>

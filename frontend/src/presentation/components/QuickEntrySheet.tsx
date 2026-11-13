@@ -1,7 +1,11 @@
 import { FormEvent, useRef, useState } from 'react';
 import { Account } from '../../domain/account';
 import { Bloc, BLOC_INFO, BLOCS } from '../../domain/bloc';
-import { Transaction, TransactionKind, TransactionPayload } from '../../domain/budget';
+import {
+  Transaction,
+  TransactionKind,
+  TransactionPayload,
+} from '../../domain/budget';
 import { centsToInputValue } from '../../domain/money';
 import { isoToDateInput, todayInputValue } from '../../domain/month';
 import {
@@ -42,11 +46,17 @@ export function QuickEntrySheet({
   now = () => new Date(),
 }: Props) {
   const [kind, setKind] = useState<TransactionKind>(editing?.kind ?? 'EXPENSE');
-  const [amount, setAmount] = useState(editing ? centsToInputValue(editing.amountCents) : '');
+  const [amount, setAmount] = useState(
+    editing ? centsToInputValue(editing.amountCents) : '',
+  );
   const [bloc, setBloc] = useState<Bloc>(editing?.bloc ?? defaultBloc);
   const [label, setLabel] = useState(editing?.label ?? '');
-  const [date, setDate] = useState(editing ? isoToDateInput(editing.date) : todayInputValue(now()));
-  const [accountId, setAccountId] = useState<string | null>(editing ? (editing.accountId ?? null) : defaultAccountId);
+  const [date, setDate] = useState(
+    editing ? isoToDateInput(editing.date) : todayInputValue(now()),
+  );
+  const [accountId, setAccountId] = useState<string | null>(
+    editing ? (editing.accountId ?? null) : defaultAccountId,
+  );
   const [errors, setErrors] = useState<TransactionFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -61,7 +71,14 @@ export function QuickEntrySheet({
     // Une opération déjà rattachée garde son compte même si le sélecteur n'a pas pu se charger.
     const sendAccount = hasAccounts || editing !== null;
     const result = buildTransactionPayload(
-      { kind, amount, bloc, label, date, accountId: sendAccount ? accountId : undefined },
+      {
+        kind,
+        amount,
+        bloc,
+        label,
+        date,
+        accountId: sendAccount ? accountId : undefined,
+      },
       now(),
       editing ?? undefined,
     );
@@ -76,19 +93,33 @@ export function QuickEntrySheet({
     try {
       await onSubmit(result.payload);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'L’enregistrement a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   const title = editing ? 'Modifier l’opération' : 'Nouvelle opération';
-  const submitLabel = editing ? 'Enregistrer' : kind === 'EXPENSE' ? 'Ajouter la dépense' : 'Ajouter le revenu';
+  const submitLabel = editing
+    ? 'Enregistrer'
+    : kind === 'EXPENSE'
+      ? 'Ajouter la dépense'
+      : 'Ajouter le revenu';
 
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
-        <div role="group" aria-label="Type d’opération" className="grid grid-cols-2 rounded-full bg-soft-cloud p-1">
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        className="flex flex-col gap-lg"
+      >
+        <div
+          role="group"
+          aria-label="Type d’opération"
+          className="grid grid-cols-2 rounded-full bg-soft-cloud p-1"
+        >
           {KINDS.map((option) => (
             <button
               key={option.kind}
@@ -119,13 +150,21 @@ export function QuickEntrySheet({
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
               aria-invalid={errors.amount ? true : undefined}
-              aria-describedby={errors.amount ? 'quick-amount-error' : undefined}
+              aria-describedby={
+                errors.amount ? 'quick-amount-error' : undefined
+              }
               className={`${inputClass} tabular pr-12 text-right !text-[28px] font-semibold`}
             />
-            <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-[24px] font-semibold text-mute">€</span>
+            <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-[24px] font-semibold text-mute">
+              €
+            </span>
           </div>
           {errors.amount && (
-            <p id="quick-amount-error" role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+            <p
+              id="quick-amount-error"
+              role="alert"
+              className="mt-1 font-body-sm text-body-sm text-error"
+            >
               {errors.amount}
             </p>
           )}
@@ -142,7 +181,9 @@ export function QuickEntrySheet({
                   aria-pressed={bloc === option}
                   onClick={() => setBloc(option)}
                   className={`min-h-[48px] rounded-full border-2 font-button-md text-body-md font-semibold ${
-                    bloc === option ? BLOC_STYLE[option].chipOn : BLOC_STYLE[option].chipOff
+                    bloc === option
+                      ? BLOC_STYLE[option].chipOn
+                      : BLOC_STYLE[option].chipOff
                   }`}
                 >
                   {BLOC_INFO[option].label}
@@ -168,7 +209,12 @@ export function QuickEntrySheet({
           />
         </div>
 
-        <AccountSelect id="quick-account" accounts={accounts} value={accountId} onChange={setAccountId} />
+        <AccountSelect
+          id="quick-account"
+          accounts={accounts}
+          value={accountId}
+          onChange={setAccountId}
+        />
 
         <div>
           <label htmlFor="quick-date" className={labelClass}>
@@ -183,7 +229,10 @@ export function QuickEntrySheet({
             className={inputClass}
           />
           {errors.date && (
-            <p role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+            <p
+              role="alert"
+              className="mt-1 font-body-sm text-body-sm text-error"
+            >
               {errors.date}
             </p>
           )}
@@ -195,7 +244,11 @@ export function QuickEntrySheet({
           </p>
         )}
 
-        <button type="submit" disabled={submitting} className={`${buttonPrimary} w-full`}>
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${buttonPrimary} w-full`}
+        >
           {submitting ? 'Enregistrement…' : submitLabel}
         </button>
       </form>

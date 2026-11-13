@@ -13,7 +13,10 @@ export function RequireHousehold({ children }: { children: ReactNode }) {
   if (failed) {
     return (
       <div className="mx-auto max-w-[560px] p-margin-mobile">
-        <ErrorNotice message="Impossible de charger votre foyer." onRetry={() => void reload()} />
+        <ErrorNotice
+          message="Impossible de charger votre foyer."
+          onRetry={() => void reload()}
+        />
       </div>
     );
   }

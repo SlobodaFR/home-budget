@@ -2,7 +2,11 @@ import { inputClass } from '../ui';
 
 export function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p id={id} role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 font-body-sm text-body-sm text-error"
+    >
       {message}
     </p>
   ) : null;
@@ -42,7 +46,9 @@ export function NumberInput({
         aria-describedby={describedBy}
         className={`${inputClass} tabular ${unit.length > 1 ? 'pr-16' : 'pr-10'} text-right`}
       />
-      <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">{unit}</span>
+      <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+        {unit}
+      </span>
     </div>
   );
 }

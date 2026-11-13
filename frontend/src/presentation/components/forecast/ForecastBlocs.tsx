@@ -1,5 +1,10 @@
 import { Bloc, BLOC_INFO } from '../../../domain/bloc';
-import { Forecast, ForecastFigure, orderedBlocs, projectionNote } from '../../../domain/forecast';
+import {
+  Forecast,
+  ForecastFigure,
+  orderedBlocs,
+  projectionNote,
+} from '../../../domain/forecast';
 import { formatCents } from '../../../domain/money';
 import { BLOC_STYLE } from '../bloc-style';
 import { cardClass } from '../ui';
@@ -16,7 +21,11 @@ function Figures({ figure }: { figure: ForecastFigure }) {
       {cells.map((cell) => (
         <div key={cell.label}>
           <dt className="font-body-sm text-body-sm text-mute">{cell.label}</dt>
-          <dd className={`tabular font-body-md text-body-md ${cell.strong ? 'font-bold' : 'font-semibold'}`}>{formatCents(cell.cents)}</dd>
+          <dd
+            className={`tabular font-body-md text-body-md ${cell.strong ? 'font-bold' : 'font-semibold'}`}
+          >
+            {formatCents(cell.cents)}
+          </dd>
         </div>
       ))}
     </dl>
@@ -26,10 +35,18 @@ function Figures({ figure }: { figure: ForecastFigure }) {
 function Note({ bloc, figure }: { bloc: Bloc; figure: ForecastFigure }) {
   const note = projectionNote(bloc, figure);
   if (note.status === 'over') {
-    return <p className="mt-sm font-body-sm text-body-sm font-semibold text-error">Dépasserait le prévu de {formatCents(note.amountCents)}</p>;
+    return (
+      <p className="mt-sm font-body-sm text-body-sm font-semibold text-error">
+        Dépasserait le prévu de {formatCents(note.amountCents)}
+      </p>
+    );
   }
   if (note.status === 'behind') {
-    return <p className="mt-sm font-body-sm text-body-sm font-semibold text-plaisir">{formatCents(note.amountCents)} sous l’objectif d’épargne</p>;
+    return (
+      <p className="mt-sm font-body-sm text-body-sm font-semibold text-plaisir">
+        {formatCents(note.amountCents)} sous l’objectif d’épargne
+      </p>
+    );
   }
   return null;
 }
@@ -37,22 +54,32 @@ function Note({ bloc, figure }: { bloc: Bloc; figure: ForecastFigure }) {
 export function ForecastBlocs({ forecast }: { forecast: Forecast }) {
   return (
     <section aria-label="Prévu, réel et projeté" className={cardClass}>
-      <h3 className="font-label-caps text-label-caps uppercase text-mute">Revenus et blocs</h3>
+      <h3 className="font-label-caps text-label-caps uppercase text-mute">
+        Revenus et blocs
+      </h3>
       <ul className="mt-sm divide-y divide-hairline-soft">
         <li className="py-md">
           <p className="flex items-center gap-sm font-body-md text-body-md font-semibold">
-            <span className="inline-block h-3 w-3 rounded-full bg-success" aria-hidden="true" />
+            <span
+              className="inline-block h-3 w-3 rounded-full bg-success"
+              aria-hidden="true"
+            />
             Revenus
           </p>
           <Figures figure={forecast.income} />
           {forecast.income.contributionAssumed && (
-            <p className="mt-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">Les contributions de chacun sont supposées versées.</p>
+            <p className="mt-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">
+              Les contributions de chacun sont supposées versées.
+            </p>
           )}
         </li>
         {orderedBlocs(forecast.blocs).map((figure) => (
           <li key={figure.bloc} className="py-md">
             <p className="flex items-center gap-sm font-body-md text-body-md font-semibold">
-              <span className={`inline-block h-3 w-3 rounded-full ${BLOC_STYLE[figure.bloc].dot}`} aria-hidden="true" />
+              <span
+                className={`inline-block h-3 w-3 rounded-full ${BLOC_STYLE[figure.bloc].dot}`}
+                aria-hidden="true"
+              />
               {BLOC_INFO[figure.bloc].label}
             </p>
             <Figures figure={figure} />

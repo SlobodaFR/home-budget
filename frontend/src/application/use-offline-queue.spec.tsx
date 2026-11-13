@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TransactionPayload } from '../domain/budget';
 import { pendingStore } from '../infrastructure/local-store';
 
-const api = vi.hoisted(() => ({ createTransaction: vi.fn<ApiMock<'createTransaction'>>() }));
+const api = vi.hoisted(() => ({
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -12,7 +14,11 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../presentation/auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'a@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'a@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import { NetworkError } from '../infrastructure/api-client';
@@ -62,7 +68,9 @@ describe('OfflineQueueProvider', () => {
   });
 
   it('keeps an operation sent offline and replays it once on reconnection', async () => {
-    api.createTransaction.mockRejectedValueOnce(new NetworkError()).mockResolvedValue({ id: 't1' });
+    api.createTransaction
+      .mockRejectedValueOnce(new NetworkError())
+      .mockResolvedValue({ id: 't1' });
     const user = renderProbe();
     await user.click(screen.getByText('envoyer'));
 
@@ -74,7 +82,9 @@ describe('OfflineQueueProvider', () => {
       window.dispatchEvent(new Event('online'));
     });
 
-    await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('0'));
+    await waitFor(() =>
+      expect(screen.getByTestId('count')).toHaveTextContent('0'),
+    );
     expect(api.createTransaction).toHaveBeenCalledTimes(2);
     expect(pendingStore.load('alice')).toHaveLength(0);
 
@@ -85,7 +95,12 @@ describe('OfflineQueueProvider', () => {
   });
 
   it('replays the persisted queue at startup', async () => {
-    pendingStore.add('alice', { clientId: 'c1', spaceId: 'space-1', payload, queuedAt: '2026-10-03T10:00:00.000Z' });
+    pendingStore.add('alice', {
+      clientId: 'c1',
+      spaceId: 'space-1',
+      payload,
+      queuedAt: '2026-10-03T10:00:00.000Z',
+    });
     api.createTransaction.mockResolvedValue({ id: 't1' });
     renderProbe();
     await waitFor(() => expect(api.createTransaction).toHaveBeenCalledTimes(1));
@@ -93,7 +108,12 @@ describe('OfflineQueueProvider', () => {
   });
 
   it('keeps the queue while the network is still down', async () => {
-    pendingStore.add('alice', { clientId: 'c1', spaceId: 'space-1', payload, queuedAt: '2026-10-03T10:00:00.000Z' });
+    pendingStore.add('alice', {
+      clientId: 'c1',
+      spaceId: 'space-1',
+      payload,
+      queuedAt: '2026-10-03T10:00:00.000Z',
+    });
     api.createTransaction.mockRejectedValue(new NetworkError());
     renderProbe();
     await waitFor(() => expect(api.createTransaction).toHaveBeenCalledTimes(1));

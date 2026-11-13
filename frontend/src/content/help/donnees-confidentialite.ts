@@ -4,7 +4,8 @@ export const donneesConfidentialite: HelpSection = {
   id: 'donnees-confidentialite',
   kind: 'guide',
   title: 'Mes données et ma confidentialité',
-  summary: 'Qui voit quoi, le chiffrement de l’espace perso et sa limite, l’export de vos données, le fonctionnement hors ligne.',
+  summary:
+    'Qui voit quoi, le chiffrement de l’espace perso et sa limite, l’export de vos données, le fonctionnement hors ligne.',
   keywords: ['vie privée', 'sécurité', 'rgpd', 'données personnelles'],
   entries: [
     {
@@ -22,7 +23,14 @@ export const donneesConfidentialite: HelpSection = {
           ],
         },
       ],
-      keywords: ['visible', 'privé', 'partagé', 'perso', 'commun', 'confidentiel'],
+      keywords: [
+        'visible',
+        'privé',
+        'partagé',
+        'perso',
+        'commun',
+        'confidentiel',
+      ],
     },
     {
       id: 'chiffrement-de-lespace-perso',
@@ -41,13 +49,24 @@ export const donneesConfidentialite: HelpSection = {
           text: 'Une clé propre à chaque personne, que même l’hébergeur ne détiendrait pas, fait partie des idées pour la suite.',
         },
       ],
-      keywords: ['chiffrement', 'clé', 'hébergeur', 'sécurité', 'aes', 'cryptage', 'confidentialité'],
+      keywords: [
+        'chiffrement',
+        'clé',
+        'hébergeur',
+        'sécurité',
+        'aes',
+        'cryptage',
+        'confidentialité',
+      ],
     },
     {
       id: 'exporter-mes-donnees',
       title: 'Exporter mes données',
       blocks: [
-        { type: 'paragraph', text: 'Vos données vous appartiennent : vous pouvez en garder une copie quand vous voulez, depuis la page Foyer, rubrique « Mes données ».' },
+        {
+          type: 'paragraph',
+          text: 'Vos données vous appartiennent : vous pouvez en garder une copie quand vous voulez, depuis la page Foyer, rubrique « Mes données ».',
+        },
         {
           type: 'list',
           items: [
@@ -57,7 +76,15 @@ export const donneesConfidentialite: HelpSection = {
         },
       ],
       links: [{ kind: 'internal', label: 'Ouvrir le foyer', to: '/foyer' }],
-      keywords: ['export', 'sauvegarde', 'json', 'csv', 'télécharger', 'excel', 'copie'],
+      keywords: [
+        'export',
+        'sauvegarde',
+        'json',
+        'csv',
+        'télécharger',
+        'excel',
+        'copie',
+      ],
     },
     {
       id: 'hors-ligne-et-synchronisation',
@@ -72,9 +99,20 @@ export const donneesConfidentialite: HelpSection = {
             'Tout le reste (chiffres du mois, modifications, import, foyer, versements, démarches cochées) demande une connexion. L’application vous le dit quand c’est le cas.',
           ],
         },
-        { type: 'note', text: 'Les opérations en attente restent sur l’appareil où vous les avez saisies jusqu’à leur envoi.' },
+        {
+          type: 'note',
+          text: 'Les opérations en attente restent sur l’appareil où vous les avez saisies jusqu’à leur envoi.',
+        },
       ],
-      keywords: ['hors ligne', 'offline', 'réseau', 'synchronisation', 'connexion', 'pwa', 'installer'],
+      keywords: [
+        'hors ligne',
+        'offline',
+        'réseau',
+        'synchronisation',
+        'connexion',
+        'pwa',
+        'installer',
+      ],
     },
     {
       id: 'supprimer-mes-donnees',

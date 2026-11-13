@@ -32,14 +32,29 @@ export function FaqAccordion({ entries, showInternalLinks, expandAll }: Props) {
                 id={buttonId}
                 aria-expanded={open}
                 aria-controls={panelId}
-                onClick={() => setOverrides((previous) => ({ ...previous, [entry.id]: !open }))}
+                onClick={() =>
+                  setOverrides((previous) => ({
+                    ...previous,
+                    [entry.id]: !open,
+                  }))
+                }
                 className="flex min-h-[56px] w-full items-center justify-between gap-md py-md text-left font-body-md text-body-md font-semibold"
               >
                 <span className="min-w-0">{entry.title}</span>
-                <ChevronDownIcon width={20} height={20} className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+                <ChevronDownIcon
+                  width={20}
+                  height={20}
+                  className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+                />
               </button>
             </h3>
-            <div id={panelId} role="region" aria-labelledby={buttonId} hidden={!open} className="pb-md">
+            <div
+              id={panelId}
+              role="region"
+              aria-labelledby={buttonId}
+              hidden={!open}
+              className="pb-md"
+            >
               <EntryBody entry={entry} showInternalLinks={showInternalLinks} />
             </div>
           </div>

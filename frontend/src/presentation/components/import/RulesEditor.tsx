@@ -4,7 +4,12 @@ import { isOfflineError } from '../../../application/error-message';
 import { useOnlineStatus } from '../../../application/use-online-status';
 import { useResource } from '../../../application/use-resource';
 import { addRule, moveRule, removeRule } from '../../../domain/rule-list';
-import { IMPORT_TARGETS, ImportTarget, Rule, TARGET_LABEL } from '../../../domain/statement-import';
+import {
+  IMPORT_TARGETS,
+  ImportTarget,
+  Rule,
+  TARGET_LABEL,
+} from '../../../domain/statement-import';
 import { apiClient } from '../../../infrastructure/api-client';
 import { ErrorNotice, OfflineNotice } from '../ErrorNotice';
 import { ArrowDownIcon, ArrowUpIcon, TrashIcon } from '../Icons';
@@ -29,9 +34,18 @@ export function RulesEditor({ spaceId }: { spaceId: string }) {
 
   if (resource.error && !resource.data) {
     return isOfflineError(resource.error) ? (
-      <OfflineNotice message="Les règles demandent une connexion." onRetry={resource.reload} />
+      <OfflineNotice
+        message="Les règles demandent une connexion."
+        onRetry={resource.reload}
+      />
     ) : (
-      <ErrorNotice message={describeImportError(resource.error, 'Impossible de charger les règles.')} onRetry={resource.reload} />
+      <ErrorNotice
+        message={describeImportError(
+          resource.error,
+          'Impossible de charger les règles.',
+        )}
+        onRetry={resource.reload}
+      />
     );
   }
   if (!resource.data) {
@@ -62,7 +76,12 @@ export function RulesEditor({ spaceId }: { spaceId: string }) {
       resource.reload();
       toast.show('Règles enregistrées');
     } catch (error) {
-      setSaveError(describeImportError(error, 'Les règles n’ont pas pu être enregistrées.'));
+      setSaveError(
+        describeImportError(
+          error,
+          'Les règles n’ont pas pu être enregistrées.',
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -74,20 +93,31 @@ export function RulesEditor({ spaceId }: { spaceId: string }) {
         {resource.data.isDefault
           ? 'Ce sont les règles de départ : elles deviennent les vôtres dès l’enregistrement.'
           : 'Ces règles sont propres à cet espace.'}{' '}
-        Un mot-clé correspond s’il figure dans le libellé, sans tenir compte des majuscules ni des accents. Les règles « Ignorer »
-        passent en premier ; pour les autres, la première qui correspond l’emporte.
+        Un mot-clé correspond s’il figure dans le libellé, sans tenir compte des
+        majuscules ni des accents. Les règles « Ignorer » passent en premier ;
+        pour les autres, la première qui correspond l’emporte.
       </p>
 
       {rules.length === 0 ? (
-        <p className="rounded bg-soft-cloud p-gutter text-center font-body-sm text-body-sm text-mute">Aucune règle.</p>
+        <p className="rounded bg-soft-cloud p-gutter text-center font-body-sm text-body-sm text-mute">
+          Aucune règle.
+        </p>
       ) : (
         <ul className="divide-y divide-hairline-soft">
           {rules.map((rule, index) => (
-            <li key={`${rule.keyword}-${index}`} className="flex items-center gap-sm py-1">
+            <li
+              key={`${rule.keyword}-${index}`}
+              className="flex items-center gap-sm py-1"
+            >
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-body-md text-body-md font-semibold">{rule.keyword}</span>
+                <span className="block truncate font-body-md text-body-md font-semibold">
+                  {rule.keyword}
+                </span>
                 <span className="flex items-center gap-sm font-body-sm text-body-sm text-mute">
-                  <span className={`inline-block h-2.5 w-2.5 rounded-full ${TARGET_STYLE[rule.target].dot}`} aria-hidden="true" />
+                  <span
+                    className={`inline-block h-2.5 w-2.5 rounded-full ${TARGET_STYLE[rule.target].dot}`}
+                    aria-hidden="true"
+                  />
                   {TARGET_LABEL[rule.target]}
                 </span>
               </span>
@@ -122,7 +152,11 @@ export function RulesEditor({ spaceId }: { spaceId: string }) {
         </ul>
       )}
 
-      <form onSubmit={handleAdd} noValidate className="flex flex-col gap-sm rounded bg-soft-cloud p-md">
+      <form
+        onSubmit={handleAdd}
+        noValidate
+        className="flex flex-col gap-sm rounded bg-soft-cloud p-md"
+      >
         <div>
           <label htmlFor="rule-keyword" className={labelClass}>
             Nouvelle règle : mot-clé
@@ -167,10 +201,19 @@ export function RulesEditor({ spaceId }: { spaceId: string }) {
       </form>
 
       {saveError && <ErrorNotice message={saveError} />}
-      <button type="button" disabled={!dirty || saving || !online} onClick={() => void handleSave()} className={buttonPrimary}>
+      <button
+        type="button"
+        disabled={!dirty || saving || !online}
+        onClick={() => void handleSave()}
+        className={buttonPrimary}
+      >
         {saving ? 'Enregistrement…' : 'Enregistrer les règles'}
       </button>
-      {!online && <p className="font-body-sm text-body-sm text-mute">Hors ligne : l’enregistrement des règles attend le réseau.</p>}
+      {!online && (
+        <p className="font-body-sm text-body-sm text-mute">
+          Hors ligne : l’enregistrement des règles attend le réseau.
+        </p>
+      )}
     </div>
   );
 }

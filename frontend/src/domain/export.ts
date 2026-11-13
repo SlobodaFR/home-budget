@@ -14,7 +14,9 @@ export interface ExportRangeErrors {
   range?: string;
 }
 
-export type ExportRangeResult = { ok: true; range: ExportRange; days: number } | { ok: false; errors: ExportRangeErrors };
+export type ExportRangeResult =
+  | { ok: true; range: ExportRange; days: number }
+  | { ok: false; errors: ExportRangeErrors };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -23,7 +25,12 @@ export function daysInRange(from: string, to: string): number | null {
   if (!isValidDateInput(from) || !isValidDateInput(to)) {
     return null;
   }
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS) + 1;
+  return (
+    Math.round(
+      (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+        DAY_MS,
+    ) + 1
+  );
 }
 
 /** Du 1er janvier à aujourd'hui : toujours dans la limite de 366 jours. */
@@ -38,7 +45,10 @@ export const EXPORT_MESSAGES = {
   tooLong: `La période est trop longue : ${MAX_EXPORT_DAYS} jours au plus (environ un an). Raccourcissez-la ou faites deux exports.`,
 } as const;
 
-export function validateExportRange(from: string, to: string): ExportRangeResult {
+export function validateExportRange(
+  from: string,
+  to: string,
+): ExportRangeResult {
   const errors: ExportRangeErrors = {};
   if (!isValidDateInput(from)) {
     errors.from = EXPORT_MESSAGES.fromMissing;
@@ -59,16 +69,22 @@ export function validateExportRange(from: string, to: string): ExportRangeResult
   return { ok: true, range: { from, to }, days };
 }
 
-export const backupFilename = (now: Date = new Date()): string => `budget-export-${todayInputValue(now)}.json`;
+export const backupFilename = (now: Date = new Date()): string =>
+  `budget-export-${todayInputValue(now)}.json`;
 
-export const csvFilename = (range: ExportRange): string => `operations-${range.from}_${range.to}.csv`;
+export const csvFilename = (range: ExportRange): string =>
+  `operations-${range.from}_${range.to}.csv`;
 
 // oxlint-disable-next-line no-control-regex -- on retire justement les caractères de contrôle des noms de fichier
 const FORBIDDEN_FILENAME_CHARS = /[\u0000-\u001f\u007f"<>:*?|]/g;
 
 /** Retire tout ce qui pourrait sortir du dossier de téléchargement ou casser un nom de fichier. */
 export function sanitizeFilename(name: string): string {
-  const cleaned = name.replace(FORBIDDEN_FILENAME_CHARS, '').replace(/^.*[\\/]/, '').trim().replace(/^\.+/, '');
+  const cleaned = name
+    .replace(FORBIDDEN_FILENAME_CHARS, '')
+    .replace(/^.*[\\/]/, '')
+    .trim()
+    .replace(/^\.+/, '');
   return cleaned.slice(0, 120);
 }
 
@@ -76,7 +92,10 @@ export function sanitizeFilename(name: string): string {
  * Nom de fichier proposé par le serveur (`Content-Disposition`), avec la forme étendue `filename*=UTF-8''…` en priorité ;
  * `fallback` si l'en-tête est absent ou inutilisable.
  */
-export function filenameFromContentDisposition(header: string | null | undefined, fallback: string): string {
+export function filenameFromContentDisposition(
+  header: string | null | undefined,
+  fallback: string,
+): string {
   if (!header) {
     return fallback;
   }

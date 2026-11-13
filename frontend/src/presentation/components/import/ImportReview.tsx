@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useImportReview } from '../../../application/use-import-review';
 import { pluralize } from '../../../domain/plural';
 import { LearnedRule } from '../../../domain/rule-keyword';
-import { CommitItem, ImportPreview, MAX_COMMIT_ITEMS, PreviewRow } from '../../../domain/statement-import';
+import {
+  CommitItem,
+  ImportPreview,
+  MAX_COMMIT_ITEMS,
+  PreviewRow,
+} from '../../../domain/statement-import';
 import { ErrorNotice } from '../ErrorNotice';
 import { ChevronRightIcon } from '../Icons';
 import { buttonPrimary, buttonSecondary } from '../ui';
@@ -23,7 +28,10 @@ interface Props {
   onBack: () => void;
 }
 
-function scrollToFirstUnclassified(rows: readonly PreviewRow[], isUnclassified: (row: PreviewRow) => boolean) {
+function scrollToFirstUnclassified(
+  rows: readonly PreviewRow[],
+  isUnclassified: (row: PreviewRow) => boolean,
+) {
   const target = rows.find(isUnclassified);
   if (target) {
     const row = document.getElementById(`import-row-${target.index}`);
@@ -33,7 +41,13 @@ function scrollToFirstUnclassified(rows: readonly PreviewRow[], isUnclassified: 
   }
 }
 
-export function ImportReview({ preview, submitting, error, onSubmit, onBack }: Props) {
+export function ImportReview({
+  preview,
+  submitting,
+  error,
+  onSubmit,
+  onBack,
+}: Props) {
   const review = useImportReview(preview.rows);
   const [showDuplicates, setShowDuplicates] = useState(false);
   const { totals, groups, choices } = review;
@@ -42,7 +56,8 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
     return (
       <div className="flex flex-col gap-gutter">
         <p className="rounded bg-soft-cloud p-gutter text-center font-body-sm text-body-sm text-mute">
-          Aucune ligne reconnue dans ce relevé. Vérifiez qu’il s’agit bien d’un export CSV avec une date et un montant par ligne.
+          Aucune ligne reconnue dans ce relevé. Vérifiez qu’il s’agit bien d’un
+          export CSV avec une date et un montant par ligne.
         </p>
         <SkippedLines skipped={preview.skipped} />
         <button type="button" onClick={onBack} className={buttonSecondary}>
@@ -61,7 +76,11 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
         row={row}
         choice={choice}
         initial={initial}
-        similarCount={choice !== null && choice !== initial ? review.similarCount(row.index) : 0}
+        similarCount={
+          choice !== null && choice !== initial
+            ? review.similarCount(row.index)
+            : 0
+        }
         learnKeyword={review.learn[row.index]}
         onChoose={review.choose}
         onClassifySimilar={review.classifySimilar}
@@ -72,18 +91,26 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
 
   const remaining = totals.toClassifyCount;
   const tooMany = totals.toCreateCount > MAX_COMMIT_ITEMS;
-  const blocked = remaining > 0 || totals.toCreateCount === 0 || tooMany || submitting;
-  const remainingInGroup = groups.toClassify.filter((row) => choices[row.index] === null).length;
+  const blocked =
+    remaining > 0 || totals.toCreateCount === 0 || tooMany || submitting;
+  const remainingInGroup = groups.toClassify.filter(
+    (row) => choices[row.index] === null,
+  ).length;
 
   return (
     <div className="flex flex-col gap-gutter">
       <p className="font-body-sm text-body-sm text-mute">
-        {pluralize(preview.rows.length, 'ligne lue', 'lignes lues')}. Chaque ligne doit être classée ou ignorée avant l’import.
+        {pluralize(preview.rows.length, 'ligne lue', 'lignes lues')}. Chaque
+        ligne doit être classée ou ignorée avant l’import.
       </p>
 
       {preview.truncated && (
-        <p role="status" className="rounded border border-plaisir/40 bg-plaisir/10 p-md font-body-sm text-body-sm">
-          Relevé tronqué : seules les premières lignes ont été lues. Importez le reste dans un second fichier.
+        <p
+          role="status"
+          className="rounded border border-plaisir/40 bg-plaisir/10 p-md font-body-sm text-body-sm"
+        >
+          Relevé tronqué : seules les premières lignes ont été lues. Importez le
+          reste dans un second fichier.
         </p>
       )}
       <SkippedLines skipped={preview.skipped} />
@@ -91,26 +118,52 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
       <ImportTotalsCard totals={totals} learnedCount={review.learnedCount} />
 
       {groups.toClassify.length > 0 && (
-        <section aria-labelledby="group-to-classify" className="flex flex-col gap-sm">
-          <h3 id="group-to-classify" className="font-label-caps text-label-caps uppercase text-mute">
-            À classer ({remainingInGroup === 0 ? 'terminé' : pluralize(remainingInGroup, 'restante', 'restantes')})
+        <section
+          aria-labelledby="group-to-classify"
+          className="flex flex-col gap-sm"
+        >
+          <h3
+            id="group-to-classify"
+            className="font-label-caps text-label-caps uppercase text-mute"
+          >
+            À classer (
+            {remainingInGroup === 0
+              ? 'terminé'
+              : pluralize(remainingInGroup, 'restante', 'restantes')}
+            )
           </h3>
-          <ul className="flex flex-col gap-sm">{groups.toClassify.map(renderRow)}</ul>
+          <ul className="flex flex-col gap-sm">
+            {groups.toClassify.map(renderRow)}
+          </ul>
         </section>
       )}
 
       {groups.classified.length > 0 && (
-        <section aria-labelledby="group-classified" className="flex flex-col gap-sm">
-          <h3 id="group-classified" className="font-label-caps text-label-caps uppercase text-mute">
+        <section
+          aria-labelledby="group-classified"
+          className="flex flex-col gap-sm"
+        >
+          <h3
+            id="group-classified"
+            className="font-label-caps text-label-caps uppercase text-mute"
+          >
             Classées ({groups.classified.length})
           </h3>
-          <ul className="flex flex-col gap-sm">{groups.classified.map(renderRow)}</ul>
+          <ul className="flex flex-col gap-sm">
+            {groups.classified.map(renderRow)}
+          </ul>
         </section>
       )}
 
       {groups.duplicates.length > 0 && (
-        <section aria-labelledby="group-duplicates" className="flex flex-col gap-sm">
-          <h3 id="group-duplicates" className="font-label-caps text-label-caps uppercase text-mute">
+        <section
+          aria-labelledby="group-duplicates"
+          className="flex flex-col gap-sm"
+        >
+          <h3
+            id="group-duplicates"
+            className="font-label-caps text-label-caps uppercase text-mute"
+          >
             <button
               type="button"
               aria-expanded={showDuplicates}
@@ -119,7 +172,11 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
               className="flex min-h-[44px] w-full items-center justify-between gap-md uppercase"
             >
               Déjà importées ({groups.duplicates.length}) · ignorées par défaut
-              <ChevronRightIcon width={18} height={18} className={showDuplicates ? 'rotate-90' : ''} />
+              <ChevronRightIcon
+                width={18}
+                height={18}
+                className={showDuplicates ? 'rotate-90' : ''}
+              />
             </button>
           </h3>
           {showDuplicates && (
@@ -138,22 +195,29 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
         )}
         {tooMany && (
           <p role="alert" className="font-body-sm text-body-sm text-error">
-            Un import est limité à {MAX_COMMIT_ITEMS} opérations : ignorez {totals.toCreateCount - MAX_COMMIT_ITEMS} lignes de plus ou
-            importez le relevé en deux fois.
+            Un import est limité à {MAX_COMMIT_ITEMS} opérations : ignorez{' '}
+            {totals.toCreateCount - MAX_COMMIT_ITEMS} lignes de plus ou importez
+            le relevé en deux fois.
           </p>
         )}
         <div className="flex items-center gap-sm lg:justify-end">
           {remaining > 0 ? (
-
             <button
               type="button"
-              onClick={() => scrollToFirstUnclassified(preview.rows, (row) => choices[row.index] === null)}
+              onClick={() =>
+                scrollToFirstUnclassified(
+                  preview.rows,
+                  (row) => choices[row.index] === null,
+                )
+              }
               className="min-h-[48px] shrink-0 rounded-full border-2 border-ink px-lg font-button-md text-body-sm font-semibold"
             >
               {remaining} à classer
             </button>
           ) : (
-            <span className="shrink-0 px-sm font-body-sm text-body-sm font-semibold text-success">Tout est classé</span>
+            <span className="shrink-0 px-sm font-body-sm text-body-sm font-semibold text-success">
+              Tout est classé
+            </span>
           )}
           <button
             type="button"
@@ -161,7 +225,9 @@ export function ImportReview({ preview, submitting, error, onSubmit, onBack }: P
             onClick={() => onSubmit(review.result())}
             className={`${buttonPrimary} min-w-0 flex-1 px-lg lg:flex-none lg:px-10`}
           >
-            {submitting ? 'Import en cours…' : `Importer ${pluralize(totals.toCreateCount, 'opération', 'opérations')}`}
+            {submitting
+              ? 'Import en cours…'
+              : `Importer ${pluralize(totals.toCreateCount, 'opération', 'opérations')}`}
           </button>
         </div>
       </div>
