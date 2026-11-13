@@ -22,21 +22,33 @@ const MODES: DepositMode[] = ['ADD', 'WITHDRAW'];
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p id={id} role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 font-body-sm text-body-sm text-error"
+    >
       {message}
     </p>
   ) : null;
 }
 
 /** Ajout rapide d'un versement (montant, date, note) ; « Retirer » enregistre un montant négatif. */
-export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Date() }: Props) {
+export function DepositForm({
+  savedCents,
+  onSubmit,
+  onCancel,
+  now = () => new Date(),
+}: Props) {
   const [values, setValues] = useState(() => emptyDepositForm(now()));
   const [errors, setErrors] = useState<DepositFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => setValues((previous) => ({ ...previous, [key]: value }));
+  const set = <K extends keyof typeof values>(
+    key: K,
+    value: (typeof values)[K],
+  ) => setValues((previous) => ({ ...previous, [key]: value }));
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -55,7 +67,9 @@ export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Da
     try {
       await onSubmit(result.payload);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'L’enregistrement a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
     }
@@ -64,8 +78,17 @@ export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Da
   const withdraw = values.mode === 'WITHDRAW';
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} noValidate aria-label="Nouveau versement" className="flex flex-col gap-lg rounded bg-soft-cloud p-md">
-      <div role="group" aria-label="Sens du mouvement" className="grid grid-cols-2 rounded-full bg-white p-1">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      noValidate
+      aria-label="Nouveau versement"
+      className="flex flex-col gap-lg rounded bg-soft-cloud p-md"
+    >
+      <div
+        role="group"
+        aria-label="Sens du mouvement"
+        className="grid grid-cols-2 rounded-full bg-white p-1"
+      >
         {MODES.map((mode) => (
           <button
             key={mode}
@@ -93,10 +116,14 @@ export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Da
             value={values.amount}
             onChange={(event) => set('amount', event.target.value)}
             aria-invalid={errors.amount ? true : undefined}
-            aria-describedby={errors.amount ? 'deposit-amount-error' : undefined}
+            aria-describedby={
+              errors.amount ? 'deposit-amount-error' : undefined
+            }
             className={`${inputClass} tabular pr-10 text-right`}
           />
-          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">€</span>
+          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+            €
+          </span>
         </div>
         <FieldError id="deposit-amount-error" message={errors.amount} />
       </div>
@@ -126,7 +153,9 @@ export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Da
           type="text"
           maxLength={MAX_DEPOSIT_NOTE_LENGTH}
           autoComplete="off"
-          placeholder={withdraw ? 'Réparation imprévue' : 'Prime de fin d’année'}
+          placeholder={
+            withdraw ? 'Réparation imprévue' : 'Prime de fin d’année'
+          }
           value={values.note}
           onChange={(event) => set('note', event.target.value)}
           aria-invalid={errors.note ? true : undefined}
@@ -143,11 +172,23 @@ export function DepositForm({ savedCents, onSubmit, onCancel, now = () => new Da
       )}
 
       <div className="flex gap-sm">
-        <button type="button" onClick={onCancel} className="min-h-[48px] rounded-full border border-hairline bg-white px-xl font-button-md text-body-md font-semibold">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="min-h-[48px] rounded-full border border-hairline bg-white px-xl font-button-md text-body-md font-semibold"
+        >
           Annuler
         </button>
-        <button type="submit" disabled={submitting} className={`${buttonPrimary} flex-1`}>
-          {submitting ? 'Enregistrement…' : withdraw ? 'Enregistrer le retrait' : 'Enregistrer le versement'}
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${buttonPrimary} flex-1`}
+        >
+          {submitting
+            ? 'Enregistrement…'
+            : withdraw
+              ? 'Enregistrer le retrait'
+              : 'Enregistrer le versement'}
         </button>
       </div>
     </form>

@@ -1,6 +1,11 @@
 import { useCallback, useState } from 'react';
 import { ExportRange } from '../domain/export';
-import { ApiError, apiClient, DownloadedFile, NetworkError } from '../infrastructure/api-client';
+import {
+  ApiError,
+  apiClient,
+  DownloadedFile,
+  NetworkError,
+} from '../infrastructure/api-client';
 import { saveFile } from '../infrastructure/browser-download';
 
 export type ExportKind = 'backup' | 'csv';
@@ -36,20 +41,27 @@ export interface ExportActions {
 export function useExport(): ExportActions {
   const [busy, setBusy] = useState<ExportKind | null>(null);
 
-  const run = useCallback(async (kind: ExportKind, fetchFile: () => Promise<DownloadedFile>) => {
-    setBusy(kind);
-    try {
-      const file = await fetchFile();
-      saveFile(file);
-      return file.filename;
-    } finally {
-      setBusy(null);
-    }
-  }, []);
+  const run = useCallback(
+    async (kind: ExportKind, fetchFile: () => Promise<DownloadedFile>) => {
+      setBusy(kind);
+      try {
+        const file = await fetchFile();
+        saveFile(file);
+        return file.filename;
+      } finally {
+        setBusy(null);
+      }
+    },
+    [],
+  );
 
-  const downloadBackup = useCallback(() => run('backup', () => apiClient.downloadExport()), [run]);
+  const downloadBackup = useCallback(
+    () => run('backup', () => apiClient.downloadExport()),
+    [run],
+  );
   const downloadCsv = useCallback(
-    (spaceId: string, range: ExportRange) => run('csv', () => apiClient.downloadTransactionsCsv(spaceId, range)),
+    (spaceId: string, range: ExportRange) =>
+      run('csv', () => apiClient.downloadTransactionsCsv(spaceId, range)),
     [run],
   );
 

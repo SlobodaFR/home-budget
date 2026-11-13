@@ -5,7 +5,11 @@ import { lifeEvent } from '../test/fixtures';
 import { useLifeEventActions } from './use-life-event-actions';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ createLifeEvent: vi.fn<ApiMock<'createLifeEvent'>>(), updateLifeEvent: vi.fn<ApiMock<'updateLifeEvent'>>(), deleteLifeEvent: vi.fn<ApiMock<'deleteLifeEvent'>>() }));
+const api = vi.hoisted(() => ({
+  createLifeEvent: vi.fn<ApiMock<'createLifeEvent'>>(),
+  updateLifeEvent: vi.fn<ApiMock<'updateLifeEvent'>>(),
+  deleteLifeEvent: vi.fn<ApiMock<'deleteLifeEvent'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -16,7 +20,9 @@ describe('useLifeEventActions', () => {
   const onChanged = vi.fn<() => void>();
 
   beforeEach(() => {
-    Object.values(api).forEach((mock) => mock.mockReset().mockResolvedValue(undefined));
+    Object.values(api).forEach((mock) =>
+      mock.mockReset().mockResolvedValue(undefined),
+    );
     onChanged.mockReset();
   });
 
@@ -25,9 +31,16 @@ describe('useLifeEventActions', () => {
     const { result } = renderHook(() => useLifeEventActions(onChanged));
     let created: unknown;
     await act(async () => {
-      created = await result.current.createBirth({ eventDate: '2026-11-12', label: 'Bébé' });
+      created = await result.current.createBirth({
+        eventDate: '2026-11-12',
+        label: 'Bébé',
+      });
     });
-    expect(api.createLifeEvent).toHaveBeenCalledWith({ type: 'BIRTH', eventDate: '2026-11-12', label: 'Bébé' });
+    expect(api.createLifeEvent).toHaveBeenCalledWith({
+      type: 'BIRTH',
+      eventDate: '2026-11-12',
+      label: 'Bébé',
+    });
     expect(created).toEqual(lifeEvent());
     expect(onChanged).toHaveBeenCalledTimes(1);
     expect(result.current.busy).toBe(false);
@@ -36,13 +49,24 @@ describe('useLifeEventActions', () => {
   it('creates a birth without a label', async () => {
     const { result } = renderHook(() => useLifeEventActions(onChanged));
     await act(() => result.current.createBirth({ eventDate: '2026-11-12' }));
-    expect(api.createLifeEvent).toHaveBeenCalledWith({ type: 'BIRTH', eventDate: '2026-11-12' });
+    expect(api.createLifeEvent).toHaveBeenCalledWith({
+      type: 'BIRTH',
+      eventDate: '2026-11-12',
+    });
   });
 
   it('updates and deletes by event id', async () => {
     const { result } = renderHook(() => useLifeEventActions(onChanged));
-    await act(() => result.current.update(lifeEvent(), { eventDate: '2026-11-20', label: 'Bébé' }));
-    expect(api.updateLifeEvent).toHaveBeenCalledWith('e1', { eventDate: '2026-11-20', label: 'Bébé' });
+    await act(() =>
+      result.current.update(lifeEvent(), {
+        eventDate: '2026-11-20',
+        label: 'Bébé',
+      }),
+    );
+    expect(api.updateLifeEvent).toHaveBeenCalledWith('e1', {
+      eventDate: '2026-11-20',
+      label: 'Bébé',
+    });
     await act(() => result.current.remove(lifeEvent()));
     expect(api.deleteLifeEvent).toHaveBeenCalledWith('e1');
     expect(onChanged).toHaveBeenCalledTimes(2);
@@ -52,7 +76,9 @@ describe('useLifeEventActions', () => {
     api.createLifeEvent.mockRejectedValue(new ApiError(400, 'date invalide'));
     const { result } = renderHook(() => useLifeEventActions(onChanged));
     await act(async () => {
-      await expect(result.current.createBirth({ eventDate: '1990-01-01' })).rejects.toBeInstanceOf(ApiError);
+      await expect(
+        result.current.createBirth({ eventDate: '1990-01-01' }),
+      ).rejects.toBeInstanceOf(ApiError);
     });
     expect(onChanged).not.toHaveBeenCalled();
     expect(result.current.busy).toBe(false);

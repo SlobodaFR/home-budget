@@ -4,7 +4,8 @@ export const faq: HelpSection = {
   id: 'faq',
   kind: 'faq',
   title: 'Questions fréquentes',
-  summary: 'Les questions que l’on se pose le plus souvent, avec des réponses courtes.',
+  summary:
+    'Les questions que l’on se pose le plus souvent, avec des réponses courtes.',
   keywords: ['faq', 'question', 'problème', 'pourquoi', 'comment'],
   entries: [
     {
@@ -28,7 +29,13 @@ export const faq: HelpSection = {
           text: 'Le solde prudent est volontairement plus bas : il suppose que vous dépensez au moins le prévu dans chaque bloc. Ce n’est pas une prédiction, seulement une façon de se garder une marge.',
         },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir le prévisionnel', to: '/previsionnel' }],
+      links: [
+        {
+          kind: 'internal',
+          label: 'Ouvrir le prévisionnel',
+          to: '/previsionnel',
+        },
+      ],
       keywords: ['solde', 'négatif', 'rouge', 'projeté', 'prudent'],
     },
     {
@@ -82,7 +89,10 @@ export const faq: HelpSection = {
           type: 'paragraph',
           text: 'Techniquement, oui. Vos données perso sont chiffrées, mais la clé de chiffrement est détenue par l’hébergeur de l’application. Le chiffrement protège contre la fuite de la base de données et contre la curiosité des autres membres du foyer, pas contre l’hébergeur lui-même.',
         },
-        { type: 'paragraph', text: 'Une clé propre à chaque personne est une idée pour la suite.' },
+        {
+          type: 'paragraph',
+          text: 'Une clé propre à chaque personne est une idée pour la suite.',
+        },
       ],
       keywords: ['chiffrement', 'clé', 'hébergeur', 'sécurité'],
     },
@@ -112,14 +122,17 @@ export const faq: HelpSection = {
     },
     {
       id: 'faq-doublons-import',
-      title: 'J’ai importé deux fois le même relevé : y aura-t-il des doublons ?',
+      title:
+        'J’ai importé deux fois le même relevé : y aura-t-il des doublons ?',
       blocks: [
         {
           type: 'paragraph',
           text: 'L’application repère les lignes déjà importées et les range à part, sous « Déjà importées », ignorées par défaut. Vous voyez le tri avant de valider : rien n’est enregistré tant que vous n’avez pas validé.',
         },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir l’import de relevé', to: '/import' }],
+      links: [
+        { kind: 'internal', label: 'Ouvrir l’import de relevé', to: '/import' },
+      ],
       keywords: ['import', 'doublon', 'relevé', 'deux fois'],
     },
     {

@@ -2,14 +2,21 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountsProvider } from '../../application/use-accounts';
-import { HouseholdContext, HouseholdContextValue } from '../../application/use-household';
+import {
+  HouseholdContext,
+  HouseholdContextValue,
+} from '../../application/use-household';
 import { OfflineQueueProvider } from '../../application/use-offline-queue';
 import { SelectedMonthProvider } from '../../application/use-selected-month';
 import { SpaceProvider } from '../../application/use-space';
 import { review } from '../../test/fixtures';
 import { testHousehold } from '../../test/render-app';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(), fetchReview: vi.fn<ApiMock<'fetchReview'>>(), fetchReviews: vi.fn<ApiMock<'fetchReviews'>>() }));
+const api = vi.hoisted(() => ({
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  fetchReview: vi.fn<ApiMock<'fetchReview'>>(),
+  fetchReviews: vi.fn<ApiMock<'fetchReviews'>>(),
+}));
 
 vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../infrastructure/api-client')>()),
@@ -17,7 +24,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import { RevuePage } from '../pages/RevuePage';
@@ -27,12 +38,21 @@ import type { ApiMock } from '../../test/api-mock';
 describe('AppShell on the review page', () => {
   beforeEach(() => {
     api.fetchAccounts.mockResolvedValue([]);
-    api.fetchReview.mockImplementation(async (_space: string, month: string) => review({ month }));
+    api.fetchReview.mockImplementation(async (_space: string, month: string) =>
+      review({ month }),
+    );
     api.fetchReviews.mockResolvedValue([]);
   });
 
   it('lets you switch space, adds no fifth tab and keeps « Accueil » highlighted', async () => {
-    const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
+    const value: HouseholdContextValue = {
+      household: testHousehold,
+      loading: false,
+      offline: false,
+      failed: false,
+      reload: vi.fn<() => Promise<void>>(),
+      setHousehold: vi.fn<() => void>(),
+    };
     render(
       <MemoryRouter initialEntries={['/revue']}>
         <HouseholdContext.Provider value={value}>
@@ -52,10 +72,16 @@ describe('AppShell on the review page', () => {
         </HouseholdContext.Provider>
       </MemoryRouter>,
     );
-    expect(await screen.findByRole('heading', { name: 'Ma revue du mois' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Ma revue du mois' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Espace' })).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: 'Navigation principale' });
+    const nav = screen.getByRole('navigation', {
+      name: 'Navigation principale',
+    });
     expect(within(nav).getAllByRole('link')).toHaveLength(4);
-    expect(within(nav).getByRole('link', { name: 'Accueil' }).className).toContain('text-ink');
+    expect(
+      within(nav).getByRole('link', { name: 'Accueil' }).className,
+    ).toContain('text-ink');
   });
 });

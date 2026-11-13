@@ -1,4 +1,12 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { Household } from '../domain/household';
 import { isOfflineError } from './error-message';
 import { apiClient } from '../infrastructure/api-client';
@@ -14,7 +22,9 @@ export interface HouseholdContextValue {
   setHousehold: (household: Household | null) => void;
 }
 
-export const HouseholdContext = createContext<HouseholdContextValue | null>(null);
+export const HouseholdContext = createContext<HouseholdContextValue | null>(
+  null,
+);
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -40,7 +50,11 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setFailed(false);
     } catch (error) {
       const cached = sessionCache.load();
-      if (isOfflineError(error) && cached?.household && cached.user.id === user?.id) {
+      if (
+        isOfflineError(error) &&
+        cached?.household &&
+        cached.user.id === user?.id
+      ) {
         setHouseholdState(cached.household);
         setOffline(true);
         setFailed(false);
@@ -69,7 +83,11 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     () => ({ household, loading, offline, failed, reload, setHousehold }),
     [household, loading, offline, failed, reload, setHousehold],
   );
-  return <HouseholdContext.Provider value={value}>{children}</HouseholdContext.Provider>;
+  return (
+    <HouseholdContext.Provider value={value}>
+      {children}
+    </HouseholdContext.Provider>
+  );
 }
 
 export function useHousehold(): HouseholdContextValue {

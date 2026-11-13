@@ -5,7 +5,9 @@ import { AccountsOverview } from './AccountsOverview';
 
 describe('AccountsOverview', () => {
   it('shows nothing without an active account', () => {
-    const { container } = render(<AccountsOverview accounts={[account({ archived: true })]} />);
+    const { container } = render(
+      <AccountsOverview accounts={[account({ archived: true })]} />,
+    );
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -13,9 +15,22 @@ describe('AccountsOverview', () => {
     render(
       <AccountsOverview
         accounts={[
-          account({ id: 'a1', balanceCents: 100000, projectedMonthEndCents: 80000 }),
-          account({ id: 'a2', balanceCents: 50000, projectedMonthEndCents: 60000 }),
-          account({ id: 'a3', archived: true, balanceCents: 999999, projectedMonthEndCents: 999999 }),
+          account({
+            id: 'a1',
+            balanceCents: 100000,
+            projectedMonthEndCents: 80000,
+          }),
+          account({
+            id: 'a2',
+            balanceCents: 50000,
+            projectedMonthEndCents: 60000,
+          }),
+          account({
+            id: 'a3',
+            archived: true,
+            balanceCents: 999999,
+            projectedMonthEndCents: 999999,
+          }),
         ]}
       />,
     );
@@ -25,13 +40,27 @@ describe('AccountsOverview', () => {
     expect(within(region).getByText('1 500,00 €')).toBeInTheDocument();
     expect(within(region).getByText('1 400,00 €')).toBeInTheDocument();
     expect(within(region).getByText('2 comptes actifs')).toBeInTheDocument();
-    expect(within(region).getByText('aucun compte sous zéro avant la fin du mois')).toBeInTheDocument();
+    expect(
+      within(region).getByText('aucun compte sous zéro avant la fin du mois'),
+    ).toBeInTheDocument();
   });
 
   it('points out the accounts that go below zero before the end of the month', () => {
-    render(<AccountsOverview accounts={[account({ id: 'a1', balanceCents: 1000, projectedMonthEndCents: -2000 })]} />);
+    render(
+      <AccountsOverview
+        accounts={[
+          account({
+            id: 'a1',
+            balanceCents: 1000,
+            projectedMonthEndCents: -2000,
+          }),
+        ]}
+      />,
+    );
     const region = screen.getByRole('region', { name: 'Synthèse des comptes' });
-    expect(within(region).getByText('compte sous zéro avant la fin du mois')).toBeInTheDocument();
+    expect(
+      within(region).getByText('compte sous zéro avant la fin du mois'),
+    ).toBeInTheDocument();
     expect(within(region).getByText('1')).toHaveClass('text-error');
   });
 });

@@ -19,18 +19,33 @@ export function PlanPage() {
       toast.show('Plan enregistré');
       return true;
     } catch (failure) {
-      toast.show(describeError(failure, 'Enregistrement du plan impossible.'), 'error');
+      toast.show(
+        describeError(failure, 'Enregistrement du plan impossible.'),
+        'error',
+      );
       return false;
     }
   };
 
   return (
     <>
-      <PageIntro title={`Plan ${kind === 'COMMON' ? 'commun' : 'perso'}`} description="Le budget prévu pour un mois type." />
+      <PageIntro
+        title={`Plan ${kind === 'COMMON' ? 'commun' : 'perso'}`}
+        description="Le budget prévu pour un mois type."
+      />
       {plan ? (
-        <PlanForm key={space.id} initial={plan} saving={saving} isCommon={kind === 'COMMON'} onSave={handleSave} />
+        <PlanForm
+          key={space.id}
+          initial={plan}
+          saving={saving}
+          isCommon={kind === 'COMMON'}
+          onSave={handleSave}
+        />
       ) : error ? (
-        <ErrorNotice message={describeError(error, 'Impossible de charger le plan.')} onRetry={reload} />
+        <ErrorNotice
+          message={describeError(error, 'Impossible de charger le plan.')}
+          onRetry={reload}
+        />
       ) : (
         loading && <LoadingScreen />
       )}

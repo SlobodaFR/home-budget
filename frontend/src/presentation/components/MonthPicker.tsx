@@ -8,16 +8,25 @@ interface Props {
   maxMonth?: string;
 }
 
-const stepButton = 'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-hairline-soft bg-white hover:bg-soft-cloud';
+const stepButton =
+  'flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-hairline-soft bg-white hover:bg-soft-cloud';
 
 export function MonthPicker({ month, onChange, maxMonth }: Props) {
   const atEnd = maxMonth !== undefined && month >= maxMonth;
   return (
     <div className="flex items-center justify-between lg:justify-start lg:gap-md">
-      <button type="button" aria-label="Mois précédent" className={stepButton} onClick={() => onChange(shiftMonth(month, -1))}>
+      <button
+        type="button"
+        aria-label="Mois précédent"
+        className={stepButton}
+        onClick={() => onChange(shiftMonth(month, -1))}
+      >
         <ChevronLeftIcon />
       </button>
-      <h2 className="font-heading-lg text-heading-lg capitalize lg:min-w-[11rem] lg:text-center" aria-live="polite">
+      <h2
+        className="font-heading-lg text-heading-lg capitalize lg:min-w-[11rem] lg:text-center"
+        aria-live="polite"
+      >
         {formatMonthLabel(month)}
       </h2>
       <button

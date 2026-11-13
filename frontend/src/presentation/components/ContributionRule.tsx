@@ -1,4 +1,8 @@
-import { CONTRIBUTION_MODE_INFO, CONTRIBUTION_MODES, ContributionMode } from '../../domain/household';
+import {
+  CONTRIBUTION_MODE_INFO,
+  CONTRIBUTION_MODES,
+  ContributionMode,
+} from '../../domain/household';
 
 interface Props {
   mode: ContributionMode;
@@ -8,7 +12,11 @@ interface Props {
 
 export function ContributionRule({ mode, disabled, onChange }: Props) {
   return (
-    <div role="radiogroup" aria-label="Règle de contribution" className="flex flex-col gap-sm">
+    <div
+      role="radiogroup"
+      aria-label="Règle de contribution"
+      className="flex flex-col gap-sm"
+    >
       {CONTRIBUTION_MODES.map((option) => {
         const info = CONTRIBUTION_MODE_INFO[option];
         const selected = option === mode;
@@ -21,7 +29,9 @@ export function ContributionRule({ mode, disabled, onChange }: Props) {
             disabled={disabled}
             onClick={() => !selected && onChange(option)}
             className={`flex min-h-[64px] items-start gap-md rounded border-2 p-md text-left transition-colors ${
-              selected ? 'border-ink bg-white' : 'border-hairline-soft bg-white hover:border-hairline'
+              selected
+                ? 'border-ink bg-white'
+                : 'border-hairline-soft bg-white hover:border-hairline'
             }`}
           >
             <span
@@ -31,8 +41,12 @@ export function ContributionRule({ mode, disabled, onChange }: Props) {
               {selected && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
             </span>
             <span>
-              <span className="block font-body-md text-body-md font-semibold">{info.label}</span>
-              <span className="block font-body-sm text-body-sm text-mute">{info.description}</span>
+              <span className="block font-body-md text-body-md font-semibold">
+                {info.label}
+              </span>
+              <span className="block font-body-sm text-body-sm text-mute">
+                {info.description}
+              </span>
             </span>
           </button>
         );

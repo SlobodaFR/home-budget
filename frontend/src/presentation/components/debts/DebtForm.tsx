@@ -67,21 +67,39 @@ interface Props {
   now?: () => Date;
 }
 
-export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClose, onSubmit, now = () => new Date() }: Props) {
-  const [values, setValues] = useState(() => (editing ? debtToForm(editing) : emptyDebtForm(now())));
+export function DebtForm({
+  editing,
+  spaceId,
+  recurring = [],
+  lenders = [],
+  onClose,
+  onSubmit,
+  now = () => new Date(),
+}: Props) {
+  const [values, setValues] = useState(() =>
+    editing ? debtToForm(editing) : emptyDebtForm(now()),
+  );
   const [initialValues] = useState(values);
   const [view, setView] = useState<'form' | 'import'>('form');
   const [marks, setMarks] = useState<PrefillMarks>({});
-  const [prefillReport, setPrefillReport] = useState<PrefillReport | null>(null);
+  const [prefillReport, setPrefillReport] = useState<PrefillReport | null>(
+    null,
+  );
   const capabilities = useExtractionCapabilities(Boolean(spaceId) && !editing);
   // Le bouton d'import n'apparaît que sur un formulaire encore vierge : il n'écrase jamais ce qui a été saisi.
-  const canImport = capabilities !== null && spaceId !== undefined && isFormUntouched(values, initialValues);
+  const canImport =
+    capabilities !== null &&
+    spaceId !== undefined &&
+    isFormUntouched(values, initialValues);
   const [errors, setErrors] = useState<DebtFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => {
+  const set = <K extends keyof typeof values>(
+    key: K,
+    value: (typeof values)[K],
+  ) => {
     setValues((previous) => ({ ...previous, [key]: value }));
     // Modifier un champ prérempli efface son repère « à vérifier » : la personne l'a relu.
     setMarks((previous) => clearPrefillMark(previous, key));
@@ -92,16 +110,31 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
     setValues(result.values);
     setMarks(result.marks);
     setErrors({});
-    setPrefillReport({ message: describePrefill(result), skipped: result.skipped });
-    if (result.applied.some((field) => field === 'contractReference' || field === 'feesCents' || field === 'guaranteeKind' || field === 'guaranteeCents')) {
+    setPrefillReport({
+      message: describePrefill(result),
+      skipped: result.skipped,
+    });
+    if (
+      result.applied.some(
+        (field) =>
+          field === 'contractReference' ||
+          field === 'feesCents' ||
+          field === 'guaranteeKind' ||
+          field === 'guaranteeCents',
+      )
+    ) {
       setDetailsOpen(true);
     }
     setView('form');
   };
   const linkable = linkableRecurring(recurring, values.recurringId || null);
-  const [detailsOpen, setDetailsOpen] = useState(() => hasContractDetails(values));
+  const [detailsOpen, setDetailsOpen] = useState(() =>
+    hasContractDetails(values),
+  );
   const percentInsurance = values.insuranceMode !== 'FIXED';
-  const warning = rateTypeWarning(values.rateType === '' ? null : values.rateType);
+  const warning = rateTypeWarning(
+    values.rateType === '' ? null : values.rateType,
+  );
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -120,7 +153,9 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
     try {
       await onSubmit(result.payload);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'L’enregistrement a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
     }
@@ -135,33 +170,71 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
   if (view === 'import' && capabilities && spaceId) {
     return (
       <BottomSheet title="Importer un contrat" onClose={leaveImport}>
-        <ContractImport spaceId={spaceId} capabilities={capabilities} onApply={applyExtraction} onBack={leaveImport} />
+        <ContractImport
+          spaceId={spaceId}
+          capabilities={capabilities}
+          onApply={applyExtraction}
+          onBack={leaveImport}
+        />
       </BottomSheet>
     );
   }
 
   return (
-    <BottomSheet title={editing ? 'Modifier le crédit' : 'Nouveau crédit'} onClose={onClose}>
-      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
+    <BottomSheet
+      title={editing ? 'Modifier le crédit' : 'Nouveau crédit'}
+      onClose={onClose}
+    >
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        className="flex flex-col gap-lg"
+      >
         {prefillReport && (
-          <section role="status" aria-label="Résultat de l’import du contrat" className="flex flex-col gap-sm rounded border border-plaisir/60 bg-plaisir/10 p-md font-body-sm text-body-sm">
+          <section
+            role="status"
+            aria-label="Résultat de l’import du contrat"
+            className="flex flex-col gap-sm rounded border border-plaisir/60 bg-plaisir/10 p-md font-body-sm text-body-sm"
+          >
             <p>{prefillReport.message}</p>
-            <p>À compléter vous-même : le nom du crédit, son type, le capital restant dû et le jour de prélèvement.</p>
+            <p>
+              À compléter vous-même : le nom du crédit, son type, le capital
+              restant dû et le jour de prélèvement.
+            </p>
             {prefillReport.skipped.length > 0 && (
               <p>
-                Non repris : {prefillReport.skipped.map((item) => `${item.label} (${item.reason})`).join(' ; ')}.
+                Non repris :{' '}
+                {prefillReport.skipped
+                  .map((item) => `${item.label} (${item.reason})`)
+                  .join(' ; ')}
+                .
               </p>
             )}
-            <button type="button" onClick={() => setPrefillReport(null)} className={`${buttonSecondary} min-h-[44px] self-start bg-white`}>
+            <button
+              type="button"
+              onClick={() => setPrefillReport(null)}
+              className={`${buttonSecondary} min-h-[44px] self-start bg-white`}
+            >
               Masquer ce message
             </button>
           </section>
         )}
 
         {canImport && (
-          <section aria-label="Importer un contrat" className="flex flex-col gap-sm rounded bg-soft-cloud p-md">
-            <p className="font-body-sm text-body-sm">Vous avez votre contrat ou votre offre de prêt sous la main ? Les informations lisibles vous sont proposées, et vous vérifiez tout avant d’enregistrer.</p>
-            <button type="button" onClick={() => setView('import')} className={`${buttonSecondary} w-full bg-white`}>
+          <section
+            aria-label="Importer un contrat"
+            className="flex flex-col gap-sm rounded bg-soft-cloud p-md"
+          >
+            <p className="font-body-sm text-body-sm">
+              Vous avez votre contrat ou votre offre de prêt sous la main ? Les
+              informations lisibles vous sont proposées, et vous vérifiez tout
+              avant d’enregistrer.
+            </p>
+            <button
+              type="button"
+              onClick={() => setView('import')}
+              className={`${buttonSecondary} w-full bg-white`}
+            >
               <UploadIcon width={20} height={20} />
               Importer depuis un contrat (PDF ou photo)
             </button>
@@ -201,7 +274,9 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             value={values.lender}
             onChange={(event) => set('lender', event.target.value)}
             aria-invalid={errors.lender ? true : undefined}
-            aria-describedby={errors.lender ? 'debt-lender-error' : 'debt-lender-hint'}
+            aria-describedby={
+              errors.lender ? 'debt-lender-error' : 'debt-lender-hint'
+            }
             className={inputClass}
           />
           {lenders.length > 0 && (
@@ -211,7 +286,10 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
               ))}
             </datalist>
           )}
-          {hint('debt-lender-hint', 'La banque ou l’organisme qui vous a prêté l’argent. Cela permet de regrouper vos crédits par prêteur.')}
+          {hint(
+            'debt-lender-hint',
+            'La banque ou l’organisme qui vous a prêté l’argent. Cela permet de regrouper vos crédits par prêteur.',
+          )}
           <FieldError id="debt-lender-error" message={errors.lender} />
           <PrefillMark confidence={marks.lender} />
         </div>
@@ -228,7 +306,9 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                   aria-pressed={values.kind === kind}
                   onClick={() => set('kind', kind)}
                   className={`flex min-h-[48px] items-center justify-center gap-1 rounded-full border-2 px-sm font-button-md text-body-sm font-semibold leading-tight ${
-                    values.kind === kind ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
+                    values.kind === kind
+                      ? 'border-ink bg-ink text-surface'
+                      : 'border-hairline bg-white text-ink'
                   }`}
                 >
                   <Icon width={18} height={18} className="shrink-0" />
@@ -248,10 +328,15 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             value={values.principal}
             onChange={(value) => set('principal', value)}
             invalid={Boolean(errors.principal)}
-            describedBy={errors.principal ? 'debt-principal-error' : 'debt-principal-hint'}
+            describedBy={
+              errors.principal ? 'debt-principal-error' : 'debt-principal-hint'
+            }
             placeholder="15 000"
           />
-          {hint('debt-principal-hint', 'La somme prêtée au départ par la banque.')}
+          {hint(
+            'debt-principal-hint',
+            'La somme prêtée au départ par la banque.',
+          )}
           <FieldError id="debt-principal-error" message={errors.principal} />
           <PrefillMark confidence={marks.principal} />
         </div>
@@ -265,7 +350,9 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             value={values.remaining}
             onChange={(value) => set('remaining', value)}
             invalid={Boolean(errors.remaining)}
-            describedBy={errors.remaining ? 'debt-remaining-error' : 'debt-remaining-hint'}
+            describedBy={
+              errors.remaining ? 'debt-remaining-error' : 'debt-remaining-hint'
+            }
             placeholder="11 200"
           />
           {hint('debt-remaining-hint', REMAINING_HELP)}
@@ -285,22 +372,38 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             describedBy={errors.rate ? 'debt-rate-error' : 'debt-rate-hint'}
             placeholder="3,9"
           />
-          {hint('debt-rate-hint', 'Le taux indiqué dans votre contrat, hors assurance (ex. 3,9). Mettez 0 pour un crédit sans intérêts.')}
+          {hint(
+            'debt-rate-hint',
+            'Le taux indiqué dans votre contrat, hors assurance (ex. 3,9). Mettez 0 pour un crédit sans intérêts.',
+          )}
           <FieldError id="debt-rate-error" message={errors.rate} />
           <PrefillMark confidence={marks.rate} />
         </div>
 
-        <div role="group" aria-label="Type de taux" aria-describedby="debt-rate-type-hint">
+        <div
+          role="group"
+          aria-label="Type de taux"
+          aria-describedby="debt-rate-type-hint"
+        >
           <span className={labelClass}>Type de taux (facultatif)</span>
           <div className="grid grid-cols-2 gap-sm min-[420px]:grid-cols-4">
-            {([['', RATE_TYPE_UNKNOWN_LABEL], ...RATE_TYPES.map((type) => [type, RATE_TYPE_LABEL[type]] as const)] as const).map(([type, label]) => (
+            {(
+              [
+                ['', RATE_TYPE_UNKNOWN_LABEL],
+                ...RATE_TYPES.map(
+                  (type) => [type, RATE_TYPE_LABEL[type]] as const,
+                ),
+              ] as const
+            ).map(([type, label]) => (
               <button
                 key={type || 'unknown'}
                 type="button"
                 aria-pressed={values.rateType === type}
                 onClick={() => set('rateType', type)}
                 className={`flex min-h-[48px] items-center justify-center rounded-full border-2 px-sm font-button-md text-body-sm font-semibold leading-tight ${
-                  values.rateType === type ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
+                  values.rateType === type
+                    ? 'border-ink bg-ink text-surface'
+                    : 'border-hairline bg-white text-ink'
                 }`}
               >
                 {label}
@@ -310,7 +413,10 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
           {hint('debt-rate-type-hint', RATE_TYPE_HELP)}
           <PrefillMark confidence={marks.rateType} />
           {warning && (
-            <p role="status" className="mt-sm flex items-start gap-sm rounded border border-plaisir/50 bg-plaisir/10 p-md font-body-sm text-body-sm">
+            <p
+              role="status"
+              className="mt-sm flex items-start gap-sm rounded border border-plaisir/50 bg-plaisir/10 p-md font-body-sm text-body-sm"
+            >
               <InfoIcon width={18} height={18} className="mt-0.5 shrink-0" />
               {warning}
             </p>
@@ -326,25 +432,39 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             value={values.monthlyPayment}
             onChange={(value) => set('monthlyPayment', value)}
             invalid={Boolean(errors.monthlyPayment)}
-            describedBy={errors.monthlyPayment ? 'debt-monthly-error' : 'debt-monthly-hint'}
+            describedBy={
+              errors.monthlyPayment ? 'debt-monthly-error' : 'debt-monthly-hint'
+            }
             placeholder="320"
           />
-          {hint('debt-monthly-hint', 'Ce que vous remboursez chaque mois, sans l’assurance.')}
+          {hint(
+            'debt-monthly-hint',
+            'Ce que vous remboursez chaque mois, sans l’assurance.',
+          )}
           <FieldError id="debt-monthly-error" message={errors.monthlyPayment} />
           <PrefillMark confidence={marks.monthlyPayment} />
         </div>
 
         <div role="group" aria-label="Durée initiale du prêt">
-          <span className={labelClass}>Durée initiale du prêt (facultatif)</span>
+          <span className={labelClass}>
+            Durée initiale du prêt (facultatif)
+          </span>
           <div className="mb-sm grid grid-cols-2 gap-sm">
-            {([['MONTHS', 'En mois'], ['YEARS', 'En années et mois']] as const).map(([unit, label]) => (
+            {(
+              [
+                ['MONTHS', 'En mois'],
+                ['YEARS', 'En années et mois'],
+              ] as const
+            ).map(([unit, label]) => (
               <button
                 key={unit}
                 type="button"
                 aria-pressed={values.termUnit === unit}
                 onClick={() => set('termUnit', unit)}
                 className={`flex min-h-[48px] items-center justify-center rounded-full border-2 px-sm font-button-md text-body-sm font-semibold leading-tight ${
-                  values.termUnit === unit ? 'border-ink bg-ink text-surface' : 'border-hairline bg-white text-ink'
+                  values.termUnit === unit
+                    ? 'border-ink bg-ink text-surface'
+                    : 'border-hairline bg-white text-ink'
                 }`}
               >
                 {label}
@@ -380,7 +500,9 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                   value={values.termYears}
                   onChange={(value) => set('termYears', value)}
                   invalid={Boolean(errors.term)}
-                  describedBy={errors.term ? 'debt-term-error' : 'debt-term-hint'}
+                  describedBy={
+                    errors.term ? 'debt-term-error' : 'debt-term-hint'
+                  }
                   placeholder="20"
                 />
               </div>
@@ -395,24 +517,41 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                   value={values.termExtraMonths}
                   onChange={(value) => set('termExtraMonths', value)}
                   invalid={Boolean(errors.term)}
-                  describedBy={errors.term ? 'debt-term-error' : 'debt-term-hint'}
+                  describedBy={
+                    errors.term ? 'debt-term-error' : 'debt-term-hint'
+                  }
                   placeholder="0"
                 />
               </div>
             </div>
           )}
-          {hint('debt-term-hint', 'La durée prévue à la signature du prêt (elle figure sur l’offre de prêt). Elle sert à vérifier que la mensualité est cohérente.')}
+          {hint(
+            'debt-term-hint',
+            'La durée prévue à la signature du prêt (elle figure sur l’offre de prêt). Elle sert à vérifier que la mensualité est cohérente.',
+          )}
           <FieldError id="debt-term-error" message={errors.term} />
           <PrefillMark confidence={marks.term} />
         </div>
 
         <fieldset className="flex flex-col gap-lg rounded border border-hairline p-md">
-          <legend className="px-1 font-label-caps text-label-caps uppercase text-mute">Assurance emprunteur</legend>
+          <legend className="px-1 font-label-caps text-label-caps uppercase text-mute">
+            Assurance emprunteur
+          </legend>
           <div>
             <label htmlFor="debt-insurance-mode" className={labelClass}>
               Comment l’assurance est-elle calculée ?
             </label>
-            <select id="debt-insurance-mode" value={values.insuranceMode} onChange={(event) => set('insuranceMode', event.target.value as typeof values.insuranceMode)} className={inputClass}>
+            <select
+              id="debt-insurance-mode"
+              value={values.insuranceMode}
+              onChange={(event) =>
+                set(
+                  'insuranceMode',
+                  event.target.value as typeof values.insuranceMode,
+                )
+              }
+              className={inputClass}
+            >
               {INSURANCE_MODES.map((mode) => (
                 <option key={mode} value={mode}>
                   {INSURANCE_MODE_LABEL[mode]}
@@ -434,7 +573,11 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                   value={values.insuranceRate}
                   onChange={(value) => set('insuranceRate', value)}
                   invalid={Boolean(errors.insuranceRate)}
-                  describedBy={errors.insuranceRate ? 'debt-insurance-rate-error' : 'debt-insurance-rate-hint'}
+                  describedBy={
+                    errors.insuranceRate
+                      ? 'debt-insurance-rate-error'
+                      : 'debt-insurance-rate-hint'
+                  }
                   placeholder="0,30"
                 />
                 {hint(
@@ -443,7 +586,10 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                     ? 'Appliqué au capital emprunté : l’assurance reste la même chaque mois.'
                     : 'Appliqué au capital restant dû : l’assurance baisse au fil des remboursements.',
                 )}
-                <FieldError id="debt-insurance-rate-error" message={errors.insuranceRate} />
+                <FieldError
+                  id="debt-insurance-rate-error"
+                  message={errors.insuranceRate}
+                />
                 <PrefillMark confidence={marks.insuranceRate} />
               </div>
               <div>
@@ -457,11 +603,18 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                   value={values.insuranceQuotity}
                   onChange={(value) => set('insuranceQuotity', value)}
                   invalid={Boolean(errors.insuranceQuotity)}
-                  describedBy={errors.insuranceQuotity ? 'debt-insurance-quotity-error' : 'debt-insurance-quotity-hint'}
+                  describedBy={
+                    errors.insuranceQuotity
+                      ? 'debt-insurance-quotity-error'
+                      : 'debt-insurance-quotity-hint'
+                  }
                   placeholder="100"
                 />
                 {hint('debt-insurance-quotity-hint', QUOTITY_HELP)}
-                <FieldError id="debt-insurance-quotity-error" message={errors.insuranceQuotity} />
+                <FieldError
+                  id="debt-insurance-quotity-error"
+                  message={errors.insuranceQuotity}
+                />
               </div>
             </>
           ) : (
@@ -474,11 +627,21 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                 value={values.insurance}
                 onChange={(value) => set('insurance', value)}
                 invalid={Boolean(errors.insurance)}
-                describedBy={errors.insurance ? 'debt-insurance-error' : 'debt-insurance-hint'}
+                describedBy={
+                  errors.insurance
+                    ? 'debt-insurance-error'
+                    : 'debt-insurance-hint'
+                }
                 placeholder="0"
               />
-              {hint('debt-insurance-hint', 'L’assurance emprunteur, si elle est prélevée en plus. Laissez vide sinon.')}
-              <FieldError id="debt-insurance-error" message={errors.insurance} />
+              {hint(
+                'debt-insurance-hint',
+                'L’assurance emprunteur, si elle est prélevée en plus. Laissez vide sinon.',
+              )}
+              <FieldError
+                id="debt-insurance-error"
+                message={errors.insurance}
+              />
               <PrefillMark confidence={marks.insurance} />
             </div>
           )}
@@ -494,7 +657,9 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             value={values.startDate}
             onChange={(event) => set('startDate', event.target.value)}
             aria-invalid={errors.startDate ? true : undefined}
-            aria-describedby={errors.startDate ? 'debt-start-date-error' : undefined}
+            aria-describedby={
+              errors.startDate ? 'debt-start-date-error' : undefined
+            }
             className={inputClass}
           />
           <FieldError id="debt-start-date-error" message={errors.startDate} />
@@ -515,10 +680,17 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             value={values.paymentDay}
             onChange={(event) => set('paymentDay', event.target.value)}
             aria-invalid={errors.paymentDay ? true : undefined}
-            aria-describedby={errors.paymentDay ? 'debt-payment-day-error' : 'debt-payment-day-hint'}
+            aria-describedby={
+              errors.paymentDay
+                ? 'debt-payment-day-error'
+                : 'debt-payment-day-hint'
+            }
             className={`${inputClass} tabular text-right`}
           />
-          {hint('debt-payment-day-hint', `Le jour du mois où la mensualité est prélevée, entre ${MIN_PAYMENT_DAY} et ${MAX_PAYMENT_DAY}.`)}
+          {hint(
+            'debt-payment-day-hint',
+            `Le jour du mois où la mensualité est prélevée, entre ${MIN_PAYMENT_DAY} et ${MAX_PAYMENT_DAY}.`,
+          )}
           <FieldError id="debt-payment-day-error" message={errors.paymentDay} />
         </div>
 
@@ -527,15 +699,25 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
             <label htmlFor="debt-recurring" className={labelClass}>
               Paiement récurrent lié (facultatif)
             </label>
-            <select id="debt-recurring" value={values.recurringId} onChange={(event) => set('recurringId', event.target.value)} aria-describedby="debt-recurring-hint" className={inputClass}>
+            <select
+              id="debt-recurring"
+              value={values.recurringId}
+              onChange={(event) => set('recurringId', event.target.value)}
+              aria-describedby="debt-recurring-hint"
+              className={inputClass}
+            >
               <option value="">Aucun</option>
               {linkable.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.label} ({formatCentsShort(item.amountCents)}){item.active ? '' : ' (inactif)'}
+                  {item.label} ({formatCentsShort(item.amountCents)})
+                  {item.active ? '' : ' (inactif)'}
                 </option>
               ))}
             </select>
-            {hint('debt-recurring-hint', 'Le paiement récurrent de votre plan qui représente cette mensualité, si vous l’avez déjà ajouté.')}
+            {hint(
+              'debt-recurring-hint',
+              'Le paiement récurrent de votre plan qui représente cette mensualité, si vous l’avez déjà ajouté.',
+            )}
           </div>
         )}
 
@@ -547,7 +729,11 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
         >
           <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-md px-md font-body-md text-body-md font-semibold">
             <span>Frais, garantie et notes (facultatif)</span>
-            <ChevronRightIcon width={20} height={20} className="transition-transform group-open:rotate-90" />
+            <ChevronRightIcon
+              width={20}
+              height={20}
+              className="transition-transform group-open:rotate-90"
+            />
           </summary>
           <div className="flex flex-col gap-lg p-md pt-sm">
             <div>
@@ -560,12 +746,19 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                 maxLength={MAX_CONTRACT_REFERENCE_LENGTH}
                 autoComplete="off"
                 value={values.contractReference}
-                onChange={(event) => set('contractReference', event.target.value)}
+                onChange={(event) =>
+                  set('contractReference', event.target.value)
+                }
                 aria-invalid={errors.contractReference ? true : undefined}
-                aria-describedby={errors.contractReference ? 'debt-reference-error' : undefined}
+                aria-describedby={
+                  errors.contractReference ? 'debt-reference-error' : undefined
+                }
                 className={inputClass}
               />
-              <FieldError id="debt-reference-error" message={errors.contractReference} />
+              <FieldError
+                id="debt-reference-error"
+                message={errors.contractReference}
+              />
               <PrefillMark confidence={marks.contractReference} />
             </div>
 
@@ -589,7 +782,17 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
               <label htmlFor="debt-guarantee-kind" className={labelClass}>
                 Garantie
               </label>
-              <select id="debt-guarantee-kind" value={values.guaranteeKind} onChange={(event) => set('guaranteeKind', event.target.value as typeof values.guaranteeKind)} className={inputClass}>
+              <select
+                id="debt-guarantee-kind"
+                value={values.guaranteeKind}
+                onChange={(event) =>
+                  set(
+                    'guaranteeKind',
+                    event.target.value as typeof values.guaranteeKind,
+                  )
+                }
+                className={inputClass}
+              >
                 {GUARANTEE_KINDS.map((kind) => (
                   <option key={kind} value={kind}>
                     {GUARANTEE_KIND_LABEL[kind]}
@@ -608,11 +811,21 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                 value={values.guarantee}
                 onChange={(value) => set('guarantee', value)}
                 invalid={Boolean(errors.guarantee)}
-                describedBy={errors.guarantee ? 'debt-guarantee-error' : 'debt-guarantee-hint'}
+                describedBy={
+                  errors.guarantee
+                    ? 'debt-guarantee-error'
+                    : 'debt-guarantee-hint'
+                }
                 placeholder="1 500"
               />
-              {hint('debt-guarantee-hint', 'Le coût de la caution ou de l’hypothèque, s’il y en a un. Choisissez d’abord le type de garantie.')}
-              <FieldError id="debt-guarantee-error" message={errors.guarantee} />
+              {hint(
+                'debt-guarantee-hint',
+                'Le coût de la caution ou de l’hypothèque, s’il y en a un. Choisissez d’abord le type de garantie.',
+              )}
+              <FieldError
+                id="debt-guarantee-error"
+                message={errors.guarantee}
+              />
               <PrefillMark confidence={marks.guarantee} />
             </div>
 
@@ -627,11 +840,19 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
                 value={values.notes}
                 onChange={(event) => set('notes', event.target.value)}
                 aria-invalid={errors.notes ? true : undefined}
-                aria-describedby={errors.notes ? 'debt-notes-error' : 'debt-notes-hint debt-notes-count'}
+                aria-describedby={
+                  errors.notes
+                    ? 'debt-notes-error'
+                    : 'debt-notes-hint debt-notes-count'
+                }
                 className={`${inputClass} py-sm`}
               />
               {hint('debt-notes-hint', NOTES_HELP)}
-              <p id="debt-notes-count" className="tabular mt-1 text-right font-body-sm text-body-sm text-mute" data-testid="notes-count">
+              <p
+                id="debt-notes-count"
+                className="tabular mt-1 text-right font-body-sm text-body-sm text-mute"
+                data-testid="notes-count"
+              >
                 {values.notes.length} / {MAX_NOTES_LENGTH} caractères
               </p>
               <FieldError id="debt-notes-error" message={errors.notes} />
@@ -645,8 +866,16 @@ export function DebtForm({ editing, spaceId, recurring = [], lenders = [], onClo
           </p>
         )}
 
-        <button type="submit" disabled={submitting} className={`${buttonPrimary} w-full`}>
-          {submitting ? 'Enregistrement…' : editing ? 'Enregistrer' : 'Ajouter le crédit'}
+        <button
+          type="submit"
+          disabled={submitting}
+          className={`${buttonPrimary} w-full`}
+        >
+          {submitting
+            ? 'Enregistrement…'
+            : editing
+              ? 'Enregistrer'
+              : 'Ajouter le crédit'}
         </button>
       </form>
     </BottomSheet>

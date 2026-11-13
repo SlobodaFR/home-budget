@@ -23,11 +23,20 @@ export interface SafetyNetFormErrors {
   targetMonths?: string;
 }
 
-export type SafetyNetFormResult = { ok: true; payload: SafetyNet } | { ok: false; errors: SafetyNetFormErrors };
+export type SafetyNetFormResult =
+  | { ok: true; payload: SafetyNet }
+  | { ok: false; errors: SafetyNetFormErrors };
 
-export function safetyNetToForm(safetyNet: SafetyNet | null, now: Date = new Date()): SafetyNetFormValues {
+export function safetyNetToForm(
+  safetyNet: SafetyNet | null,
+  now: Date = new Date(),
+): SafetyNetFormValues {
   if (!safetyNet) {
-    return { saved: '', asOf: todayInputValue(now), targetMonths: String(DEFAULT_TARGET_MONTHS) };
+    return {
+      saved: '',
+      asOf: todayInputValue(now),
+      targetMonths: String(DEFAULT_TARGET_MONTHS),
+    };
   }
   return {
     saved: centsToInputValue(safetyNet.savedCents),
@@ -36,14 +45,18 @@ export function safetyNetToForm(safetyNet: SafetyNet | null, now: Date = new Dat
   };
 }
 
-export function buildSafetyNetPayload(values: SafetyNetFormValues): SafetyNetFormResult {
+export function buildSafetyNetPayload(
+  values: SafetyNetFormValues,
+): SafetyNetFormResult {
   const errors: SafetyNetFormErrors = {};
 
   const savedCents = parseAmountToCents(values.saved);
   if (values.saved.trim() === '') {
-    errors.saved = 'Saisissez le montant de votre épargne (0 si vous n’avez encore rien).';
+    errors.saved =
+      'Saisissez le montant de votre épargne (0 si vous n’avez encore rien).';
   } else if (savedCents === null) {
-    errors.saved = 'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 5 500).';
+    errors.saved =
+      'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 5 500).';
   }
 
   if (!isValidDateInput(values.asOf)) {
@@ -51,8 +64,12 @@ export function buildSafetyNetPayload(values: SafetyNetFormValues): SafetyNetFor
   }
 
   const monthsText = values.targetMonths.trim();
-  const targetMonths = /^\d{1,3}$/.test(monthsText) ? Number(monthsText) : Number.NaN;
-  if (!(targetMonths >= MIN_TARGET_MONTHS && targetMonths <= MAX_TARGET_MONTHS)) {
+  const targetMonths = /^\d{1,3}$/.test(monthsText)
+    ? Number(monthsText)
+    : Number.NaN;
+  if (
+    !(targetMonths >= MIN_TARGET_MONTHS && targetMonths <= MAX_TARGET_MONTHS)
+  ) {
     errors.targetMonths = `L’objectif doit être un nombre de mois entre ${MIN_TARGET_MONTHS} et ${MAX_TARGET_MONTHS}.`;
   }
 
@@ -81,10 +98,18 @@ function isCount(value: unknown): value is number {
 
 /** Lit la réponse sans jamais planter : un `progress` absent ou illisible donne simplement `null`. */
 export function parseSafetyNetState(raw: unknown): SafetyNetState {
-  const body = raw as { safetyNet?: SafetyNet | null; progress?: Partial<Record<keyof SafetyNetProgress, unknown>> | null } | null;
+  const body = raw as {
+    safetyNet?: SafetyNet | null;
+    progress?: Partial<Record<keyof SafetyNetProgress, unknown>> | null;
+  } | null;
   const safetyNet = body?.safetyNet ?? null;
   const progress = body?.progress;
-  if (!safetyNet || !progress || !isCount(progress.currentCents) || !isCount(progress.monthlyBasisCents)) {
+  if (
+    !safetyNet ||
+    !progress ||
+    !isCount(progress.currentCents) ||
+    !isCount(progress.monthlyBasisCents)
+  ) {
     return { safetyNet, progress: null };
   }
   return {
@@ -92,7 +117,9 @@ export function parseSafetyNetState(raw: unknown): SafetyNetState {
     progress: {
       currentCents: progress.currentCents,
       monthlyBasisCents: progress.monthlyBasisCents,
-      coveredMonths: isCount(progress.coveredMonths) ? progress.coveredMonths : null,
+      coveredMonths: isCount(progress.coveredMonths)
+        ? progress.coveredMonths
+        : null,
     },
   };
 }
@@ -110,14 +137,27 @@ export interface SafetyNetCoverage {
   reached: boolean;
 }
 
-export function safetyNetCoverage(safetyNet: SafetyNet, progress: SafetyNetProgress | null): SafetyNetCoverage {
+export function safetyNetCoverage(
+  safetyNet: SafetyNet,
+  progress: SafetyNetProgress | null,
+): SafetyNetCoverage {
   const currentCents = progress?.currentCents ?? safetyNet.savedCents;
   const addedCents = Math.max(currentCents - safetyNet.savedCents, 0);
   const coveredMonths = progress?.coveredMonths ?? null;
   if (coveredMonths === null) {
-    return { currentCents, addedCents, monthlyBasisCents: progress?.monthlyBasisCents ?? null, coveredMonths: null, ratio: 0, reached: false };
+    return {
+      currentCents,
+      addedCents,
+      monthlyBasisCents: progress?.monthlyBasisCents ?? null,
+      coveredMonths: null,
+      ratio: 0,
+      reached: false,
+    };
   }
-  const ratio = Math.min(Math.max(coveredMonths / safetyNet.targetMonths, 0), 1);
+  const ratio = Math.min(
+    Math.max(coveredMonths / safetyNet.targetMonths, 0),
+    1,
+  );
   return {
     currentCents,
     addedCents,
@@ -128,7 +168,9 @@ export function safetyNetCoverage(safetyNet: SafetyNet, progress: SafetyNetProgr
   };
 }
 
-const MONTHS_FORMATTER = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+const MONTHS_FORMATTER = new Intl.NumberFormat('fr-FR', {
+  maximumFractionDigits: 1,
+});
 
 export function formatMonthsCount(months: number): string {
   return `${MONTHS_FORMATTER.format(months)} mois`;

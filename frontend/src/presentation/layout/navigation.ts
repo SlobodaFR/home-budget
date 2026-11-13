@@ -68,12 +68,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   },
 ];
 
-export const HELP_NAV: NavItem = { to: HELP_ROUTE, label: HELP_TITLE, icon: HelpIcon };
+export const HELP_NAV: NavItem = {
+  to: HELP_ROUTE,
+  label: HELP_TITLE,
+  icon: HelpIcon,
+};
 
 /** Le titre (h1) de chaque écran de l'application, tel qu'il apparaît dans l'en-tête de page sur ordinateur. */
-export const ROUTE_TITLES: Readonly<Record<string, string>> = Object.fromEntries(
-  [...MAIN_NAV, ...NAV_GROUPS.flatMap((group) => group.items), HELP_NAV].map((item) => [item.to, item.label]),
-);
+export const ROUTE_TITLES: Readonly<Record<string, string>> =
+  Object.fromEntries(
+    [...MAIN_NAV, ...NAV_GROUPS.flatMap((group) => group.items), HELP_NAV].map(
+      (item) => [item.to, item.label],
+    ),
+  );
 
 /** L'écran qui correspond à une adresse (sans barre finale) ; « Foyer » par défaut, comme la barre d'onglets. */
 export function routeTitle(pathname: string): string {

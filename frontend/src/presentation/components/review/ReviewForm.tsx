@@ -28,24 +28,45 @@ interface Props {
   onSave: (payload: ReviewPayload) => Promise<void>;
 }
 
-function Recap({ review, onEdit }: { review: MonthlyReview; onEdit: () => void }) {
+function Recap({
+  review,
+  onEdit,
+}: {
+  review: MonthlyReview;
+  onEdit: () => void;
+}) {
   return (
     <div className="flex flex-col gap-gutter">
-      <p role="status" className="flex items-start gap-sm rounded bg-success/10 p-md font-body-md text-body-md font-semibold text-success">
+      <p
+        role="status"
+        className="flex items-start gap-sm rounded bg-success/10 p-md font-body-md text-body-md font-semibold text-success"
+      >
         <CheckIcon width={20} height={20} className="mt-0.5 shrink-0" />
-        {review.completedAt ? describeCompletion(review.completedAt) : 'Revue terminée'}
+        {review.completedAt
+          ? describeCompletion(review.completedAt)
+          : 'Revue terminée'}
       </p>
       <dl className={`${cardClass} flex flex-col gap-md`}>
         {REVIEW_FIELDS.map((field) => (
           <div key={field}>
-            <dt className="font-label-caps text-label-caps uppercase text-mute">{REVIEW_QUESTIONS[field].label}</dt>
+            <dt className="font-label-caps text-label-caps uppercase text-mute">
+              {REVIEW_QUESTIONS[field].label}
+            </dt>
             <dd className="mt-1 whitespace-pre-wrap break-words font-body-md text-body-md">
-              {review.answers[field].trim() === '' ? <span className="text-mute">Pas de réponse</span> : review.answers[field]}
+              {review.answers[field].trim() === '' ? (
+                <span className="text-mute">Pas de réponse</span>
+              ) : (
+                review.answers[field]
+              )}
             </dd>
           </div>
         ))}
       </dl>
-      <button type="button" onClick={onEdit} className={`${buttonSecondary} w-full`}>
+      <button
+        type="button"
+        onClick={onEdit}
+        className={`${buttonSecondary} w-full`}
+      >
         <PencilIcon width={18} height={18} />
         Modifier ma revue
       </button>
@@ -57,7 +78,13 @@ function Recap({ review, onEdit }: { review: MonthlyReview; onEdit: () => void }
  * Étape 2 : trois questions, 500 caractères au plus chacune. « Enregistrer le brouillon » garde les réponses pour plus tard,
  * « Terminer la revue » exige une décision. Quoi qu'il arrive (hors ligne, erreur du serveur), le texte saisi reste à l'écran.
  */
-export function ReviewForm({ review, initialValues, offline, onChange, onSave }: Props) {
+export function ReviewForm({
+  review,
+  initialValues,
+  offline,
+  onChange,
+  onSave,
+}: Props) {
   const done = review.status === 'DONE';
   const [values, setValues] = useState<ReviewAnswers>(initialValues);
   const [saved, setSaved] = useState<ReviewAnswers>(review.answers);
@@ -66,13 +93,20 @@ export function ReviewForm({ review, initialValues, offline, onChange, onSave }:
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pending, setPending] = useState<'draft' | 'complete' | null>(null);
   const submittingRef = useRef(false);
-  const fieldRefs = useRef<Partial<Record<ReviewField, HTMLTextAreaElement | null>>>({});
+  const fieldRefs = useRef<
+    Partial<Record<ReviewField, HTMLTextAreaElement | null>>
+  >({});
 
   const dirty = !answersEqual(values, saved);
   const showRecap = done && !editing;
 
   if (showRecap) {
-    return <Recap review={{ ...review, answers: saved }} onEdit={() => setEditing(true)} />;
+    return (
+      <Recap
+        review={{ ...review, answers: saved }}
+        onEdit={() => setEditing(true)}
+      />
+    );
   }
 
   const change = (field: ReviewField, text: string) => {
@@ -110,7 +144,11 @@ export function ReviewForm({ review, initialValues, offline, onChange, onSave }:
       setEditing(false);
     } catch (error) {
       // Le texte saisi n'est jamais effacé : on garde les champs tels quels et on explique.
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué. Votre texte est conservé : réessayez.');
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : 'L’enregistrement a échoué. Votre texte est conservé : réessayez.',
+      );
     } finally {
       submittingRef.current = false;
       setPending(null);
@@ -134,8 +172,17 @@ export function ReviewForm({ review, initialValues, offline, onChange, onSave }:
   const busy = pending !== null;
 
   return (
-    <form onSubmit={handleSubmit} noValidate aria-label="Mes trois questions" className="flex flex-col gap-gutter">
-      {review.status === 'DRAFT' && !dirty && <p className="font-body-sm text-body-sm text-mute">Brouillon enregistré : vous pouvez le reprendre à tout moment.</p>}
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      aria-label="Mes trois questions"
+      className="flex flex-col gap-gutter"
+    >
+      {review.status === 'DRAFT' && !dirty && (
+        <p className="font-body-sm text-body-sm text-mute">
+          Brouillon enregistré : vous pouvez le reprendre à tout moment.
+        </p>
+      )}
 
       {REVIEW_FIELDS.map((field) => {
         const question = REVIEW_QUESTIONS[field];
@@ -145,11 +192,22 @@ export function ReviewForm({ review, initialValues, offline, onChange, onSave }:
         const id = `review-${field}`;
         return (
           <div key={field}>
-            <label htmlFor={id} className="block font-body-md text-body-md font-semibold">
+            <label
+              htmlFor={id}
+              className="block font-body-md text-body-md font-semibold"
+            >
               {question.label}
-              {field === 'decision' && <span className="font-body-sm text-body-sm font-normal text-mute"> (obligatoire pour terminer)</span>}
+              {field === 'decision' && (
+                <span className="font-body-sm text-body-sm font-normal text-mute">
+                  {' '}
+                  (obligatoire pour terminer)
+                </span>
+              )}
             </label>
-            <p id={`${id}-hint`} className="mb-1 font-body-sm text-body-sm text-mute">
+            <p
+              id={`${id}-hint`}
+              className="mb-1 font-body-sm text-body-sm text-mute"
+            >
               {question.hint}
             </p>
             <textarea
@@ -169,12 +227,20 @@ export function ReviewForm({ review, initialValues, offline, onChange, onSave }:
             <div className="mt-1 flex items-start justify-between gap-md">
               <div className="min-w-0 flex-1">
                 {error && (
-                  <p id={`${id}-error`} role="alert" className="font-body-sm text-body-sm font-semibold text-error">
+                  <p
+                    id={`${id}-error`}
+                    role="alert"
+                    className="font-body-sm text-body-sm font-semibold text-error"
+                  >
                     {error}
                   </p>
                 )}
               </div>
-              <p id={`${id}-count`} aria-live={remaining <= 50 ? 'polite' : 'off'} className={`tabular shrink-0 font-body-sm text-body-sm ${remaining <= 50 ? 'font-semibold text-ink' : 'text-mute'}`}>
+              <p
+                id={`${id}-count`}
+                aria-live={remaining <= 50 ? 'polite' : 'off'}
+                className={`tabular shrink-0 font-body-sm text-body-sm ${remaining <= 50 ? 'font-semibold text-ink' : 'text-mute'}`}
+              >
                 {describeCounter(text)}
               </p>
             </div>
@@ -183,39 +249,76 @@ export function ReviewForm({ review, initialValues, offline, onChange, onSave }:
       })}
 
       {offline && (
-        <p role="status" className="flex items-start gap-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm">
+        <p
+          role="status"
+          className="flex items-start gap-sm rounded bg-soft-cloud p-md font-body-sm text-body-sm"
+        >
           <WifiOffIcon width={20} height={20} className="mt-0.5 shrink-0" />
-          Vous êtes hors ligne. Vous pouvez écrire : votre texte reste sur cet écran, et l’enregistrement se fera quand le réseau sera revenu.
+          Vous êtes hors ligne. Vous pouvez écrire : votre texte reste sur cet
+          écran, et l’enregistrement se fera quand le réseau sera revenu.
         </p>
       )}
 
       {submitError && (
-        <p role="alert" className="rounded border border-error/30 bg-error/5 p-md font-body-sm text-body-sm text-error">
+        <p
+          role="alert"
+          className="rounded border border-error/30 bg-error/5 p-md font-body-sm text-body-sm text-error"
+        >
           {submitError}
         </p>
       )}
 
-      <p aria-live="polite" className="font-body-sm text-body-sm text-mute" data-testid="review-save-state">
-        {dirty ? 'Modifications pas encore enregistrées.' : saved.wentWell || saved.surprise || saved.decision ? 'Tout est enregistré.' : ''}
+      <p
+        aria-live="polite"
+        className="font-body-sm text-body-sm text-mute"
+        data-testid="review-save-state"
+      >
+        {dirty
+          ? 'Modifications pas encore enregistrées.'
+          : saved.wentWell || saved.surprise || saved.decision
+            ? 'Tout est enregistré.'
+            : ''}
       </p>
 
       <div className="flex flex-col gap-md">
         {done || editing ? (
           <>
-            <button type="submit" disabled={busy} className={`${buttonPrimary} w-full`}>
-              {pending === 'complete' ? 'Enregistrement…' : 'Enregistrer les modifications'}
+            <button
+              type="submit"
+              disabled={busy}
+              className={`${buttonPrimary} w-full`}
+            >
+              {pending === 'complete'
+                ? 'Enregistrement…'
+                : 'Enregistrer les modifications'}
             </button>
-            <button type="button" disabled={busy} onClick={cancelEdit} className={`${buttonSecondary} w-full`}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={cancelEdit}
+              className={`${buttonSecondary} w-full`}
+            >
               Annuler
             </button>
           </>
         ) : (
           <>
-            <button type="submit" disabled={busy} className={`${buttonPrimary} w-full`}>
+            <button
+              type="submit"
+              disabled={busy}
+              className={`${buttonPrimary} w-full`}
+            >
               {pending === 'complete' ? 'Enregistrement…' : 'Terminer la revue'}
             </button>
-            <button type="button" disabled={busy} onClick={() => void submit(false)} className={`${buttonSecondary} w-full`}>
-              {pending === 'draft' ? 'Enregistrement…' : 'Enregistrer le brouillon'}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void submit(false)}
+              className={`${buttonSecondary} w-full`}
+            >
+              {pending === 'draft'
+                ? 'Enregistrement…'
+                : 'Enregistrer le brouillon'}
             </button>
           </>
         )}

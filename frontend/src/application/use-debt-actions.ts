@@ -19,16 +19,35 @@ export function useDebtActions(spaceId: string, onChanged: () => void) {
     [onChanged],
   );
 
-  const create = useCallback((payload: DebtPayload) => run(() => apiClient.createDebt(spaceId, payload)), [run, spaceId]);
+  const create = useCallback(
+    (payload: DebtPayload) => run(() => apiClient.createDebt(spaceId, payload)),
+    [run, spaceId],
+  );
   const update = useCallback(
-    (debt: Debt, payload: DebtPayload) => run(() => apiClient.updateDebt(spaceId, debt.id, { ...payload, archived: debt.archived })),
+    (debt: Debt, payload: DebtPayload) =>
+      run(() =>
+        apiClient.updateDebt(spaceId, debt.id, {
+          ...payload,
+          archived: debt.archived,
+        }),
+      ),
     [run, spaceId],
   );
   const setArchived = useCallback(
-    (debt: Debt, archived: boolean) => run(() => apiClient.updateDebt(spaceId, debt.id, debtToPayload(debt, { archived }))),
+    (debt: Debt, archived: boolean) =>
+      run(() =>
+        apiClient.updateDebt(
+          spaceId,
+          debt.id,
+          debtToPayload(debt, { archived }),
+        ),
+      ),
     [run, spaceId],
   );
-  const remove = useCallback((debt: Debt) => run(() => apiClient.deleteDebt(spaceId, debt.id)), [run, spaceId]);
+  const remove = useCallback(
+    (debt: Debt) => run(() => apiClient.deleteDebt(spaceId, debt.id)),
+    [run, spaceId],
+  );
 
   return { busy, create, update, setArchived, remove };
 }

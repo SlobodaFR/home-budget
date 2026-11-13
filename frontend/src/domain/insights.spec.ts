@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { insightAction, lessonReference, MAX_INSIGHTS, parseInsights } from './insights';
+import {
+  insightAction,
+  lessonReference,
+  MAX_INSIGHTS,
+  parseInsights,
+} from './insights';
 
 const raw = (overrides: Record<string, unknown> = {}) => ({
   id: 'recurring-missing',
@@ -26,53 +31,99 @@ describe('parseInsights', () => {
   });
 
   it('keeps at most 8 items', () => {
-    const insights = Array.from({ length: 12 }, (_, index) => raw({ id: `i-${index}` }));
+    const insights = Array.from({ length: 12 }, (_, index) =>
+      raw({ id: `i-${index}` }),
+    );
     expect(parseInsights({ insights })).toHaveLength(MAX_INSIGHTS);
   });
 
-  it.each([null, undefined, 'oops', {}, { insights: 'x' }])('returns nothing for a malformed body (%s)', (body) => {
-    expect(parseInsights(body)).toEqual([]);
-  });
+  it.each([null, undefined, 'oops', {}, { insights: 'x' }])(
+    'returns nothing for a malformed body (%s)',
+    (body) => {
+      expect(parseInsights(body)).toEqual([]);
+    },
+  );
 
   it('skips unreadable entries and falls back on safe defaults', () => {
     const result = parseInsights({
-      insights: [null, 42, { title: 'sans id' }, raw({ severity: 'WEIRD', lesson: 'x', link: 3, detail: undefined })],
+      insights: [
+        null,
+        42,
+        { title: 'sans id' },
+        raw({ severity: 'WEIRD', lesson: 'x', link: 3, detail: undefined }),
+      ],
     });
     expect(result).toEqual([
-      { id: 'recurring-missing', severity: 'INFO', title: '2 paiements récurrents introuvables', detail: '', lesson: null, link: null },
+      {
+        id: 'recurring-missing',
+        severity: 'INFO',
+        title: '2 paiements récurrents introuvables',
+        detail: '',
+        lesson: null,
+        link: null,
+      },
     ]);
   });
 
   it('turns a null lesson and link into null', () => {
-    expect(parseInsights({ insights: [raw({ lesson: null, link: null })] })[0]).toMatchObject({ lesson: null, link: null });
+    expect(
+      parseInsights({ insights: [raw({ lesson: null, link: null })] })[0],
+    ).toMatchObject({ lesson: null, link: null });
   });
 });
 
 describe('insightAction for the savings projects insights', () => {
   it('offers « Voir mes projets » for the project insights', () => {
-    expect(insightAction('/projets', 'project-behind')).toEqual({ to: '/projets', label: 'Voir mes projets' });
-    expect(insightAction('/projets', 'project-reached')).toEqual({ to: '/projets', label: 'Voir mes projets' });
-    expect(insightAction('/projets')).toEqual({ to: '/projets', label: 'Voir mes projets' });
+    expect(insightAction('/projets', 'project-behind')).toEqual({
+      to: '/projets',
+      label: 'Voir mes projets',
+    });
+    expect(insightAction('/projets', 'project-reached')).toEqual({
+      to: '/projets',
+      label: 'Voir mes projets',
+    });
+    expect(insightAction('/projets')).toEqual({
+      to: '/projets',
+      label: 'Voir mes projets',
+    });
   });
 
   it('offers « Ajuster mon plan » when the projects exceed the planned savings', () => {
-    expect(insightAction('/plan', 'projects-exceed-savings')).toEqual({ to: '/plan', label: 'Ajuster mon plan' });
+    expect(insightAction('/plan', 'projects-exceed-savings')).toEqual({
+      to: '/plan',
+      label: 'Ajuster mon plan',
+    });
   });
 });
 
 describe('insightAction for the non monthly payments insights', () => {
   it('opens the provisions tab for an upcoming big payment', () => {
-    expect(insightAction('/previsionnel', 'upcoming-big-payment')).toEqual({ to: '/previsionnel?vue=provisions', label: 'Voir mes provisions' });
+    expect(insightAction('/previsionnel', 'upcoming-big-payment')).toEqual({
+      to: '/previsionnel?vue=provisions',
+      label: 'Voir mes provisions',
+    });
   });
 
   it('offers to adjust the plan for a provision suggestion', () => {
-    expect(insightAction('/plan', 'provision-suggestion')).toEqual({ to: '/plan', label: 'Ajuster mon plan' });
+    expect(insightAction('/plan', 'provision-suggestion')).toEqual({
+      to: '/plan',
+      label: 'Ajuster mon plan',
+    });
   });
 
   it('falls back to the generic button when the server links elsewhere or the id is another one', () => {
-    expect(insightAction('/aides', 'upcoming-big-payment')).toEqual({ to: '/aides', label: 'Voir les aides' });
-    expect(insightAction('/previsionnel', 'recurring-missing')).toEqual({ to: '/previsionnel', label: 'Voir le prévisionnel' });
-    expect(insightAction('/previsionnel', 'constructor')).toEqual({ to: '/previsionnel', label: 'Voir le prévisionnel' });
+    expect(insightAction('/aides', 'upcoming-big-payment')).toEqual({
+      to: '/aides',
+      label: 'Voir les aides',
+    });
+    expect(insightAction('/previsionnel', 'recurring-missing')).toEqual({
+      to: '/previsionnel',
+      label: 'Voir le prévisionnel',
+    });
+    expect(insightAction('/previsionnel', 'constructor')).toEqual({
+      to: '/previsionnel',
+      label: 'Voir le prévisionnel',
+    });
   });
 });
 
@@ -97,7 +148,10 @@ describe('insightAction', () => {
 
 describe('lessonReference', () => {
   it('only mentions the lesson when no course URL is known', () => {
-    expect(lessonReference(4, null)).toEqual({ label: 'Leçon 4 du cours', href: null });
+    expect(lessonReference(4, null)).toEqual({
+      label: 'Leçon 4 du cours',
+      href: null,
+    });
   });
 
   it('links to the lesson when a URL template exists', () => {
@@ -110,51 +164,106 @@ describe('lessonReference', () => {
 
 describe('insightAction for the monthly review insights', () => {
   it('offers « Faire ma revue » for the pending review', () => {
-    expect(insightAction('/revue', 'monthly-review')).toEqual({ to: '/revue', label: 'Faire ma revue' });
-    expect(insightAction('/revue')).toEqual({ to: '/revue', label: 'Faire ma revue' });
+    expect(insightAction('/revue', 'monthly-review')).toEqual({
+      to: '/revue',
+      label: 'Faire ma revue',
+    });
+    expect(insightAction('/revue')).toEqual({
+      to: '/revue',
+      label: 'Faire ma revue',
+    });
   });
 
   it('offers « Voir ma revue » once it is done', () => {
-    expect(insightAction('/revue', 'review-done')).toEqual({ to: '/revue', label: 'Voir ma revue' });
+    expect(insightAction('/revue', 'review-done')).toEqual({
+      to: '/revue',
+      label: 'Voir ma revue',
+    });
   });
 
   it('keeps the generic label when the server sends another link for review-done', () => {
-    expect(insightAction('/plan', 'review-done')).toEqual({ to: '/plan', label: 'Ouvrir le plan' });
+    expect(insightAction('/plan', 'review-done')).toEqual({
+      to: '/plan',
+      label: 'Ouvrir le plan',
+    });
   });
 });
 
 describe('insightAction for the spending-riser insight', () => {
   it('offers « Voir mes démarches » for the life event insights', () => {
-    expect(insightAction('/evenements', 'life-event-overdue')).toEqual({ to: '/evenements', label: 'Voir mes démarches' });
-    expect(insightAction('/evenements', 'life-event-due-soon')).toEqual({ to: '/evenements', label: 'Voir mes démarches' });
+    expect(insightAction('/evenements', 'life-event-overdue')).toEqual({
+      to: '/evenements',
+      label: 'Voir mes démarches',
+    });
+    expect(insightAction('/evenements', 'life-event-due-soon')).toEqual({
+      to: '/evenements',
+      label: 'Voir mes démarches',
+    });
   });
 
   it('offers « Voir mes tendances »', () => {
-    expect(insightAction('/tendances', 'spending-riser')).toEqual({ to: '/tendances', label: 'Voir mes tendances' });
+    expect(insightAction('/tendances', 'spending-riser')).toEqual({
+      to: '/tendances',
+      label: 'Voir mes tendances',
+    });
   });
 });
 
 describe('insightAction for the pending contribution insight', () => {
   it('offers « Verser ma contribution » and opens the contribution card', () => {
-    expect(insightAction('/foyer', 'contribution-pending')).toEqual({ to: '/foyer?verser=1', label: 'Verser ma contribution' });
+    expect(insightAction('/foyer', 'contribution-pending')).toEqual({
+      to: '/foyer?verser=1',
+      label: 'Verser ma contribution',
+    });
   });
 
   it('keeps the generic label for other foyer insights and for another link', () => {
-    expect(insightAction('/foyer', 'safety-net-unset')).toEqual({ to: '/foyer', label: 'Ouvrir le foyer' });
-    expect(insightAction('/foyer')).toEqual({ to: '/foyer', label: 'Ouvrir le foyer' });
-    expect(insightAction('/plan', 'contribution-pending')).toEqual({ to: '/plan', label: 'Ouvrir le plan' });
+    expect(insightAction('/foyer', 'safety-net-unset')).toEqual({
+      to: '/foyer',
+      label: 'Ouvrir le foyer',
+    });
+    expect(insightAction('/foyer')).toEqual({
+      to: '/foyer',
+      label: 'Ouvrir le foyer',
+    });
+    expect(insightAction('/plan', 'contribution-pending')).toEqual({
+      to: '/plan',
+      label: 'Ouvrir le plan',
+    });
   });
 });
 
 describe('insightAction for the debt insights', () => {
   it('offers « Voir mes crédits » for every debt insight, including the payment gap', () => {
-    for (const id of ['debt-ratio-high', 'debt-never-paid-off', 'debt-payment-gap']) {
-      expect(insightAction('/dettes', id)).toEqual({ to: '/dettes', label: 'Voir mes crédits' });
+    for (const id of [
+      'debt-ratio-high',
+      'debt-never-paid-off',
+      'debt-payment-gap',
+    ]) {
+      expect(insightAction('/dettes', id)).toEqual({
+        to: '/dettes',
+        label: 'Voir mes crédits',
+      });
     }
   });
 
   it('reads the payment gap insight as a simple piece of information', () => {
-    const [insight] = parseInsights({ insights: [{ id: 'debt-payment-gap', severity: 'INFO', title: 'Mensualité à revérifier', detail: 'Saisie : 320 €.', lesson: null, link: '/dettes' }] });
-    expect(insight).toMatchObject({ id: 'debt-payment-gap', severity: 'INFO', link: '/dettes' });
+    const [insight] = parseInsights({
+      insights: [
+        {
+          id: 'debt-payment-gap',
+          severity: 'INFO',
+          title: 'Mensualité à revérifier',
+          detail: 'Saisie : 320 €.',
+          lesson: null,
+          link: '/dettes',
+        },
+      ],
+    });
+    expect(insight).toMatchObject({
+      id: 'debt-payment-gap',
+      severity: 'INFO',
+      link: '/dettes',
+    });
   });
 });

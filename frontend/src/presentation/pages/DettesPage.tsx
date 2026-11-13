@@ -4,19 +4,33 @@ import { useDebtActions } from '../../application/use-debt-actions';
 import { useDebts, useDebtsSummary } from '../../application/use-debts';
 import { useRecurringOptions } from '../../application/use-recurring-options';
 import { useSpace } from '../../application/use-space';
-import { activeDebts, archivedDebts, Debt, DebtPayload, knownLenders, sortDebts } from '../../domain/debt';
+import {
+  activeDebts,
+  archivedDebts,
+  Debt,
+  DebtPayload,
+  knownLenders,
+  sortDebts,
+} from '../../domain/debt';
 import { DebtCard } from '../components/debts/DebtCard';
 import { DebtDetail } from '../components/debts/DebtDetail';
 import { DebtForm } from '../components/debts/DebtForm';
 import { DebtsSummaryCard } from '../components/debts/DebtsSummaryCard';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { ChevronRightIcon, CreditCardIcon, PlusIcon } from '../components/Icons';
+import {
+  ChevronRightIcon,
+  CreditCardIcon,
+  PlusIcon,
+} from '../components/Icons';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useToast } from '../components/Toast';
 import { buttonPrimary, cardClass } from '../components/ui';
 import { CardGrid, PageIntro } from '../layout/PageLayout';
 
-type SheetState = { type: 'form'; editing: Debt | null } | { type: 'detail'; id: string } | null;
+type SheetState =
+  | { type: 'form'; editing: Debt | null }
+  | { type: 'detail'; id: string }
+  | null;
 
 export function DettesPage() {
   const { space, kind } = useSpace();
@@ -47,7 +61,10 @@ export function DettesPage() {
   const closeSheet = useCallback(() => setSheet(null), []);
   // Le client trie déjà ; on ne s'y fie pas (un crédit qui ne diminue pas doit toujours passer en tête).
   const list = sortDebts(debts.data ?? []);
-  const detailDebt = sheet?.type === 'detail' ? (list.find((debt) => debt.id === sheet.id) ?? null) : null;
+  const detailDebt =
+    sheet?.type === 'detail'
+      ? (list.find((debt) => debt.id === sheet.id) ?? null)
+      : null;
 
   const handleSubmit = async (payload: DebtPayload) => {
     const editing = sheet?.type === 'form' ? sheet.editing : null;
@@ -61,7 +78,10 @@ export function DettesPage() {
       }
     } catch (error) {
       throw new Error(
-        describeError(error, 'L’enregistrement a échoué. Vérifiez les informations (le capital restant ne peut pas dépasser le capital emprunté) et réessayez.'),
+        describeError(
+          error,
+          'L’enregistrement a échoué. Vérifiez les informations (le capital restant ne peut pas dépasser le capital emprunté) et réessayez.',
+        ),
       );
     }
     closeSheet();
@@ -70,7 +90,11 @@ export function DettesPage() {
   const handleToggleArchive = async (debt: Debt) => {
     try {
       await actions.setArchived(debt, !debt.archived);
-      toast.show(debt.archived ? 'Crédit désarchivé' : 'Crédit archivé : il ne compte plus dans vos mensualités');
+      toast.show(
+        debt.archived
+          ? 'Crédit désarchivé'
+          : 'Crédit archivé : il ne compte plus dans vos mensualités',
+      );
       closeSheet();
     } catch (error) {
       toast.show(describeError(error, 'Modification impossible.'), 'error');
@@ -90,7 +114,12 @@ export function DettesPage() {
   const active = activeDebts(list);
   const archived = archivedDebts(list);
   const renderCard = (debt: Debt) => (
-    <DebtCard key={debt.id} debt={debt} onOpen={(target) => setSheet({ type: 'detail', id: target.id })} onEdit={(target) => setSheet({ type: 'form', editing: target })} />
+    <DebtCard
+      key={debt.id}
+      debt={debt}
+      onOpen={(target) => setSheet({ type: 'detail', id: target.id })}
+      onEdit={(target) => setSheet({ type: 'form', editing: target })}
+    />
   );
 
   return (
@@ -101,58 +130,106 @@ export function DettesPage() {
         back={{ to: '/', label: 'Accueil' }}
       />
 
-      {summary.data && debts.data && <DebtsSummaryCard summary={summary.data} />}
+      {summary.data && debts.data && (
+        <DebtsSummaryCard summary={summary.data} />
+      )}
 
       {debts.data ? (
         list.length === 0 ? (
-          <section aria-label="À quoi sert le suivi des crédits" className={`${cardClass} flex flex-col gap-md lg:max-w-[680px]`}>
+          <section
+            aria-label="À quoi sert le suivi des crédits"
+            className={`${cardClass} flex flex-col gap-md lg:max-w-[680px]`}
+          >
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-soft-cloud">
               <CreditCardIcon width={24} height={24} />
             </span>
-            <h3 className="font-heading-lg text-heading-lg">À quoi sert le suivi des crédits&nbsp;?</h3>
+            <h3 className="font-heading-lg text-heading-lg">
+              À quoi sert le suivi des crédits&nbsp;?
+            </h3>
             <p className="font-body-md text-body-md">
-              Notez vos crédits pour voir d’un coup d’œil <span className="font-semibold">combien il reste à rembourser</span>, <span className="font-semibold">quand ils se termineront</span> et
-              combien d’intérêts il reste à payer.
+              Notez vos crédits pour voir d’un coup d’œil{' '}
+              <span className="font-semibold">
+                combien il reste à rembourser
+              </span>
+              , <span className="font-semibold">quand ils se termineront</span>{' '}
+              et combien d’intérêts il reste à payer.
             </p>
             <p className="font-body-sm text-body-sm text-mute">
-              Vous pourrez aussi tester « et si je remboursais plus vite ? » pour voir l’effet sur la durée et les intérêts. Il vous faut seulement le tableau d’amortissement ou le relevé de la banque.
+              Vous pourrez aussi tester « et si je remboursais plus vite ? »
+              pour voir l’effet sur la durée et les intérêts. Il vous faut
+              seulement le tableau d’amortissement ou le relevé de la banque.
             </p>
-            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full lg:w-fit`}>
+            <button
+              type="button"
+              onClick={() => setSheet({ type: 'form', editing: null })}
+              className={`${buttonPrimary} w-full lg:w-fit`}
+            >
               <PlusIcon width={18} height={18} />
               Ajouter mon premier crédit
             </button>
           </section>
         ) : (
           <>
-            <button type="button" onClick={() => setSheet({ type: 'form', editing: null })} className={`${buttonPrimary} w-full lg:w-fit lg:self-start`}>
+            <button
+              type="button"
+              onClick={() => setSheet({ type: 'form', editing: null })}
+              className={`${buttonPrimary} w-full lg:w-fit lg:self-start`}
+            >
               <PlusIcon width={18} height={18} />
               Nouveau crédit
             </button>
             {active.length > 0 && (
-              <CardGrid label="Crédits en cours">{active.map(renderCard)}</CardGrid>
+              <CardGrid label="Crédits en cours">
+                {active.map(renderCard)}
+              </CardGrid>
             )}
             {archived.length > 0 && (
               <details className="group rounded bg-white shadow-[0_0_0_1px_#E5E5E5]">
                 <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-md px-gutter font-body-md text-body-md font-semibold">
                   <span>Crédits archivés ({archived.length})</span>
-                  <ChevronRightIcon width={20} height={20} className="transition-transform group-open:rotate-90" />
+                  <ChevronRightIcon
+                    width={20}
+                    height={20}
+                    className="transition-transform group-open:rotate-90"
+                  />
                 </summary>
                 <div className="p-gutter pt-0">
-                  <CardGrid label="Crédits archivés">{archived.map(renderCard)}</CardGrid>
+                  <CardGrid label="Crédits archivés">
+                    {archived.map(renderCard)}
+                  </CardGrid>
                 </div>
               </details>
             )}
           </>
         )
       ) : offline ? (
-        <OfflineNotice message="Hors ligne : vos crédits reviendront avec le réseau." onRetry={retry} />
+        <OfflineNotice
+          message="Hors ligne : vos crédits reviendront avec le réseau."
+          onRetry={retry}
+        />
       ) : debts.error ? (
-        <ErrorNotice message={describeError(debts.error, 'Impossible de charger les crédits.')} onRetry={debts.reload} />
+        <ErrorNotice
+          message={describeError(
+            debts.error,
+            'Impossible de charger les crédits.',
+          )}
+          onRetry={debts.reload}
+        />
       ) : (
         <LoadingScreen />
       )}
 
-      {sheet?.type === 'form' && <DebtForm key={sheet.editing?.id ?? 'new'} editing={sheet.editing} spaceId={space.id} recurring={recurring} lenders={knownLenders(list)} onClose={closeSheet} onSubmit={handleSubmit} />}
+      {sheet?.type === 'form' && (
+        <DebtForm
+          key={sheet.editing?.id ?? 'new'}
+          editing={sheet.editing}
+          spaceId={space.id}
+          recurring={recurring}
+          lenders={knownLenders(list)}
+          onClose={closeSheet}
+          onSubmit={handleSubmit}
+        />
+      )}
       {detailDebt && (
         <DebtDetail
           key={detailDebt.id}

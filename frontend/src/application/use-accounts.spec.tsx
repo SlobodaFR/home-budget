@@ -11,7 +11,10 @@ import { account } from '../test/fixtures';
 import { testHousehold } from '../test/render-app';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(), createTransaction: vi.fn<ApiMock<'createTransaction'>>() }));
+const api = vi.hoisted(() => ({
+  fetchAccounts: vi.fn<ApiMock<'fetchAccounts'>>(),
+  createTransaction: vi.fn<ApiMock<'createTransaction'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -19,7 +22,11 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../presentation/auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 const captured: { value: AccountsValue | null } = { value: null };
@@ -34,11 +41,22 @@ function latest(): AccountsValue {
 function Probe() {
   const value = useAccounts();
   captured.value = value;
-  return <p data-testid="names">{value.accounts.map((item) => item.name).join(',')}</p>;
+  return (
+    <p data-testid="names">
+      {value.accounts.map((item) => item.name).join(',')}
+    </p>
+  );
 }
 
 function renderProvider() {
-  const value: HouseholdContextValue = { household: testHousehold, loading: false, offline: false, failed: false, reload: vi.fn<() => Promise<void>>(), setHousehold: vi.fn<() => void>() };
+  const value: HouseholdContextValue = {
+    household: testHousehold,
+    loading: false,
+    offline: false,
+    failed: false,
+    reload: vi.fn<() => Promise<void>>(),
+    setHousehold: vi.fn<() => void>(),
+  };
   render(
     <MemoryRouter>
       <HouseholdContext.Provider value={value}>
@@ -57,12 +75,17 @@ function renderProvider() {
 describe('AccountsProvider', () => {
   beforeEach(() => {
     api.fetchAccounts.mockReset();
-    api.fetchAccounts.mockResolvedValue([account({ id: 'a1', name: 'Courant' }), account({ id: 'a2', name: 'Livret', archived: true })]);
+    api.fetchAccounts.mockResolvedValue([
+      account({ id: 'a1', name: 'Courant' }),
+      account({ id: 'a2', name: 'Livret', archived: true }),
+    ]);
   });
 
   it('loads the accounts of the selected space', async () => {
     renderProvider();
-    await waitFor(() => expect(screen.getByTestId('names')).toHaveTextContent('Courant,Livret'));
+    await waitFor(() =>
+      expect(screen.getByTestId('names')).toHaveTextContent('Courant,Livret'),
+    );
     expect(api.fetchAccounts).toHaveBeenCalledWith('s-common');
     expect(latest().hasSelectableAccount).toBe(true);
     expect(latest().nameOf('a1')).toBe('Courant');
@@ -72,14 +95,18 @@ describe('AccountsProvider', () => {
   it('loads the personal space accounts when that space is selected', async () => {
     preferences.setSpaceKind('PERSONAL');
     renderProvider();
-    await waitFor(() => expect(api.fetchAccounts).toHaveBeenCalledWith('s-alice'));
+    await waitFor(() =>
+      expect(api.fetchAccounts).toHaveBeenCalledWith('s-alice'),
+    );
   });
 
   it('has no selectable account when all are archived', async () => {
     api.fetchAccounts.mockResolvedValue([account({ archived: true })]);
     renderProvider();
     await waitFor(() => expect(latest().loaded).toBe(true));
-    await waitFor(() => expect(screen.getByTestId('names')).toHaveTextContent('Compte commun'));
+    await waitFor(() =>
+      expect(screen.getByTestId('names')).toHaveTextContent('Compte commun'),
+    );
     expect(latest().hasSelectableAccount).toBe(false);
   });
 

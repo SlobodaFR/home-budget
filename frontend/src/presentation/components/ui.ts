@@ -9,7 +9,8 @@ export const inputClass =
 
 export const cardClass = 'rounded bg-white p-gutter shadow-[0_0_0_1px_#E5E5E5]';
 
-export const labelClass = 'mb-1 block font-label-caps text-label-caps uppercase text-mute';
+export const labelClass =
+  'mb-1 block font-label-caps text-label-caps uppercase text-mute';
 
 /** Les boutons ronds « précédent » et « suivant » des sélecteurs de mois et d'année. */
 export const stepButtonClass =

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { deriveKeyword, keywordError, mergeLearnedRules, MAX_RULES } from './rule-keyword';
+import {
+  deriveKeyword,
+  keywordError,
+  mergeLearnedRules,
+  MAX_RULES,
+} from './rule-keyword';
 
 describe('deriveKeyword', () => {
   it.each([
@@ -46,13 +51,21 @@ describe('mergeLearnedRules', () => {
   const existing = [{ keyword: 'loyer', target: 'FIXE' as const }];
 
   it('appends new rules at the end', () => {
-    const result = mergeLearnedRules(existing, [{ keyword: 'boulangerie', target: 'COURANT' }]);
-    expect(result.rules).toEqual([...existing, { keyword: 'boulangerie', target: 'COURANT' }]);
+    const result = mergeLearnedRules(existing, [
+      { keyword: 'boulangerie', target: 'COURANT' },
+    ]);
+    expect(result.rules).toEqual([
+      ...existing,
+      { keyword: 'boulangerie', target: 'COURANT' },
+    ]);
     expect(result.added).toBe(1);
   });
 
   it('skips keywords already present, ignoring case and accents', () => {
-    const result = mergeLearnedRules([{ keyword: 'Électricité', target: 'FIXE' }], [{ keyword: 'electricite', target: 'COURANT' }]);
+    const result = mergeLearnedRules(
+      [{ keyword: 'Électricité', target: 'FIXE' }],
+      [{ keyword: 'electricite', target: 'COURANT' }],
+    );
     expect(result.added).toBe(0);
     expect(result.rules).toHaveLength(1);
   });
@@ -63,11 +76,19 @@ describe('mergeLearnedRules', () => {
       { keyword: 'CINEMA', target: 'COURANT' },
       { keyword: 'x', target: 'COURANT' },
     ]);
-    expect(result.rules.map((rule) => rule.keyword)).toEqual(['loyer', 'cinema']);
+    expect(result.rules.map((rule) => rule.keyword)).toEqual([
+      'loyer',
+      'cinema',
+    ]);
   });
 
   it('never goes beyond the server cap', () => {
-    const full = Array.from({ length: MAX_RULES }, (_, index) => ({ keyword: `regle${index}`, target: 'COURANT' as const }));
-    expect(mergeLearnedRules(full, [{ keyword: 'nouveau', target: 'FIXE' }]).added).toBe(0);
+    const full = Array.from({ length: MAX_RULES }, (_, index) => ({
+      keyword: `regle${index}`,
+      target: 'COURANT' as const,
+    }));
+    expect(
+      mergeLearnedRules(full, [{ keyword: 'nouveau', target: 'FIXE' }]).added,
+    ).toBe(0);
   });
 });

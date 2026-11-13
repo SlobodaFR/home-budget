@@ -10,9 +10,14 @@ describe('PageIntro', () => {
         <PageIntro title="Comptes communs" description="Où circule l’argent." />
       </MemoryRouter>,
     );
-    const heading = screen.getByRole('heading', { level: 2, name: 'Comptes communs' });
+    const heading = screen.getByRole('heading', {
+      level: 2,
+      name: 'Comptes communs',
+    });
     expect(heading.className).toContain('lg:sr-only');
-    expect(screen.getByText('Où circule l’argent.').className).toContain('text-mute');
+    expect(screen.getByText('Où circule l’argent.').className).toContain(
+      'text-mute',
+    );
   });
 
   it('shows a back link on mobile and tablet only (the side bar replaces it on desktop)', () => {
@@ -42,7 +47,9 @@ describe('PageIntro', () => {
         <PageIntro title="Plan" description="Un texte" />
       </MemoryRouter>,
     );
-    expect((container.firstChild as HTMLElement).className).toContain('lg:max-w-[75ch]');
+    expect((container.firstChild as HTMLElement).className).toContain(
+      'lg:max-w-[75ch]',
+    );
   });
 });
 
@@ -80,20 +87,38 @@ describe('CardGrid', () => {
 
 describe('TwoColumns', () => {
   it('keeps the left column first in the DOM, so the reading order on mobile is the same as on desktop', () => {
-    const { container } = render(<TwoColumns left={<p>Gauche</p>} right={<p>Droite</p>} />);
+    const { container } = render(
+      <TwoColumns left={<p>Gauche</p>} right={<p>Droite</p>} />,
+    );
     const columns = Array.from((container.firstChild as HTMLElement).children);
     expect(columns).toHaveLength(2);
-    expect(within(columns[0] as HTMLElement).getByText('Gauche')).toBeInTheDocument();
-    expect(within(columns[1] as HTMLElement).getByText('Droite')).toBeInTheDocument();
+    expect(
+      within(columns[0] as HTMLElement).getByText('Gauche'),
+    ).toBeInTheDocument();
+    expect(
+      within(columns[1] as HTMLElement).getByText('Droite'),
+    ).toBeInTheDocument();
   });
 
   it('is a single column until the chosen breakpoint', () => {
-    const { container, rerender } = render(<TwoColumns left={<p>G</p>} right={<p>D</p>} />);
-    expect((container.firstChild as HTMLElement).className).toContain('flex-col');
-    expect((container.firstChild as HTMLElement).className).toContain('xl:grid-cols-2');
+    const { container, rerender } = render(
+      <TwoColumns left={<p>G</p>} right={<p>D</p>} />,
+    );
+    expect((container.firstChild as HTMLElement).className).toContain(
+      'flex-col',
+    );
+    expect((container.firstChild as HTMLElement).className).toContain(
+      'xl:grid-cols-2',
+    );
     rerender(<TwoColumns from="md" left={<p>G</p>} right={<p>D</p>} />);
-    expect((container.firstChild as HTMLElement).className).toContain('md:grid-cols-2');
-    rerender(<TwoColumns from="lg" ratio="aside" left={<p>G</p>} right={<p>D</p>} />);
-    expect((container.firstChild as HTMLElement).className).toContain('lg:grid-cols-[minmax(0,1fr)_340px]');
+    expect((container.firstChild as HTMLElement).className).toContain(
+      'md:grid-cols-2',
+    );
+    rerender(
+      <TwoColumns from="lg" ratio="aside" left={<p>G</p>} right={<p>D</p>} />,
+    );
+    expect((container.firstChild as HTMLElement).className).toContain(
+      'lg:grid-cols-[minmax(0,1fr)_340px]',
+    );
   });
 });

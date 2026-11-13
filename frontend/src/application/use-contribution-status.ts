@@ -1,33 +1,56 @@
 import { useCallback, useState } from 'react';
-import { ContributionPaymentPayload, ContributionPaymentResult, ContributionReport } from '../domain/contribution-tracking';
+import {
+  ContributionPaymentPayload,
+  ContributionPaymentResult,
+  ContributionReport,
+} from '../domain/contribution-tracking';
 import { Account } from '../domain/account';
-import { ApiError, apiClient, NetworkError } from '../infrastructure/api-client';
+import {
+  ApiError,
+  apiClient,
+  NetworkError,
+} from '../infrastructure/api-client';
 import { Resource, useResource } from './use-resource';
 
 /** Où en sont les contributions du mois. `async` : une erreur de lecture devient un état d'erreur, jamais une exception de rendu. */
-export function useContributionStatus(month: string, refreshToken = 0): Resource<ContributionReport> {
-  return useResource(async () => apiClient.fetchContributionStatus(month), [month], refreshToken);
+export function useContributionStatus(
+  month: string,
+  refreshToken = 0,
+): Resource<ContributionReport> {
+  return useResource(
+    async () => apiClient.fetchContributionStatus(month),
+    [month],
+    refreshToken,
+  );
 }
 
 /** Enregistre un versement. Pas de file d’attente hors ligne : l'échec est relancé tel quel et le formulaire garde la saisie. */
 export function useContributionPayment() {
   const [busy, setBusy] = useState(false);
 
-  const pay = useCallback(async (payload: ContributionPaymentPayload): Promise<ContributionPaymentResult> => {
-    setBusy(true);
-    try {
-      return await apiClient.createContributionPayment(payload);
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  const pay = useCallback(
+    async (
+      payload: ContributionPaymentPayload,
+    ): Promise<ContributionPaymentResult> => {
+      setBusy(true);
+      try {
+        return await apiClient.createContributionPayment(payload);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
+  );
 
   return { busy, pay };
 }
 
 /** Les comptes d'un espace (pour choisir où a atterri le versement). Liste vide tant que ça charge, en cas d'échec ou sans espace. */
 export function useSpaceAccounts(spaceId: string | null): Account[] {
-  const resource = useResource(async () => (spaceId === null ? [] : apiClient.fetchAccounts(spaceId)), [spaceId]);
+  const resource = useResource(
+    async () => (spaceId === null ? [] : apiClient.fetchAccounts(spaceId)),
+    [spaceId],
+  );
   return Array.isArray(resource.data) ? resource.data : [];
 }
 

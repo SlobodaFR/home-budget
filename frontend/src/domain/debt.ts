@@ -1,5 +1,13 @@
-import { centsToInputValue, formatCentsShort, parseAmountToCents } from './money';
-import { formatLongDateInput, isValidDateInput, todayInputValue } from './month';
+import {
+  centsToInputValue,
+  formatCentsShort,
+  parseAmountToCents,
+} from './money';
+import {
+  formatLongDateInput,
+  isValidDateInput,
+  todayInputValue,
+} from './month';
 import { RecurringPayment } from './recurring';
 
 export const MAX_DEBT_NAME_LENGTH = 60;
@@ -21,7 +29,13 @@ export const DEBT_RATIO_REFERENCE_PERCENT = 35;
 
 export type DebtKind = 'MORTGAGE' | 'CAR' | 'CONSUMER' | 'STUDENT' | 'OTHER';
 
-export const DEBT_KINDS: readonly DebtKind[] = ['MORTGAGE', 'CAR', 'CONSUMER', 'STUDENT', 'OTHER'];
+export const DEBT_KINDS: readonly DebtKind[] = [
+  'MORTGAGE',
+  'CAR',
+  'CONSUMER',
+  'STUDENT',
+  'OTHER',
+];
 
 export const DEBT_KIND_LABEL: Record<DebtKind, string> = {
   MORTGAGE: 'Immobilier',
@@ -32,12 +46,24 @@ export const DEBT_KIND_LABEL: Record<DebtKind, string> = {
 };
 
 export type RateType = 'FIXED' | 'VARIABLE' | 'ADJUSTABLE';
-export const RATE_TYPES: readonly RateType[] = ['FIXED', 'VARIABLE', 'ADJUSTABLE'];
-export const RATE_TYPE_LABEL: Record<RateType, string> = { FIXED: 'Fixe', VARIABLE: 'Variable', ADJUSTABLE: 'Révisable' };
+export const RATE_TYPES: readonly RateType[] = [
+  'FIXED',
+  'VARIABLE',
+  'ADJUSTABLE',
+];
+export const RATE_TYPE_LABEL: Record<RateType, string> = {
+  FIXED: 'Fixe',
+  VARIABLE: 'Variable',
+  ADJUSTABLE: 'Révisable',
+};
 export const RATE_TYPE_UNKNOWN_LABEL = 'Non précisé';
 
 export type InsuranceMode = 'FIXED' | 'PERCENT_INITIAL' | 'PERCENT_REMAINING';
-export const INSURANCE_MODES: readonly InsuranceMode[] = ['FIXED', 'PERCENT_INITIAL', 'PERCENT_REMAINING'];
+export const INSURANCE_MODES: readonly InsuranceMode[] = [
+  'FIXED',
+  'PERCENT_INITIAL',
+  'PERCENT_REMAINING',
+];
 export const INSURANCE_MODE_LABEL: Record<InsuranceMode, string> = {
   FIXED: 'Montant mensuel fixe',
   PERCENT_INITIAL: '% du capital emprunté',
@@ -45,8 +71,18 @@ export const INSURANCE_MODE_LABEL: Record<InsuranceMode, string> = {
 };
 
 export type GuaranteeKind = 'NONE' | 'SURETY' | 'MORTGAGE' | 'OTHER';
-export const GUARANTEE_KINDS: readonly GuaranteeKind[] = ['NONE', 'SURETY', 'MORTGAGE', 'OTHER'];
-export const GUARANTEE_KIND_LABEL: Record<GuaranteeKind, string> = { NONE: 'Aucune', SURETY: 'Caution', MORTGAGE: 'Hypothèque', OTHER: 'Autre' };
+export const GUARANTEE_KINDS: readonly GuaranteeKind[] = [
+  'NONE',
+  'SURETY',
+  'MORTGAGE',
+  'OTHER',
+];
+export const GUARANTEE_KIND_LABEL: Record<GuaranteeKind, string> = {
+  NONE: 'Aucune',
+  SURETY: 'Caution',
+  MORTGAGE: 'Hypothèque',
+  OTHER: 'Autre',
+};
 
 export type PaymentCheckStatus = 'OK' | 'GAP' | 'UNKNOWN';
 
@@ -60,7 +96,12 @@ export interface PaymentCheck {
   differencePercent: number | null;
 }
 
-export const UNKNOWN_PAYMENT_CHECK: PaymentCheck = { status: 'UNKNOWN', expectedMonthlyPaymentCents: null, differenceCents: null, differencePercent: null };
+export const UNKNOWN_PAYMENT_CHECK: PaymentCheck = {
+  status: 'UNKNOWN',
+  expectedMonthlyPaymentCents: null,
+  differenceCents: null,
+  differencePercent: null,
+};
 
 export interface Debt {
   id: string;
@@ -185,34 +226,70 @@ export interface WhatIfQuery {
 }
 
 /** Rappel affiché quand le serveur n'envoie pas sa propre note : la mention sur les indemnités est obligatoire. */
-export const DEFAULT_WHAT_IF_NOTE = 'Vérifiez les indemnités de remboursement anticipé de votre contrat.';
+export const DEFAULT_WHAT_IF_NOTE =
+  'Vérifiez les indemnités de remboursement anticipé de votre contrat.';
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lecture tolérante des réponses du serveur
 // ---------------------------------------------------------------------------------------------------------------------
 
-const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
-const asObject = (value: unknown): Record<string, unknown> => (value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {});
-const asCents = (value: unknown): number => (isNumber(value) ? Math.max(0, Math.round(value)) : 0);
-const asMonths = (value: unknown): number | null => (isNumber(value) ? Math.max(0, Math.trunc(value)) : null);
-const asNullableCents = (value: unknown): number | null => (isNumber(value) ? Math.max(0, Math.round(value)) : null);
-const asDate = (value: unknown): string | null => (typeof value === 'string' && isValidDateInput(value.slice(0, 10)) ? value.slice(0, 10) : null);
+const isNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+const asObject = (value: unknown): Record<string, unknown> =>
+  value !== null && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : {};
+const asCents = (value: unknown): number =>
+  isNumber(value) ? Math.max(0, Math.round(value)) : 0;
+const asMonths = (value: unknown): number | null =>
+  isNumber(value) ? Math.max(0, Math.trunc(value)) : null;
+const asNullableCents = (value: unknown): number | null =>
+  isNumber(value) ? Math.max(0, Math.round(value)) : null;
+const asDate = (value: unknown): string | null =>
+  typeof value === 'string' && isValidDateInput(value.slice(0, 10))
+    ? value.slice(0, 10)
+    : null;
 
 function kindOf(value: unknown): DebtKind {
   return DEBT_KINDS.includes(value as DebtKind) ? (value as DebtKind) : 'OTHER';
 }
 
-const asText = (value: unknown): string => (typeof value === 'string' ? value : '');
-const rateTypeOf = (value: unknown): RateType | null => (RATE_TYPES.includes(value as RateType) ? (value as RateType) : null);
-const insuranceModeOf = (value: unknown): InsuranceMode => (INSURANCE_MODES.includes(value as InsuranceMode) ? (value as InsuranceMode) : 'FIXED');
-const guaranteeKindOf = (value: unknown): GuaranteeKind => (GUARANTEE_KINDS.includes(value as GuaranteeKind) ? (value as GuaranteeKind) : 'NONE');
+const asText = (value: unknown): string =>
+  typeof value === 'string' ? value : '';
+const rateTypeOf = (value: unknown): RateType | null =>
+  RATE_TYPES.includes(value as RateType) ? (value as RateType) : null;
+const insuranceModeOf = (value: unknown): InsuranceMode =>
+  INSURANCE_MODES.includes(value as InsuranceMode)
+    ? (value as InsuranceMode)
+    : 'FIXED';
+const guaranteeKindOf = (value: unknown): GuaranteeKind =>
+  GUARANTEE_KINDS.includes(value as GuaranteeKind)
+    ? (value as GuaranteeKind)
+    : 'NONE';
 const asTermMonths = (value: unknown): number | null =>
-  isNumber(value) && Number.isInteger(value) && value >= MIN_TERM_MONTHS && value <= MAX_TERM_MONTHS ? value : null;
+  isNumber(value) &&
+  Number.isInteger(value) &&
+  value >= MIN_TERM_MONTHS &&
+  value <= MAX_TERM_MONTHS
+    ? value
+    : null;
 const asQuotity = (value: unknown): number =>
-  isNumber(value) ? Math.min(MAX_QUOTITY_PERCENT, Math.max(MIN_QUOTITY_PERCENT, Math.round(value))) : DEFAULT_QUOTITY_PERCENT;
+  isNumber(value)
+    ? Math.min(
+        MAX_QUOTITY_PERCENT,
+        Math.max(MIN_QUOTITY_PERCENT, Math.round(value)),
+      )
+    : DEFAULT_QUOTITY_PERCENT;
 
 /** L'assurance d'un mois quand le serveur ne l'a pas calculée : montant saisi, ou taux annuel × capital × quotité ÷ 12. */
-function estimateMonthlyInsurance(mode: InsuranceMode, insuranceMonthlyCents: number, ratePercent: number | null, quotityPercent: number, principalCents: number, remainingCents: number): number {
+function estimateMonthlyInsurance(
+  mode: InsuranceMode,
+  insuranceMonthlyCents: number,
+  ratePercent: number | null,
+  quotityPercent: number,
+  principalCents: number,
+  remainingCents: number,
+): number {
   if (mode === 'FIXED' || ratePercent === null) {
     return insuranceMonthlyCents;
   }
@@ -226,36 +303,64 @@ export function parsePaymentCheck(raw: unknown): PaymentCheck {
   if (source.status !== 'OK' && source.status !== 'GAP') {
     return UNKNOWN_PAYMENT_CHECK;
   }
-  const expected = isNumber(source.expectedMonthlyPaymentCents) ? Math.max(0, Math.round(source.expectedMonthlyPaymentCents)) : null;
+  const expected = isNumber(source.expectedMonthlyPaymentCents)
+    ? Math.max(0, Math.round(source.expectedMonthlyPaymentCents))
+    : null;
   return {
     status: source.status,
     expectedMonthlyPaymentCents: expected,
-    differenceCents: isNumber(source.differenceCents) ? Math.round(source.differenceCents) : null,
-    differencePercent: isNumber(source.differencePercent) ? Math.round(source.differencePercent) : null,
+    differenceCents: isNumber(source.differenceCents)
+      ? Math.round(source.differenceCents)
+      : null,
+    differencePercent: isNumber(source.differencePercent)
+      ? Math.round(source.differencePercent)
+      : null,
   };
 }
 
 /** Lit un crédit ; `null` si l'essentiel (id, nom, capital emprunté) manque. Ce qui manque est recalculé plutôt que supposé. */
 export function parseDebt(raw: unknown): Debt | null {
   const item = asObject(raw);
-  if (typeof item.id !== 'string' || typeof item.name !== 'string' || !isNumber(item.principalCents)) {
+  if (
+    typeof item.id !== 'string' ||
+    typeof item.name !== 'string' ||
+    !isNumber(item.principalCents)
+  ) {
     return null;
   }
   const principalCents = asCents(item.principalCents);
-  const remainingCents = isNumber(item.remainingCents) ? asCents(item.remainingCents) : principalCents;
+  const remainingCents = isNumber(item.remainingCents)
+    ? asCents(item.remainingCents)
+    : principalCents;
   const monthsRemaining = asMonths(item.monthsRemaining);
   const payoffDate = asDate(item.payoffDate);
   // Le contrat ajoute `neverPaidOff: true` dans ce cas : on ne le devine pas, pour ne jamais lancer une fausse alerte.
   const neverPaidOff = item.neverPaidOff === true;
   const insuranceMonthlyCents = asCents(item.insuranceMonthlyCents);
   const insuranceMode = insuranceModeOf(item.insuranceMode);
-  const insuranceRatePercent = isNumber(item.insuranceRatePercent) ? Math.max(0, item.insuranceRatePercent) : null;
+  const insuranceRatePercent = isNumber(item.insuranceRatePercent)
+    ? Math.max(0, item.insuranceRatePercent)
+    : null;
   const insuranceQuotityPercent = asQuotity(item.insuranceQuotityPercent);
   const monthlyPaymentCents = asCents(item.monthlyPaymentCents);
   const monthlyInsuranceCents = isNumber(item.monthlyInsuranceCents)
     ? asCents(item.monthlyInsuranceCents)
-    : estimateMonthlyInsurance(insuranceMode, insuranceMonthlyCents, insuranceRatePercent, insuranceQuotityPercent, principalCents, remainingCents);
-  const computedShare = principalCents > 0 ? Math.floor(((principalCents - Math.min(remainingCents, principalCents)) / principalCents) * 100) : 0;
+    : estimateMonthlyInsurance(
+        insuranceMode,
+        insuranceMonthlyCents,
+        insuranceRatePercent,
+        insuranceQuotityPercent,
+        principalCents,
+        remainingCents,
+      );
+  const computedShare =
+    principalCents > 0
+      ? Math.floor(
+          ((principalCents - Math.min(remainingCents, principalCents)) /
+            principalCents) *
+            100,
+        )
+      : 0;
   return {
     id: item.id,
     spaceId: typeof item.spaceId === 'string' ? item.spaceId : '',
@@ -263,10 +368,14 @@ export function parseDebt(raw: unknown): Debt | null {
     kind: kindOf(item.kind),
     principalCents,
     remainingCents,
-    annualRatePercent: isNumber(item.annualRatePercent) ? Math.max(0, item.annualRatePercent) : 0,
+    annualRatePercent: isNumber(item.annualRatePercent)
+      ? Math.max(0, item.annualRatePercent)
+      : 0,
     monthlyPaymentCents,
     startDate: asDate(item.startDate) ?? '',
-    paymentDay: isNumber(item.paymentDay) ? Math.trunc(item.paymentDay) : MIN_PAYMENT_DAY,
+    paymentDay: isNumber(item.paymentDay)
+      ? Math.trunc(item.paymentDay)
+      : MIN_PAYMENT_DAY,
     insuranceMonthlyCents,
     lender: asText(item.lender).trim(),
     contractReference: asText(item.contractReference).trim(),
@@ -280,17 +389,30 @@ export function parseDebt(raw: unknown): Debt | null {
     guaranteeCents: asCents(item.guaranteeCents),
     notes: asText(item.notes),
     monthlyInsuranceCents,
-    monthlyTotalCents: isNumber(item.monthlyTotalCents) ? asCents(item.monthlyTotalCents) : monthlyPaymentCents + monthlyInsuranceCents,
-    remainingInsuranceCents: neverPaidOff ? null : asNullableCents(item.remainingInsuranceCents),
-    remainingCostCents: neverPaidOff ? null : asNullableCents(item.remainingCostCents),
+    monthlyTotalCents: isNumber(item.monthlyTotalCents)
+      ? asCents(item.monthlyTotalCents)
+      : monthlyPaymentCents + monthlyInsuranceCents,
+    remainingInsuranceCents: neverPaidOff
+      ? null
+      : asNullableCents(item.remainingInsuranceCents),
+    remainingCostCents: neverPaidOff
+      ? null
+      : asNullableCents(item.remainingCostCents),
     paymentCheck: parsePaymentCheck(item.paymentCheck),
     monthsRemaining: neverPaidOff ? null : monthsRemaining,
     payoffDate: neverPaidOff ? null : payoffDate,
-    totalInterestRemainingCents: neverPaidOff ? null : asNullableCents(item.totalInterestRemainingCents),
-    paidSharePercent: isNumber(item.paidSharePercent) ? Math.min(100, Math.max(0, Math.trunc(item.paidSharePercent))) : Math.min(100, Math.max(0, computedShare)),
+    totalInterestRemainingCents: neverPaidOff
+      ? null
+      : asNullableCents(item.totalInterestRemainingCents),
+    paidSharePercent: isNumber(item.paidSharePercent)
+      ? Math.min(100, Math.max(0, Math.trunc(item.paidSharePercent)))
+      : Math.min(100, Math.max(0, computedShare)),
     neverPaidOff,
     archived: item.archived === true,
-    recurringId: typeof item.recurringId === 'string' && item.recurringId !== '' ? item.recurringId : null,
+    recurringId:
+      typeof item.recurringId === 'string' && item.recurringId !== ''
+        ? item.recurringId
+        : null,
   };
 }
 
@@ -317,22 +439,32 @@ function parseLenderSummaries(raw: unknown): LenderSummary[] {
     const item = asObject(entry);
     entries.push({
       lender: asText(item.lender).trim(),
-      activeCount: isNumber(item.activeCount) ? Math.max(0, Math.trunc(item.activeCount)) : 0,
+      activeCount: isNumber(item.activeCount)
+        ? Math.max(0, Math.trunc(item.activeCount))
+        : 0,
       remainingCents: asCents(item.remainingCents),
       monthlyTotalCents: asCents(item.monthlyTotalCents),
     });
   }
   // Le serveur trie déjà par capital restant ; on ne s'y fie pas.
-  return entries.sort((a, b) => b.remainingCents - a.remainingCents || a.lender.localeCompare(b.lender, 'fr'));
+  return entries.sort(
+    (a, b) =>
+      b.remainingCents - a.remainingCents ||
+      a.lender.localeCompare(b.lender, 'fr'),
+  );
 }
 
 export function parseDebtsSummary(raw: unknown): DebtsSummary {
   const source = asObject(raw);
   return {
-    activeCount: isNumber(source.activeCount) ? Math.max(0, Math.trunc(source.activeCount)) : 0,
+    activeCount: isNumber(source.activeCount)
+      ? Math.max(0, Math.trunc(source.activeCount))
+      : 0,
     totalRemainingCents: asCents(source.totalRemainingCents),
     totalMonthlyCents: asCents(source.totalMonthlyCents),
-    debtToIncomePercent: isNumber(source.debtToIncomePercent) ? Math.max(0, Math.round(source.debtToIncomePercent)) : null,
+    debtToIncomePercent: isNumber(source.debtToIncomePercent)
+      ? Math.max(0, Math.round(source.debtToIncomePercent))
+      : null,
     totalMonthlyInsuranceCents: asCents(source.totalMonthlyInsuranceCents),
     totalRemainingCostCents: asNullableCents(source.totalRemainingCostCents),
     byLender: parseLenderSummaries(source.byLender),
@@ -343,7 +475,9 @@ function parseScenario(raw: unknown): WhatIfScenario {
   const source = asObject(raw);
   return {
     monthsRemaining: asMonths(source.monthsRemaining),
-    totalInterestRemainingCents: asNullableCents(source.totalInterestRemainingCents),
+    totalInterestRemainingCents: asNullableCents(
+      source.totalInterestRemainingCents,
+    ),
     payoffDate: asDate(source.payoffDate),
   };
 }
@@ -351,26 +485,38 @@ function parseScenario(raw: unknown): WhatIfScenario {
 /** Lit la simulation ; `null` si ni le scénario de référence ni le scénario simulé ne sont présents. Les gains ne sont jamais négatifs. */
 export function parseWhatIf(raw: unknown): WhatIfResult | null {
   const source = asObject(raw);
-  if (source.baseline === undefined || source.scenario === undefined || source.baseline === null || source.scenario === null) {
+  if (
+    source.baseline === undefined ||
+    source.scenario === undefined ||
+    source.baseline === null ||
+    source.scenario === null
+  ) {
     return null;
   }
   const baseline = parseScenario(source.baseline);
   const scenario = parseScenario(source.scenario);
-  const interestSaved =
-    isNumber(source.interestSavedCents)
-      ? source.interestSavedCents
-      : baseline.totalInterestRemainingCents !== null && scenario.totalInterestRemainingCents !== null
-        ? baseline.totalInterestRemainingCents - scenario.totalInterestRemainingCents
-        : 0;
-  const monthsSaved =
-    isNumber(source.monthsSaved) ? source.monthsSaved : baseline.monthsRemaining !== null && scenario.monthsRemaining !== null ? baseline.monthsRemaining - scenario.monthsRemaining : 0;
+  const interestSaved = isNumber(source.interestSavedCents)
+    ? source.interestSavedCents
+    : baseline.totalInterestRemainingCents !== null &&
+        scenario.totalInterestRemainingCents !== null
+      ? baseline.totalInterestRemainingCents -
+        scenario.totalInterestRemainingCents
+      : 0;
+  const monthsSaved = isNumber(source.monthsSaved)
+    ? source.monthsSaved
+    : baseline.monthsRemaining !== null && scenario.monthsRemaining !== null
+      ? baseline.monthsRemaining - scenario.monthsRemaining
+      : 0;
   return {
     baseline,
     scenario,
     interestSavedCents: Math.max(0, Math.round(interestSaved)),
     monthsSaved: Math.max(0, Math.trunc(monthsSaved)),
     insuranceSavedCents: asNullableCents(source.insuranceSavedCents),
-    note: typeof source.note === 'string' && source.note.trim() !== '' ? source.note : DEFAULT_WHAT_IF_NOTE,
+    note:
+      typeof source.note === 'string' && source.note.trim() !== ''
+        ? source.note
+        : DEFAULT_WHAT_IF_NOTE,
   };
 }
 
@@ -394,14 +540,19 @@ export function sortDebts(debts: readonly Debt[]): Debt[] {
   });
 }
 
-export const activeDebts = (debts: readonly Debt[]): Debt[] => debts.filter((debt) => !debt.archived);
-export const archivedDebts = (debts: readonly Debt[]): Debt[] => debts.filter((debt) => debt.archived);
+export const activeDebts = (debts: readonly Debt[]): Debt[] =>
+  debts.filter((debt) => !debt.archived);
+export const archivedDebts = (debts: readonly Debt[]): Debt[] =>
+  debts.filter((debt) => debt.archived);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Libellés
 // ---------------------------------------------------------------------------------------------------------------------
 
-const RATE_FORMAT = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const RATE_FORMAT = new Intl.NumberFormat('fr-FR', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
 
 /** 3.9 → « 3,9 % », 0 → « 0 % ». */
 export function formatRate(percent: number): string {
@@ -430,31 +581,54 @@ export function formatYearsAndMonths(months: number): string | null {
 /** « dans 38 mois (3 ans et 2 mois) ». */
 export function describeTimeLeft(months: number): string {
   const detail = formatYearsAndMonths(months);
-  return months <= 0 ? 'ce mois-ci' : `dans ${formatMonths(months)}${detail ? ` (${detail})` : ''}`;
+  return months <= 0
+    ? 'ce mois-ci'
+    : `dans ${formatMonths(months)}${detail ? ` (${detail})` : ''}`;
 }
 
-export const isRepaid = (debt: Pick<Debt, 'remainingCents'>): boolean => debt.remainingCents <= 0;
+export const isRepaid = (debt: Pick<Debt, 'remainingCents'>): boolean =>
+  debt.remainingCents <= 0;
 
 /** « Fin prévue le 5 décembre 2029 · dans 38 mois (3 ans et 2 mois) » ; `null` si la dette ne diminue pas ou est soldée. */
-export function describePayoff(debt: Pick<Debt, 'payoffDate' | 'monthsRemaining' | 'remainingCents' | 'neverPaidOff'>): string | null {
-  if (debt.neverPaidOff || debt.remainingCents <= 0 || debt.payoffDate === null || debt.monthsRemaining === null) {
+export function describePayoff(
+  debt: Pick<
+    Debt,
+    'payoffDate' | 'monthsRemaining' | 'remainingCents' | 'neverPaidOff'
+  >,
+): string | null {
+  if (
+    debt.neverPaidOff ||
+    debt.remainingCents <= 0 ||
+    debt.payoffDate === null ||
+    debt.monthsRemaining === null
+  ) {
     return null;
   }
   return `Fin prévue le ${formatLongDateInput(debt.payoffDate)} · ${describeTimeLeft(debt.monthsRemaining)}`;
 }
 
 /** « 320 € par mois, plus 15 € d’assurance » (l'assurance n'est mentionnée que si elle existe). */
-export function describeMonthly(debt: Pick<Debt, 'monthlyPaymentCents' | 'monthlyInsuranceCents'>): string {
+export function describeMonthly(
+  debt: Pick<Debt, 'monthlyPaymentCents' | 'monthlyInsuranceCents'>,
+): string {
   const base = `${formatCentsShort(debt.monthlyPaymentCents)} par mois`;
-  return debt.monthlyInsuranceCents > 0 ? `${base}, plus ${formatCentsShort(debt.monthlyInsuranceCents)} d’assurance` : base;
+  return debt.monthlyInsuranceCents > 0
+    ? `${base}, plus ${formatCentsShort(debt.monthlyInsuranceCents)} d’assurance`
+    : base;
 }
 
 /** Ce que l'on prélève vraiment chaque mois : mensualité et assurance. */
-export const totalMonthlyCents = (debt: Pick<Debt, 'monthlyPaymentCents' | 'monthlyInsuranceCents'>): number => debt.monthlyPaymentCents + debt.monthlyInsuranceCents;
+export const totalMonthlyCents = (
+  debt: Pick<Debt, 'monthlyPaymentCents' | 'monthlyInsuranceCents'>,
+): number => debt.monthlyPaymentCents + debt.monthlyInsuranceCents;
 
 /** « 335 € par mois au total » ; `null` sans assurance (la mensualité suffit alors). */
-export function describeMonthlyTotal(debt: Pick<Debt, 'monthlyPaymentCents' | 'monthlyInsuranceCents'>): string | null {
-  return debt.monthlyInsuranceCents > 0 ? `${formatCentsShort(totalMonthlyCents(debt))} par mois au total` : null;
+export function describeMonthlyTotal(
+  debt: Pick<Debt, 'monthlyPaymentCents' | 'monthlyInsuranceCents'>,
+): string | null {
+  return debt.monthlyInsuranceCents > 0
+    ? `${formatCentsShort(totalMonthlyCents(debt))} par mois au total`
+    : null;
 }
 
 /** « 240 mois (20 ans) ». */
@@ -463,9 +637,11 @@ export function describeTerm(months: number): string {
   return `${formatMonths(months)}${detail ? ` (${detail})` : ''}`;
 }
 
-export const RATE_TYPE_HELP = 'Les calculs supposent un taux fixe ; avec un taux variable ou révisable, ils restent des estimations.';
+export const RATE_TYPE_HELP =
+  'Les calculs supposent un taux fixe ; avec un taux variable ou révisable, ils restent des estimations.';
 
-export const rateTypeLabel = (rateType: RateType | null): string => (rateType === null ? RATE_TYPE_UNKNOWN_LABEL : RATE_TYPE_LABEL[rateType]);
+export const rateTypeLabel = (rateType: RateType | null): string =>
+  rateType === null ? RATE_TYPE_UNKNOWN_LABEL : RATE_TYPE_LABEL[rateType];
 
 /** L'avertissement des taux qui bougent ; `null` pour un taux fixe ou non précisé. */
 export function rateTypeWarning(rateType: RateType | null): string | null {
@@ -476,25 +652,45 @@ export function rateTypeWarning(rateType: RateType | null): string | null {
 
 /** « 1,2 % du capital emprunté par an (environ 15 € par mois) », « 15 € par mois », « Aucune assurance renseignée ». */
 export function describeInsurance(
-  debt: Pick<Debt, 'insuranceMode' | 'insuranceRatePercent' | 'insuranceQuotityPercent' | 'monthlyInsuranceCents' | 'insuranceMonthlyCents'>,
+  debt: Pick<
+    Debt,
+    | 'insuranceMode'
+    | 'insuranceRatePercent'
+    | 'insuranceQuotityPercent'
+    | 'monthlyInsuranceCents'
+    | 'insuranceMonthlyCents'
+  >,
 ): string {
   if (debt.insuranceMode === 'FIXED' || debt.insuranceRatePercent === null) {
-    return debt.monthlyInsuranceCents > 0 ? `${formatCentsShort(debt.monthlyInsuranceCents)} par mois` : 'Aucune assurance renseignée';
+    return debt.monthlyInsuranceCents > 0
+      ? `${formatCentsShort(debt.monthlyInsuranceCents)} par mois`
+      : 'Aucune assurance renseignée';
   }
-  const base = debt.insuranceMode === 'PERCENT_INITIAL' ? 'du capital emprunté' : 'du capital restant dû';
-  const quotity = debt.insuranceQuotityPercent !== DEFAULT_QUOTITY_PERCENT ? `, quotité ${debt.insuranceQuotityPercent} %` : '';
+  const base =
+    debt.insuranceMode === 'PERCENT_INITIAL'
+      ? 'du capital emprunté'
+      : 'du capital restant dû';
+  const quotity =
+    debt.insuranceQuotityPercent !== DEFAULT_QUOTITY_PERCENT
+      ? `, quotité ${debt.insuranceQuotityPercent} %`
+      : '';
   return `${formatRate(debt.insuranceRatePercent)} ${base} par an${quotity} (environ ${formatCentsShort(debt.monthlyInsuranceCents)} par mois)`;
 }
 
 /** « Caution · 1 500 € », « Aucune » ; un montant sans type est tout de même écrit. */
-export function describeGuarantee(debt: Pick<Debt, 'guaranteeKind' | 'guaranteeCents'>): string {
+export function describeGuarantee(
+  debt: Pick<Debt, 'guaranteeKind' | 'guaranteeCents'>,
+): string {
   const label = GUARANTEE_KIND_LABEL[debt.guaranteeKind];
-  return debt.guaranteeCents > 0 ? `${label} · ${formatCentsShort(debt.guaranteeCents)}` : label;
+  return debt.guaranteeCents > 0
+    ? `${label} · ${formatCentsShort(debt.guaranteeCents)}`
+    : label;
 }
 
 /** Le prêteur tel qu'on l'affiche dans les regroupements. */
 export const LENDER_UNKNOWN_LABEL = 'Prêteur non précisé';
-export const lenderLabel = (lender: string): string => (lender.trim() === '' ? LENDER_UNKNOWN_LABEL : lender.trim());
+export const lenderLabel = (lender: string): string =>
+  lender.trim() === '' ? LENDER_UNKNOWN_LABEL : lender.trim();
 
 /** Les prêteurs déjà saisis dans l'espace (sans doublon, sans tenir compte de la casse), pour les suggestions du formulaire. */
 export function knownLenders(debts: readonly Pick<Debt, 'lender'>[]): string[] {
@@ -519,12 +715,18 @@ export interface PaymentCheckMessage {
  * Le message de la vérification de mensualité. Un écart invite à revérifier la saisie ou la durée, jamais à renégocier ou
  * racheter le prêt. Quand la vérification est impossible, on dit seulement ce qui manque, sans rien d'alarmant.
  */
-export function describePaymentCheck(debt: Pick<Debt, 'paymentCheck' | 'monthlyPaymentCents' | 'initialTermMonths' | 'rateType'>): PaymentCheckMessage {
+export function describePaymentCheck(
+  debt: Pick<
+    Debt,
+    'paymentCheck' | 'monthlyPaymentCents' | 'initialTermMonths' | 'rateType'
+  >,
+): PaymentCheckMessage {
   const { paymentCheck } = debt;
   if (paymentCheck.status === 'GAP') {
     const entered = formatCentsShort(debt.monthlyPaymentCents);
     const expected = paymentCheck.expectedMonthlyPaymentCents;
-    const origin = 'ce que donneraient le capital, le taux et la durée d’origine';
+    const origin =
+      'ce que donneraient le capital, le taux et la durée d’origine';
     return {
       level: 'gap',
       text:
@@ -534,32 +736,55 @@ export function describePaymentCheck(debt: Pick<Debt, 'paymentCheck' | 'monthlyP
     };
   }
   if (paymentCheck.status === 'OK') {
-    return { level: 'ok', text: 'La mensualité saisie correspond au capital, au taux et à la durée d’origine.' };
+    return {
+      level: 'ok',
+      text: 'La mensualité saisie correspond au capital, au taux et à la durée d’origine.',
+    };
   }
   if (debt.rateType === 'VARIABLE' || debt.rateType === 'ADJUSTABLE') {
-    return { level: 'unknown', text: 'La mensualité n’est pas vérifiée : avec un taux variable ou révisable, on ne peut pas la recalculer à partir du prêt d’origine.' };
+    return {
+      level: 'unknown',
+      text: 'La mensualité n’est pas vérifiée : avec un taux variable ou révisable, on ne peut pas la recalculer à partir du prêt d’origine.',
+    };
   }
   if (debt.initialTermMonths === null) {
-    return { level: 'unknown', text: 'Pour vérifier la mensualité, indiquez la durée initiale du prêt (modifiez le crédit).' };
+    return {
+      level: 'unknown',
+      text: 'Pour vérifier la mensualité, indiquez la durée initiale du prêt (modifiez le crédit).',
+    };
   }
-  return { level: 'unknown', text: 'La mensualité n’a pas pu être vérifiée avec les informations disponibles.' };
+  return {
+    level: 'unknown',
+    text: 'La mensualité n’a pas pu être vérifiée avec les informations disponibles.',
+  };
 }
 
-export const describePaidShare = (debt: Pick<Debt, 'paidSharePercent'>): string => `Déjà remboursé : ${debt.paidSharePercent} %`;
+export const describePaidShare = (
+  debt: Pick<Debt, 'paidSharePercent'>,
+): string => `Déjà remboursé : ${debt.paidSharePercent} %`;
 
 /** « Déjà remboursé : 25 % — 3 800 € sur 15 000 € » : le texte lu par les lecteurs d'écran et affiché sous la barre. */
-export function describePaidProgress(debt: Pick<Debt, 'paidSharePercent' | 'principalCents' | 'remainingCents'>): string {
+export function describePaidProgress(
+  debt: Pick<Debt, 'paidSharePercent' | 'principalCents' | 'remainingCents'>,
+): string {
   const paid = Math.max(0, debt.principalCents - debt.remainingCents);
   return `Déjà remboursé : ${debt.paidSharePercent} % — ${formatCentsShort(paid)} sur ${formatCentsShort(debt.principalCents)}`;
 }
 
 /** Les intérêts d'un mois sur le capital restant (estimation : capital × taux ÷ 12, au centime). */
-export function monthlyInterestCents(debt: Pick<Debt, 'remainingCents' | 'annualRatePercent'>): number {
+export function monthlyInterestCents(
+  debt: Pick<Debt, 'remainingCents' | 'annualRatePercent'>,
+): number {
   return Math.round((debt.remainingCents * debt.annualRatePercent) / 1200);
 }
 
 /** Le message qui met en avant un crédit dont la mensualité ne couvre pas les intérêts. */
-export function describeNeverPaidOff(debt: Pick<Debt, 'remainingCents' | 'annualRatePercent' | 'monthlyPaymentCents'>): string {
+export function describeNeverPaidOff(
+  debt: Pick<
+    Debt,
+    'remainingCents' | 'annualRatePercent' | 'monthlyPaymentCents'
+  >,
+): string {
   const interest = monthlyInterestCents(debt);
   return (
     `Cette mensualité ne couvre pas les intérêts : le capital restant ne diminue pas. Les intérêts d’un mois sont d’environ ${formatCentsShort(interest)} ` +
@@ -610,7 +835,13 @@ export const DEBT_RATIO_EXPLANATION = `${DEBT_RATIO_REFERENCE_PERCENT} % est un 
 
 /** Position (0-100) d'un taux sur la jauge, qui va de 0 à 2 × le repère. */
 export function ratioGaugePercent(percent: number): number {
-  return Math.min(100, Math.max(0, Math.round((percent / (DEBT_RATIO_REFERENCE_PERCENT * 2)) * 100)));
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round((percent / (DEBT_RATIO_REFERENCE_PERCENT * 2)) * 100),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -676,14 +907,21 @@ export interface DebtFormErrors {
   notes?: string;
 }
 
-export type DebtFormResult = { ok: true; payload: DebtPayload } | { ok: false; errors: DebtFormErrors };
+export type DebtFormResult =
+  | { ok: true; payload: DebtPayload }
+  | { ok: false; errors: DebtFormErrors };
 
-export const REMAINING_HELP = 'Le capital restant figure sur votre tableau d’amortissement ou sur le relevé de la banque.';
-export const QUOTITY_HELP = 'La part du prêt couverte par l’assurance. Deux emprunteurs assurés chacun à 100 % : 200 %.';
-export const NOTES_HELP = 'Par exemple les conditions de remboursement anticipé. N’y mettez jamais de numéro de compte ni de mot de passe.';
-export const GUARANTEE_NONE_ERROR = 'Choisissez le type de garantie (caution, hypothèque…) pour y associer un montant, ou laissez le montant vide.';
+export const REMAINING_HELP =
+  'Le capital restant figure sur votre tableau d’amortissement ou sur le relevé de la banque.';
+export const QUOTITY_HELP =
+  'La part du prêt couverte par l’assurance. Deux emprunteurs assurés chacun à 100 % : 200 %.';
+export const NOTES_HELP =
+  'Par exemple les conditions de remboursement anticipé. N’y mettez jamais de numéro de compte ni de mot de passe.';
+export const GUARANTEE_NONE_ERROR =
+  'Choisissez le type de garantie (caution, hypothèque…) pour y associer un montant, ou laissez le montant vide.';
 
-const AMOUNT_HINT = 'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 15 000 ou 320,50).';
+const AMOUNT_HINT =
+  'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 15 000 ou 320,50).';
 
 export function emptyDebtForm(now: Date = new Date()): DebtFormValues {
   const today = todayInputValue(now);
@@ -695,7 +933,9 @@ export function emptyDebtForm(now: Date = new Date()): DebtFormValues {
     rate: '',
     monthlyPayment: '',
     startDate: today,
-    paymentDay: String(Math.min(MAX_PAYMENT_DAY, Math.max(MIN_PAYMENT_DAY, now.getDate()))),
+    paymentDay: String(
+      Math.min(MAX_PAYMENT_DAY, Math.max(MIN_PAYMENT_DAY, now.getDate())),
+    ),
     recurringId: '',
     lender: '',
     contractReference: '',
@@ -716,10 +956,15 @@ export function emptyDebtForm(now: Date = new Date()): DebtFormValues {
 }
 
 /** 3.9 → « 3,9 » (la virgule française attendue par le formulaire). */
-export const percentToInput = (percent: number): string => String(percent).replace('.', ',');
-const optionalCentsToInput = (cents: number): string => (cents === 0 ? '' : centsToInputValue(cents));
+export const percentToInput = (percent: number): string =>
+  String(percent).replace('.', ',');
+const optionalCentsToInput = (cents: number): string =>
+  cents === 0 ? '' : centsToInputValue(cents);
 
-type TermFormValues = Pick<DebtFormValues, 'termUnit' | 'termMonths' | 'termYears' | 'termExtraMonths'>;
+type TermFormValues = Pick<
+  DebtFormValues,
+  'termUnit' | 'termMonths' | 'termYears' | 'termExtraMonths'
+>;
 
 /** Une durée en mois → les champs de saisie du formulaire (en années et mois à partir d'un an). `null` : tout vide. */
 export function termToForm(term: number | null): TermFormValues {
@@ -728,7 +973,8 @@ export function termToForm(term: number | null): TermFormValues {
     termUnit: inYears ? 'YEARS' : 'MONTHS',
     termMonths: term !== null && !inYears ? String(term) : '',
     termYears: term !== null && inYears ? String(Math.floor(term / 12)) : '',
-    termExtraMonths: term !== null && inYears && term % 12 !== 0 ? String(term % 12) : '',
+    termExtraMonths:
+      term !== null && inYears && term % 12 !== 0 ? String(term % 12) : '',
   };
 }
 
@@ -748,8 +994,14 @@ export function debtToForm(debt: Debt): DebtFormValues {
     ...termToForm(debt.initialTermMonths),
     rateType: debt.rateType ?? '',
     insuranceMode: debt.insuranceMode,
-    insurance: debt.insuranceMode === 'FIXED' ? optionalCentsToInput(debt.insuranceMonthlyCents) : '',
-    insuranceRate: debt.insuranceRatePercent === null ? '' : percentToInput(debt.insuranceRatePercent),
+    insurance:
+      debt.insuranceMode === 'FIXED'
+        ? optionalCentsToInput(debt.insuranceMonthlyCents)
+        : '',
+    insuranceRate:
+      debt.insuranceRatePercent === null
+        ? ''
+        : percentToInput(debt.insuranceRatePercent),
     insuranceQuotity: String(debt.insuranceQuotityPercent),
     fees: optionalCentsToInput(debt.feesCents),
     guaranteeKind: debt.guaranteeKind,
@@ -759,8 +1011,19 @@ export function debtToForm(debt: Debt): DebtFormValues {
 }
 
 /** Y a-t-il quelque chose dans les champs facultatifs du contrat ? Sert à ouvrir ce bloc d'office à la modification. */
-export function hasContractDetails(values: Pick<DebtFormValues, 'contractReference' | 'fees' | 'guaranteeKind' | 'guarantee' | 'notes'>): boolean {
-  return values.contractReference.trim() !== '' || values.fees.trim() !== '' || values.guaranteeKind !== 'NONE' || values.guarantee.trim() !== '' || values.notes.trim() !== '';
+export function hasContractDetails(
+  values: Pick<
+    DebtFormValues,
+    'contractReference' | 'fees' | 'guaranteeKind' | 'guarantee' | 'notes'
+  >,
+): boolean {
+  return (
+    values.contractReference.trim() !== '' ||
+    values.fees.trim() !== '' ||
+    values.guaranteeKind !== 'NONE' ||
+    values.guarantee.trim() !== '' ||
+    values.notes.trim() !== ''
+  );
 }
 
 const RATE_PATTERN = /^\d+(?:[.,]\d{0,2})?$|^[.,]\d{1,2}$/;
@@ -787,29 +1050,42 @@ export const TERM_ERROR = `La durée doit être comprise entre ${MIN_TERM_MONTHS
 type TermResult = { ok: true; months: number | null } | { ok: false };
 
 /** La durée initiale en mois, depuis la saisie en mois ou en années et mois. Tout vide : non précisée (`null`). */
-export function parseInitialTerm(values: Pick<DebtFormValues, 'termUnit' | 'termMonths' | 'termYears' | 'termExtraMonths'>): TermResult {
+export function parseInitialTerm(
+  values: Pick<
+    DebtFormValues,
+    'termUnit' | 'termMonths' | 'termYears' | 'termExtraMonths'
+  >,
+): TermResult {
   if (values.termUnit === 'MONTHS') {
     const text = values.termMonths.trim();
     if (text === '') {
       return { ok: true, months: null };
     }
     const months = WHOLE_NUMBER.test(text) ? Number(text) : NaN;
-    return months >= MIN_TERM_MONTHS && months <= MAX_TERM_MONTHS ? { ok: true, months } : { ok: false };
+    return months >= MIN_TERM_MONTHS && months <= MAX_TERM_MONTHS
+      ? { ok: true, months }
+      : { ok: false };
   }
   const yearsText = values.termYears.trim();
   const extraText = values.termExtraMonths.trim();
   if (yearsText === '' && extraText === '') {
     return { ok: true, months: null };
   }
-  if ((yearsText !== '' && !WHOLE_NUMBER.test(yearsText)) || (extraText !== '' && !WHOLE_NUMBER.test(extraText))) {
+  if (
+    (yearsText !== '' && !WHOLE_NUMBER.test(yearsText)) ||
+    (extraText !== '' && !WHOLE_NUMBER.test(extraText))
+  ) {
     return { ok: false };
   }
   const total = Number(yearsText || '0') * 12 + Number(extraText || '0');
-  return total >= MIN_TERM_MONTHS && total <= MAX_TERM_MONTHS ? { ok: true, months: total } : { ok: false };
+  return total >= MIN_TERM_MONTHS && total <= MAX_TERM_MONTHS
+    ? { ok: true, months: total }
+    : { ok: false };
 }
 
 /** Un montant facultatif en euros : vide = 0, `null` si illisible. */
-const optionalAmount = (input: string): number | null => (input.trim() === '' ? 0 : parseAmountToCents(input));
+const optionalAmount = (input: string): number | null =>
+  input.trim() === '' ? 0 : parseAmountToCents(input);
 
 export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
   const errors: DebtFormErrors = {};
@@ -833,7 +1109,8 @@ export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
 
   const principalCents = parseAmountToCents(values.principal);
   if (values.principal.trim() === '') {
-    errors.principal = 'Indiquez le capital emprunté (la somme prêtée au départ).';
+    errors.principal =
+      'Indiquez le capital emprunté (la somme prêtée au départ).';
   } else if (principalCents === null) {
     errors.principal = AMOUNT_HINT;
   } else if (principalCents === 0) {
@@ -842,18 +1119,25 @@ export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
 
   const remainingCents = parseAmountToCents(values.remaining);
   if (values.remaining.trim() === '') {
-    errors.remaining = 'Indiquez le capital restant dû (voir l’aide ci-dessus).';
+    errors.remaining =
+      'Indiquez le capital restant dû (voir l’aide ci-dessus).';
   } else if (remainingCents === null) {
     errors.remaining = AMOUNT_HINT;
-  } else if (principalCents !== null && principalCents > 0 && remainingCents > principalCents) {
-    errors.remaining = 'Le capital restant ne peut pas dépasser le capital emprunté.';
+  } else if (
+    principalCents !== null &&
+    principalCents > 0 &&
+    remainingCents > principalCents
+  ) {
+    errors.remaining =
+      'Le capital restant ne peut pas dépasser le capital emprunté.';
   }
 
   const rate = parseRatePercent(values.rate);
   if (values.rate.trim() === '') {
     errors.rate = 'Indiquez le taux annuel (0 si le crédit est sans intérêts).';
   } else if (rate === null) {
-    errors.rate = 'Taux invalide : utilisez des chiffres avec au plus 2 décimales, virgule ou point (ex. 3,9).';
+    errors.rate =
+      'Taux invalide : utilisez des chiffres avec au plus 2 décimales, virgule ou point (ex. 3,9).';
   } else if (rate > MAX_RATE_PERCENT) {
     errors.rate = `Le taux doit être compris entre 0 et ${MAX_RATE_PERCENT} %.`;
   }
@@ -879,15 +1163,18 @@ export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
   if (values.insuranceMode === 'FIXED') {
     insuranceCents = optionalAmount(values.insurance);
     if (insuranceCents === null) {
-      errors.insurance = 'Montant invalide : utilisez des chiffres et au plus 2 décimales, ou laissez vide s’il n’y a pas d’assurance.';
+      errors.insurance =
+        'Montant invalide : utilisez des chiffres et au plus 2 décimales, ou laissez vide s’il n’y a pas d’assurance.';
     }
   } else {
     if (values.insuranceRate.trim() === '') {
-      errors.insuranceRate = 'Indiquez le taux annuel de l’assurance (ex. 0,30).';
+      errors.insuranceRate =
+        'Indiquez le taux annuel de l’assurance (ex. 0,30).';
     } else {
       insuranceRate = parseRatePercent(values.insuranceRate);
       if (insuranceRate === null) {
-        errors.insuranceRate = 'Taux invalide : utilisez des chiffres avec au plus 2 décimales, virgule ou point (ex. 0,30).';
+        errors.insuranceRate =
+          'Taux invalide : utilisez des chiffres avec au plus 2 décimales, virgule ou point (ex. 0,30).';
       } else if (insuranceRate > MAX_INSURANCE_RATE_PERCENT) {
         errors.insuranceRate = `Le taux de l’assurance doit être compris entre 0 et ${MAX_INSURANCE_RATE_PERCENT} %.`;
       }
@@ -905,12 +1192,14 @@ export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
 
   const feesCents = optionalAmount(values.fees);
   if (feesCents === null) {
-    errors.fees = 'Montant invalide : utilisez des chiffres et au plus 2 décimales, ou laissez vide.';
+    errors.fees =
+      'Montant invalide : utilisez des chiffres et au plus 2 décimales, ou laissez vide.';
   }
 
   const guaranteeCents = optionalAmount(values.guarantee);
   if (guaranteeCents === null) {
-    errors.guarantee = 'Montant invalide : utilisez des chiffres et au plus 2 décimales, ou laissez vide.';
+    errors.guarantee =
+      'Montant invalide : utilisez des chiffres et au plus 2 décimales, ou laissez vide.';
   } else if (guaranteeCents > 0 && values.guaranteeKind === 'NONE') {
     errors.guarantee = GUARANTEE_NONE_ERROR;
   }
@@ -924,7 +1213,11 @@ export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
   }
 
   const paymentDay = parsePaymentDay(values.paymentDay);
-  if (paymentDay === null || paymentDay < MIN_PAYMENT_DAY || paymentDay > MAX_PAYMENT_DAY) {
+  if (
+    paymentDay === null ||
+    paymentDay < MIN_PAYMENT_DAY ||
+    paymentDay > MAX_PAYMENT_DAY
+  ) {
     errors.paymentDay = `Choisissez un jour de prélèvement entre ${MIN_PAYMENT_DAY} et ${MAX_PAYMENT_DAY}.`;
   }
 
@@ -971,7 +1264,10 @@ export function buildDebtPayload(values: DebtFormValues): DebtFormResult {
   };
 }
 
-export function debtToPayload(debt: Debt, overrides: Partial<DebtPayload> = {}): DebtPayload {
+export function debtToPayload(
+  debt: Debt,
+  overrides: Partial<DebtPayload> = {},
+): DebtPayload {
   return {
     name: debt.name,
     kind: debt.kind,
@@ -1007,8 +1303,13 @@ export function debtToPayload(debt: Debt, overrides: Partial<DebtPayload> = {}):
  * Les paiements récurrents proposés pour représenter la mensualité : les dépenses actives de l'espace, plus celui qui est
  * déjà lié (même s'il est devenu inactif ou n'est plus une dépense), pour ne pas le perdre en modifiant le crédit.
  */
-export function linkableRecurring(items: readonly RecurringPayment[], currentId: string | null): RecurringPayment[] {
-  return items.filter((item) => (item.kind === 'EXPENSE' && item.active) || item.id === currentId);
+export function linkableRecurring(
+  items: readonly RecurringPayment[],
+  currentId: string | null,
+): RecurringPayment[] {
+  return items.filter(
+    (item) => (item.kind === 'EXPENSE' && item.active) || item.id === currentId,
+  );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1026,17 +1327,22 @@ export interface WhatIfFormErrors {
   both?: string;
 }
 
-export type WhatIfFormResult = { ok: true; query: WhatIfQuery } | { ok: false; errors: WhatIfFormErrors };
+export type WhatIfFormResult =
+  | { ok: true; query: WhatIfQuery }
+  | { ok: false; errors: WhatIfFormErrors };
 
 export const EMPTY_WHAT_IF_FORM: WhatIfFormValues = { extra: '', lumpSum: '' };
 
-export const WHAT_IF_NEEDS_ONE = 'Indiquez au moins un montant supérieur à 0 : un versement supplémentaire par mois, ou un remboursement partiel immédiat.';
+export const WHAT_IF_NEEDS_ONE =
+  'Indiquez au moins un montant supérieur à 0 : un versement supplémentaire par mois, ou un remboursement partiel immédiat.';
 
 /** Deux montants facultatifs en euros, dont au moins un est supérieur à 0. */
 export function buildWhatIfQuery(values: WhatIfFormValues): WhatIfFormResult {
   const errors: WhatIfFormErrors = {};
-  const extra = values.extra.trim() === '' ? 0 : parseAmountToCents(values.extra);
-  const lumpSum = values.lumpSum.trim() === '' ? 0 : parseAmountToCents(values.lumpSum);
+  const extra =
+    values.extra.trim() === '' ? 0 : parseAmountToCents(values.extra);
+  const lumpSum =
+    values.lumpSum.trim() === '' ? 0 : parseAmountToCents(values.lumpSum);
   if (extra === null) {
     errors.extra = AMOUNT_HINT;
   }
@@ -1049,39 +1355,61 @@ export function buildWhatIfQuery(values: WhatIfFormValues): WhatIfFormResult {
   if (Object.keys(errors).length > 0 || extra === null || lumpSum === null) {
     return { ok: false, errors };
   }
-  return { ok: true, query: { extraMonthlyCents: extra, lumpSumCents: lumpSum } };
+  return {
+    ok: true,
+    query: { extraMonthlyCents: extra, lumpSumCents: lumpSum },
+  };
 }
 
 /** Durée d'un scénario : « 38 mois », ou une phrase si la dette ne diminue pas. */
 export function describeScenarioDuration(scenario: WhatIfScenario): string {
-  return scenario.monthsRemaining === null ? 'Jamais : la mensualité ne couvre pas les intérêts' : formatMonths(scenario.monthsRemaining);
+  return scenario.monthsRemaining === null
+    ? 'Jamais : la mensualité ne couvre pas les intérêts'
+    : formatMonths(scenario.monthsRemaining);
 }
 
 export function describeScenarioEnd(scenario: WhatIfScenario): string {
-  return scenario.payoffDate === null ? '—' : formatLongDateInput(scenario.payoffDate);
+  return scenario.payoffDate === null
+    ? '—'
+    : formatLongDateInput(scenario.payoffDate);
 }
 
 export function describeScenarioInterest(scenario: WhatIfScenario): string {
-  return scenario.totalInterestRemainingCents === null ? '—' : formatCentsShort(scenario.totalInterestRemainingCents);
+  return scenario.totalInterestRemainingCents === null
+    ? '—'
+    : formatCentsShort(scenario.totalInterestRemainingCents);
 }
 
 /** « environ 40 € d’assurance en moins » ; `null` quand il n'y a rien à dire (jamais de valeur négative). */
-export function describeInsuranceSaved(insuranceSavedCents: number | null | undefined): string | null {
-  return typeof insuranceSavedCents === 'number' && insuranceSavedCents > 0 ? `environ ${formatCentsShort(Math.round(insuranceSavedCents))} d’assurance en moins` : null;
+export function describeInsuranceSaved(
+  insuranceSavedCents: number | null | undefined,
+): string | null {
+  return typeof insuranceSavedCents === 'number' && insuranceSavedCents > 0
+    ? `environ ${formatCentsShort(Math.round(insuranceSavedCents))} d’assurance en moins`
+    : null;
 }
 
 /** « Vous économiseriez 270 € d’intérêts et 9 mois, et environ 40 € d’assurance en moins. » Jamais de montant ni de durée négatifs. */
 export function describeWhatIfSavings(
-  result: Pick<WhatIfResult, 'baseline' | 'scenario' | 'interestSavedCents' | 'monthsSaved'> & Partial<Pick<WhatIfResult, 'insuranceSavedCents'>>,
+  result: Pick<
+    WhatIfResult,
+    'baseline' | 'scenario' | 'interestSavedCents' | 'monthsSaved'
+  > &
+    Partial<Pick<WhatIfResult, 'insuranceSavedCents'>>,
 ): string {
   const interest = Math.max(0, result.interestSavedCents);
   const months = Math.max(0, result.monthsSaved);
   const insurance = describeInsuranceSaved(result.insuranceSavedCents);
-  if (result.baseline.monthsRemaining === null && result.scenario.monthsRemaining !== null) {
+  if (
+    result.baseline.monthsRemaining === null &&
+    result.scenario.monthsRemaining !== null
+  ) {
     return `Avec ce remboursement, le crédit pourrait être soldé en ${formatMonths(result.scenario.monthsRemaining)}, alors qu’aujourd’hui la dette ne diminue pas.`;
   }
   if (interest === 0 && months === 0) {
-    return insurance ? `Vous économiseriez ${insurance.replace(' en moins', '')}.` : 'Ce remboursement ne changerait presque rien : essayez un montant plus élevé.';
+    return insurance
+      ? `Vous économiseriez ${insurance.replace(' en moins', '')}.`
+      : 'Ce remboursement ne changerait presque rien : essayez un montant plus élevé.';
   }
   if (months === 0) {
     return `Vous économiseriez ${formatCentsShort(interest)} d’intérêts${insurance ? ` et ${insurance}` : ''}.`;

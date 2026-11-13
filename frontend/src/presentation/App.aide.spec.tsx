@@ -17,7 +17,11 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('./auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import App from './App';
@@ -41,35 +45,75 @@ describe('App : route /aide', () => {
 
   it('shows the help inside the application for a member of a household, with the tab bar and « Foyer » highlighted', async () => {
     renderApp();
-    expect(await screen.findByRole('heading', { level: 1, name: 'Aide et documentation' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Sommaire' })).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: 'Navigation principale' });
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Aide et documentation',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'Sommaire' }),
+    ).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', {
+      name: 'Navigation principale',
+    });
     expect(within(nav).getAllByRole('link')).toHaveLength(4);
-    expect(within(nav).getByRole('link', { name: 'Foyer' }).className).toContain('text-ink');
-    expect(screen.getByRole('link', { name: 'Ouvrir les projets' })).toHaveAttribute('href', '/projets');
+    expect(
+      within(nav).getByRole('link', { name: 'Foyer' }).className,
+    ).toContain('text-ink');
+    expect(
+      screen.getByRole('link', { name: 'Ouvrir les projets' }),
+    ).toHaveAttribute('href', '/projets');
   });
 
   it('shows the same help, without the tab bar, for someone who has no household yet', async () => {
     api.fetchHousehold.mockResolvedValue(null);
     renderApp();
-    expect(await screen.findByRole('heading', { level: 1, name: 'Aide et documentation' })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Sommaire' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Navigation principale' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^Ouvrir/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Bienvenue' })).toHaveAttribute('href', '/bienvenue');
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Aide et documentation',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'Sommaire' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('navigation', { name: 'Navigation principale' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /^Ouvrir/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Bienvenue' })).toHaveAttribute(
+      'href',
+      '/bienvenue',
+    );
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
   it('still shows the help when the household cannot be loaded at all (embedded content, no network needed)', async () => {
     api.fetchHousehold.mockRejectedValue(new Error('boom'));
     renderApp();
-    expect(await screen.findByRole('heading', { level: 1, name: 'Aide et documentation' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: 'Pour commencer' })).toBeInTheDocument());
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Aide et documentation',
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { level: 2, name: 'Pour commencer' }),
+      ).toBeInTheDocument(),
+    );
   });
 
   it('leaves the other routes alone: /aides is still the official aids page', async () => {
     api.fetchHousehold.mockResolvedValue(null);
     renderApp('/aides');
-    await waitFor(() => expect(screen.getByText(/Commençons par votre foyer/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Commençons par votre foyer/),
+      ).toBeInTheDocument(),
+    );
   });
 });

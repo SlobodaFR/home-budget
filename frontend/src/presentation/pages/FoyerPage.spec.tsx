@@ -2,7 +2,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { HouseholdContext, HouseholdContextValue } from '../../application/use-household';
+import {
+  HouseholdContext,
+  HouseholdContextValue,
+} from '../../application/use-household';
 import { SpaceProvider } from '../../application/use-space';
 import { Contribution, Household } from '../../domain/household';
 
@@ -22,7 +25,11 @@ vi.mock('../../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 vi.mock('../auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'alice', email: 'alice@example.test', name: 'Alice' }, loading: false, logout: vi.fn<() => Promise<void>>() }),
+  useAuth: () => ({
+    user: { id: 'alice', email: 'alice@example.test', name: 'Alice' },
+    loading: false,
+    logout: vi.fn<() => Promise<void>>(),
+  }),
 }));
 
 import { FoyerPage } from './FoyerPage';
@@ -34,8 +41,18 @@ const household: Household = {
   role: 'OWNER',
   contributionMode: 'PROPORTIONAL',
   members: [
-    { userId: 'alice', name: 'Alice', role: 'OWNER', netMonthlyIncomeCents: 350000 },
-    { userId: 'bob', name: 'Bob', role: 'MEMBER', netMonthlyIncomeCents: 200000 },
+    {
+      userId: 'alice',
+      name: 'Alice',
+      role: 'OWNER',
+      netMonthlyIncomeCents: 350000,
+    },
+    {
+      userId: 'bob',
+      name: 'Bob',
+      role: 'MEMBER',
+      netMonthlyIncomeCents: 200000,
+    },
   ],
   spaces: [
     { id: 's-common', kind: 'COMMON', name: 'Commun' },
@@ -49,8 +66,20 @@ const complete: Contribution = {
   incomplete: false,
   shortfallCents: 0,
   shares: [
-    { userId: 'alice', name: 'Alice', incomeCents: 350000, contributionCents: 210000, remainingCents: 140000 },
-    { userId: 'bob', name: 'Bob', incomeCents: 200000, contributionCents: 120000, remainingCents: 80000 },
+    {
+      userId: 'alice',
+      name: 'Alice',
+      incomeCents: 350000,
+      contributionCents: 210000,
+      remainingCents: 140000,
+    },
+    {
+      userId: 'bob',
+      name: 'Bob',
+      incomeCents: 200000,
+      contributionCents: 120000,
+      remainingCents: 80000,
+    },
   ],
 };
 
@@ -89,7 +118,13 @@ describe('FoyerPage', () => {
     api.updateMyIncome.mockResolvedValue(undefined);
     api.updateContributionMode.mockResolvedValue(undefined);
     api.fetchSafetyNet.mockResolvedValue({ safetyNet: null, progress: null });
-    api.fetchContributionStatus.mockResolvedValue({ month: '2026-11', incomplete: true, members: [], totalExpectedCents: null, totalPaidCents: 0 });
+    api.fetchContributionStatus.mockResolvedValue({
+      month: '2026-11',
+      incomplete: true,
+      members: [],
+      totalExpectedCents: null,
+      totalPaidCents: 0,
+    });
     api.saveSafetyNet.mockResolvedValue(undefined);
   });
 
@@ -103,27 +138,50 @@ describe('FoyerPage', () => {
     renderPage();
     await waitFor(() => expect(shareLines()).toHaveLength(2));
     const text = shareLines().join('|');
-    expect(text).toMatch(/Alice verse 2\s?100,00\s€, il lui reste 1\s?400,00\s€/);
+    expect(text).toMatch(
+      /Alice verse 2\s?100,00\s€, il lui reste 1\s?400,00\s€/,
+    );
     expect(text).toMatch(/Bob verse 1\s?200,00\s€, il lui reste 800,00\s€/);
   });
 
   it('asks for the missing incomes when the contribution is incomplete', async () => {
-    api.fetchContribution.mockResolvedValue({ ...complete, incomplete: true, shares: [] });
+    api.fetchContribution.mockResolvedValue({
+      ...complete,
+      incomplete: true,
+      shares: [],
+    });
     renderPage({
       members: [
-        { userId: 'alice', name: 'Alice', role: 'OWNER', netMonthlyIncomeCents: 350000 },
-        { userId: 'bob', name: 'Bob', role: 'MEMBER', netMonthlyIncomeCents: null },
+        {
+          userId: 'alice',
+          name: 'Alice',
+          role: 'OWNER',
+          netMonthlyIncomeCents: 350000,
+        },
+        {
+          userId: 'bob',
+          name: 'Bob',
+          role: 'MEMBER',
+          netMonthlyIncomeCents: null,
+        },
       ],
     });
-    expect(await screen.findByText('Il manque des revenus pour calculer les parts.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Il manque des revenus pour calculer les parts.'),
+    ).toBeInTheDocument();
     expect(screen.getByText(/manquant : Bob/)).toBeInTheDocument();
     expect(shareLines()).toEqual([]);
   });
 
   it('warns when the incomes do not cover the common budget', async () => {
-    api.fetchContribution.mockResolvedValue({ ...complete, shortfallCents: 25000 });
+    api.fetchContribution.mockResolvedValue({
+      ...complete,
+      shortfallCents: 25000,
+    });
     renderPage();
-    expect(await screen.findByRole('alert')).toHaveTextContent(/il manque\s+250,00\s€ par mois/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /il manque\s+250,00\s€ par mois/,
+    );
   });
 
   it('saves my income in cents and refreshes the household', async () => {
@@ -131,8 +189,12 @@ describe('FoyerPage', () => {
     const input = screen.getByLabelText('Revenu net mensuel');
     await user.clear(input);
     await user.type(input, '2 000,50');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer mon revenu' }));
-    await waitFor(() => expect(api.updateMyIncome).toHaveBeenCalledWith(200050));
+    await user.click(
+      screen.getByRole('button', { name: 'Enregistrer mon revenu' }),
+    );
+    await waitFor(() =>
+      expect(api.updateMyIncome).toHaveBeenCalledWith(200050),
+    );
     expect(reload).toHaveBeenCalled();
   });
 
@@ -141,7 +203,9 @@ describe('FoyerPage', () => {
     const input = screen.getByLabelText('Revenu net mensuel');
     await user.clear(input);
     await user.type(input, 'beaucoup');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer mon revenu' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Enregistrer mon revenu' }),
+    );
     expect(screen.getByText(/Revenu invalide/)).toBeInTheDocument();
     expect(api.updateMyIncome).not.toHaveBeenCalled();
   });
@@ -150,15 +214,22 @@ describe('FoyerPage', () => {
     const { user } = renderPage();
     await waitFor(() => expect(shareLines()).toHaveLength(2));
     await user.click(screen.getByRole('radio', { name: /Moitié-moitié/ }));
-    await waitFor(() => expect(api.updateContributionMode).toHaveBeenCalledWith('EQUAL'));
+    await waitFor(() =>
+      expect(api.updateContributionMode).toHaveBeenCalledWith('EQUAL'),
+    );
     await waitFor(() => expect(api.fetchContribution).toHaveBeenCalledTimes(2));
   });
 
   it('shows the invitation code with a copy button', async () => {
-    api.createInvitation.mockResolvedValue({ code: 'ABCD-1234', expiresAt: '2026-11-06T10:00:00.000Z' });
+    api.createInvitation.mockResolvedValue({
+      code: 'ABCD-1234',
+      expiresAt: '2026-11-06T10:00:00.000Z',
+    });
     const { user } = renderPage();
     await user.click(screen.getByRole('button', { name: 'Inviter quelqu’un' }));
-    expect(await screen.findByTestId('invitation-code')).toHaveTextContent('ABCD-1234');
+    expect(await screen.findByTestId('invitation-code')).toHaveTextContent(
+      'ABCD-1234',
+    );
     expect(screen.getByRole('button', { name: 'Copier' })).toBeInTheDocument();
   });
 
@@ -167,13 +238,21 @@ describe('FoyerPage', () => {
       const { user } = renderPage();
       const amount = await screen.findByLabelText('Montant épargné');
       await user.type(amount, '5 500,50');
-      fireEvent.change(screen.getByLabelText('À la date du'), { target: { value: '2026-11-01' } });
+      fireEvent.change(screen.getByLabelText('À la date du'), {
+        target: { value: '2026-11-01' },
+      });
       const months = screen.getByLabelText('Objectif en mois de dépenses');
       await user.clear(months);
       await user.type(months, '6');
-      await user.click(screen.getByRole('button', { name: 'Enregistrer l’épargne' }));
+      await user.click(
+        screen.getByRole('button', { name: 'Enregistrer l’épargne' }),
+      );
       await waitFor(() =>
-        expect(api.saveSafetyNet).toHaveBeenCalledWith({ savedCents: 550050, asOf: '2026-11-01', targetMonths: 6 }),
+        expect(api.saveSafetyNet).toHaveBeenCalledWith({
+          savedCents: 550050,
+          asOf: '2026-11-01',
+          targetMonths: 6,
+        }),
       );
       await waitFor(() => expect(api.fetchSafetyNet).toHaveBeenCalledTimes(2));
     });
@@ -184,7 +263,9 @@ describe('FoyerPage', () => {
       const months = screen.getByLabelText('Objectif en mois de dépenses');
       await user.clear(months);
       await user.type(months, '30');
-      await user.click(screen.getByRole('button', { name: 'Enregistrer l’épargne' }));
+      await user.click(
+        screen.getByRole('button', { name: 'Enregistrer l’épargne' }),
+      );
       expect(await screen.findByText(/entre 1 et 24/)).toBeInTheDocument();
       expect(api.saveSafetyNet).not.toHaveBeenCalled();
     });
@@ -192,24 +273,39 @@ describe('FoyerPage', () => {
     it('shows the server-computed progress and keeps the form on the raw declared amount', async () => {
       api.fetchSafetyNet.mockResolvedValue({
         safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 },
-        progress: { currentCents: 600000, monthlyBasisCents: 300000, coveredMonths: 2 },
+        progress: {
+          currentCents: 600000,
+          monthlyBasisCents: 300000,
+          coveredMonths: 2,
+        },
       });
       renderPage();
       const progress = await screen.findByTestId('safety-net-progress');
       expect(progress).toHaveTextContent(/6\s?000,00\s€/);
-      expect(progress).toHaveTextContent(/dont 500,00\s€ versés depuis le 1 novembre 2026/);
-      expect(progress).toHaveTextContent(/2 mois de dépenses couverts sur 6 visés/);
+      expect(progress).toHaveTextContent(
+        /dont 500,00\s€ versés depuis le 1 novembre 2026/,
+      );
+      expect(progress).toHaveTextContent(
+        /2 mois de dépenses couverts sur 6 visés/,
+      );
       expect(progress).toHaveTextContent(/3\s?000,00\s€ par mois/);
-      expect(screen.getByRole('progressbar', { name: 'Épargne de sécurité' })).toHaveAttribute('aria-valuenow', '2');
+      expect(
+        screen.getByRole('progressbar', { name: 'Épargne de sécurité' }),
+      ).toHaveAttribute('aria-valuenow', '2');
       expect(screen.getByLabelText('Montant épargné')).toHaveValue('5500');
     });
 
     it('shows only the amount when the backend sends no progress', async () => {
-      api.fetchSafetyNet.mockResolvedValue({ safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 }, progress: null });
+      api.fetchSafetyNet.mockResolvedValue({
+        safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 },
+        progress: null,
+      });
       renderPage();
       const progress = await screen.findByTestId('safety-net-progress');
       expect(progress).toHaveTextContent(/5\s?500,00\s€/);
-      expect(progress).toHaveTextContent(/Objectif : couvrir 6 mois de dépenses/);
+      expect(progress).toHaveTextContent(
+        /Objectif : couvrir 6 mois de dépenses/,
+      );
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
       expect(api.fetchSafetyNet).toHaveBeenCalledTimes(1);
     });
@@ -217,7 +313,11 @@ describe('FoyerPage', () => {
     it('shows no coverage when the monthly basis is unknown', async () => {
       api.fetchSafetyNet.mockResolvedValue({
         safetyNet: { savedCents: 550000, asOf: '2026-11-01', targetMonths: 6 },
-        progress: { currentCents: 550000, monthlyBasisCents: 0, coveredMonths: null },
+        progress: {
+          currentCents: 550000,
+          monthlyBasisCents: 0,
+          coveredMonths: null,
+        },
       });
       renderPage();
       const progress = await screen.findByTestId('safety-net-progress');
@@ -227,33 +327,47 @@ describe('FoyerPage', () => {
 
     it('links to the bank accounts page', () => {
       renderPage();
-      expect(screen.getByRole('link', { name: 'Voir mes comptes' })).toHaveAttribute('href', '/comptes');
+      expect(
+        screen.getByRole('link', { name: 'Voir mes comptes' }),
+      ).toHaveAttribute('href', '/comptes');
     });
 
     it('links to the savings projects page', () => {
       renderPage();
-      expect(screen.getByRole('link', { name: 'Voir mes projets' })).toHaveAttribute('href', '/projets');
+      expect(
+        screen.getByRole('link', { name: 'Voir mes projets' }),
+      ).toHaveAttribute('href', '/projets');
     });
 
     it('links to the trends page', () => {
       renderPage();
-      expect(screen.getByRole('link', { name: 'Voir mes tendances' })).toHaveAttribute('href', '/tendances');
+      expect(
+        screen.getByRole('link', { name: 'Voir mes tendances' }),
+      ).toHaveAttribute('href', '/tendances');
     });
 
     it('links to the life events page, whatever the space', () => {
       renderPage();
-      expect(screen.getByRole('heading', { name: 'Événements de vie' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Voir mes démarches' })).toHaveAttribute('href', '/evenements');
+      expect(
+        screen.getByRole('heading', { name: 'Événements de vie' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: 'Voir mes démarches' }),
+      ).toHaveAttribute('href', '/evenements');
     });
 
     it('links to the credits page', () => {
       renderPage();
-      expect(screen.getByRole('link', { name: 'Voir mes crédits' })).toHaveAttribute('href', '/dettes');
+      expect(
+        screen.getByRole('link', { name: 'Voir mes crédits' }),
+      ).toHaveAttribute('href', '/dettes');
     });
 
     it('links to the official aids page', () => {
       renderPage();
-      expect(screen.getByRole('link', { name: 'Voir mes aides' })).toHaveAttribute('href', '/aides');
+      expect(
+        screen.getByRole('link', { name: 'Voir mes aides' }),
+      ).toHaveAttribute('href', '/aides');
     });
   });
 });

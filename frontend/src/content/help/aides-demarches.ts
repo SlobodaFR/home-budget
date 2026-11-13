@@ -4,7 +4,8 @@ export const aidesDemarches: HelpSection = {
   id: 'aides-demarches',
   kind: 'guide',
   title: 'Aides et démarches',
-  summary: 'Les aides officielles (crédits d’impôt, tarif de crèche) et les événements de vie comme une naissance.',
+  summary:
+    'Les aides officielles (crédits d’impôt, tarif de crèche) et les événements de vie comme une naissance.',
   keywords: ['impôts', 'caf', 'bébé'],
   entries: [
     {
@@ -28,10 +29,21 @@ export const aidesDemarches: HelpSection = {
           type: 'paragraph',
           text: 'Le crédit d’impôt est versé l’été de l’année suivante, après la déclaration de revenus. Les taux et les plafonds sont dans « Règles officielles et sources ».',
         },
-        { type: 'note', text: 'Ce sont des estimations, pas un conseil fiscal. En cas de doute, la source officielle ou votre centre des impôts font foi.' },
+        {
+          type: 'note',
+          text: 'Ce sont des estimations, pas un conseil fiscal. En cas de doute, la source officielle ou votre centre des impôts font foi.',
+        },
       ],
       links: [{ kind: 'internal', label: 'Ouvrir les aides', to: '/aides' }],
-      keywords: ['crédit d’impôt', 'garde', 'enfants', 'services à la personne', 'ménage', 'profil fiscal', 'impôts'],
+      keywords: [
+        'crédit d’impôt',
+        'garde',
+        'enfants',
+        'services à la personne',
+        'ménage',
+        'profil fiscal',
+        'impôts',
+      ],
     },
     {
       id: 'estimateur-de-creche',
@@ -46,8 +58,21 @@ export const aidesDemarches: HelpSection = {
           text: 'Votre crèche reste seule à fixer le tarif exact : prenez le résultat comme un ordre de grandeur. Le barème utilisé est décrit dans « Règles officielles et sources ».',
         },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir l’estimateur de crèche', to: '/aides' }],
-      keywords: ['crèche', 'micro-crèche', 'tarif', 'garde', 'participation familiale', 'psu'],
+      links: [
+        {
+          kind: 'internal',
+          label: 'Ouvrir l’estimateur de crèche',
+          to: '/aides',
+        },
+      ],
+      keywords: [
+        'crèche',
+        'micro-crèche',
+        'tarif',
+        'garde',
+        'participation familiale',
+        'psu',
+      ],
     },
     {
       id: 'evenements-de-vie',
@@ -66,10 +91,23 @@ export const aidesDemarches: HelpSection = {
             'La date de l’événement peut aller de 24 mois avant à 18 mois après aujourd’hui.',
           ],
         },
-        { type: 'paragraph', text: 'Les démarches sont les mêmes pour tout le foyer. Aujourd’hui, seule la naissance est proposée.' },
+        {
+          type: 'paragraph',
+          text: 'Les démarches sont les mêmes pour tout le foyer. Aujourd’hui, seule la naissance est proposée.',
+        },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir les démarches', to: '/evenements' }],
-      keywords: ['naissance', 'bébé', 'mairie', 'caf', 'congé', 'démarches', 'échéance'],
+      links: [
+        { kind: 'internal', label: 'Ouvrir les démarches', to: '/evenements' },
+      ],
+      keywords: [
+        'naissance',
+        'bébé',
+        'mairie',
+        'caf',
+        'congé',
+        'démarches',
+        'échéance',
+      ],
     },
   ],
 };

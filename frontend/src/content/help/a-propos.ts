@@ -1,7 +1,15 @@
 import { APP_NAME, APP_VERSION, REPOSITORY_URL } from '../../domain/app-info';
 import { HelpLink, HelpSection } from '../../domain/help';
 
-const repositoryLinks: HelpLink[] = REPOSITORY_URL ? [{ kind: 'external', label: 'Voir le projet sur GitHub', href: REPOSITORY_URL }] : [];
+const repositoryLinks: HelpLink[] = REPOSITORY_URL
+  ? [
+      {
+        kind: 'external',
+        label: 'Voir le projet sur GitHub',
+        href: REPOSITORY_URL,
+      },
+    ]
+  : [];
 
 export const aPropos: HelpSection = {
   id: 'a-propos',

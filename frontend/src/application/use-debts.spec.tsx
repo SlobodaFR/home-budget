@@ -24,8 +24,16 @@ vi.mock('../infrastructure/api-client', async (importOriginal) => ({
 }));
 
 const whatIf = {
-  baseline: { monthsRemaining: 38, totalInterestRemainingCents: 96000, payoffDate: '2029-12-05' },
-  scenario: { monthsRemaining: 29, totalInterestRemainingCents: 69000, payoffDate: '2029-03-05' },
+  baseline: {
+    monthsRemaining: 38,
+    totalInterestRemainingCents: 96000,
+    payoffDate: '2029-12-05',
+  },
+  scenario: {
+    monthsRemaining: 29,
+    totalInterestRemainingCents: 69000,
+    payoffDate: '2029-03-05',
+  },
   interestSavedCents: 27000,
   monthsSaved: 9,
   note: 'Vérifiez.',
@@ -34,7 +42,13 @@ const whatIf = {
 beforeEach(() => {
   Object.values(api).forEach((mock) => mock.mockReset());
   api.fetchDebts.mockResolvedValue([debt()]);
-  api.fetchDebtsSummary.mockResolvedValue(debtsSummary({ activeCount: 1, totalRemainingCents: 1120000, totalMonthlyCents: 33500 }));
+  api.fetchDebtsSummary.mockResolvedValue(
+    debtsSummary({
+      activeCount: 1,
+      totalRemainingCents: 1120000,
+      totalMonthlyCents: 33500,
+    }),
+  );
   api.createDebt.mockResolvedValue(debt());
   api.updateDebt.mockResolvedValue(undefined);
   api.deleteDebt.mockResolvedValue(undefined);
@@ -49,16 +63,23 @@ describe('useDebts', () => {
     await waitFor(() => expect(result.current.data).toEqual([debt()]));
     expect(api.fetchDebts).toHaveBeenCalledWith('s-common');
     const summary = renderHook(() => useDebtsSummary('s-common'));
-    await waitFor(() => expect(summary.result.current.data?.debtToIncomePercent).toBe(31));
+    await waitFor(() =>
+      expect(summary.result.current.data?.debtToIncomePercent).toBe(31),
+    );
   });
 
   it('reloads when the token or the space changes', async () => {
-    const { result, rerender } = renderHook(({ id, token }) => useDebts(id, token), { initialProps: { id: 's-common', token: 0 } });
+    const { result, rerender } = renderHook(
+      ({ id, token }) => useDebts(id, token),
+      { initialProps: { id: 's-common', token: 0 } },
+    );
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ id: 's-common', token: 1 });
     await waitFor(() => expect(api.fetchDebts).toHaveBeenCalledTimes(2));
     rerender({ id: 's-alice', token: 1 });
-    await waitFor(() => expect(api.fetchDebts).toHaveBeenLastCalledWith('s-alice'));
+    await waitFor(() =>
+      expect(api.fetchDebts).toHaveBeenLastCalledWith('s-alice'),
+    );
   });
 
   it('turns a failing or missing client method into an error state, never a crash', async () => {
@@ -68,7 +89,9 @@ describe('useDebts', () => {
     const original = api.fetchDebts;
     api.fetchDebts = undefined as never;
     const missing = renderHook(() => useDebts('s-common'));
-    await waitFor(() => expect(missing.result.current.error).toBeInstanceOf(TypeError));
+    await waitFor(() =>
+      expect(missing.result.current.error).toBeInstanceOf(TypeError),
+    );
     api.fetchDebts = original;
   });
 });
@@ -77,7 +100,16 @@ describe('useDebtActions', () => {
   it('creates, then tells the page to refresh', async () => {
     const onChanged = vi.fn<() => void>();
     const { result } = renderHook(() => useDebtActions('s-common', onChanged));
-    const payload = debtPayload({ name: 'x', principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0 });
+    const payload = debtPayload({
+      name: 'x',
+      principalCents: 1,
+      remainingCents: 1,
+      annualRatePercent: 0,
+      monthlyPaymentCents: 1,
+      startDate: '2026-10-01',
+      paymentDay: 1,
+      insuranceMonthlyCents: 0,
+    });
     await act(async () => {
       await result.current.create(payload);
     });
@@ -90,9 +122,25 @@ describe('useDebtActions', () => {
     const { result } = renderHook(() => useDebtActions('s-common', vi.fn()));
     const archived = debt({ archived: true });
     await act(async () => {
-      await result.current.update(archived, debtPayload({ name: 'Autre', principalCents: 1, remainingCents: 1, annualRatePercent: 0, monthlyPaymentCents: 1, startDate: '2026-10-01', paymentDay: 1, insuranceMonthlyCents: 0 }));
+      await result.current.update(
+        archived,
+        debtPayload({
+          name: 'Autre',
+          principalCents: 1,
+          remainingCents: 1,
+          annualRatePercent: 0,
+          monthlyPaymentCents: 1,
+          startDate: '2026-10-01',
+          paymentDay: 1,
+          insuranceMonthlyCents: 0,
+        }),
+      );
     });
-    expect(api.updateDebt).toHaveBeenCalledWith('s-common', 'd1', expect.objectContaining({ name: 'Autre', archived: true }));
+    expect(api.updateDebt).toHaveBeenCalledWith(
+      's-common',
+      'd1',
+      expect.objectContaining({ name: 'Autre', archived: true }),
+    );
   });
 
   it('archives and unarchives with the full payload, and deletes', async () => {
@@ -101,7 +149,15 @@ describe('useDebtActions', () => {
       await result.current.setArchived(debt(), true);
       await result.current.remove(debt());
     });
-    expect(api.updateDebt).toHaveBeenCalledWith('s-common', 'd1', expect.objectContaining({ name: 'Prêt auto', monthlyPaymentCents: 32000, archived: true }));
+    expect(api.updateDebt).toHaveBeenCalledWith(
+      's-common',
+      'd1',
+      expect.objectContaining({
+        name: 'Prêt auto',
+        monthlyPaymentCents: 32000,
+        archived: true,
+      }),
+    );
     expect(api.deleteDebt).toHaveBeenCalledWith('s-common', 'd1');
   });
 
@@ -148,7 +204,9 @@ describe('useDebtActions', () => {
     const onChanged = vi.fn<() => void>();
     const { result } = renderHook(() => useDebtActions('s-common', onChanged));
     await act(async () => {
-      await expect(result.current.remove(debt())).rejects.toBeInstanceOf(NetworkError);
+      await expect(result.current.remove(debt())).rejects.toBeInstanceOf(
+        NetworkError,
+      );
     });
     expect(onChanged).not.toHaveBeenCalled();
     expect(result.current.busy).toBe(false);
@@ -188,7 +246,9 @@ describe('useDebtWhatIf', () => {
 
   it('ignores a late answer after a reset', async () => {
     let release: (value: unknown) => void = () => undefined;
-    api.fetchDebtWhatIf.mockReturnValue(new Promise((resolve) => (release = resolve)));
+    api.fetchDebtWhatIf.mockReturnValue(
+      new Promise((resolve) => (release = resolve)),
+    );
     const { result } = renderHook(() => useDebtWhatIf('s-common', 'd1'));
     let pending: Promise<void> = Promise.resolve();
     act(() => {
@@ -203,7 +263,10 @@ describe('useDebtWhatIf', () => {
   });
 
   it('goes back to idle when the debt changes', async () => {
-    const { result, rerender } = renderHook(({ id }) => useDebtWhatIf('s-common', id), { initialProps: { id: 'd1' } });
+    const { result, rerender } = renderHook(
+      ({ id }) => useDebtWhatIf('s-common', id),
+      { initialProps: { id: 'd1' } },
+    );
     await act(async () => {
       await result.current.run({ extraMonthlyCents: 1, lumpSumCents: 0 });
     });
@@ -220,7 +283,9 @@ describe('useRecurringOptions', () => {
     await waitFor(() => expect(result.current).toEqual([{ id: 'r1' }]));
     api.fetchRecurring.mockRejectedValue(new ApiError(500, 'boom'));
     const failing = renderHook(() => useRecurringOptions('s-alice'));
-    await waitFor(() => expect(api.fetchRecurring).toHaveBeenCalledWith('s-alice'));
+    await waitFor(() =>
+      expect(api.fetchRecurring).toHaveBeenCalledWith('s-alice'),
+    );
     expect(failing.result.current).toEqual([]);
   });
 });

@@ -9,8 +9,16 @@ const rules = [
 
 describe('rule list editing', () => {
   it('moves a rule up and down without mutating', () => {
-    expect(moveRule(rules, 1, -1).map((rule) => rule.keyword)).toEqual(['b2', 'a1', 'c3']);
-    expect(moveRule(rules, 1, 1).map((rule) => rule.keyword)).toEqual(['a1', 'c3', 'b2']);
+    expect(moveRule(rules, 1, -1).map((rule) => rule.keyword)).toEqual([
+      'b2',
+      'a1',
+      'c3',
+    ]);
+    expect(moveRule(rules, 1, 1).map((rule) => rule.keyword)).toEqual([
+      'a1',
+      'c3',
+      'b2',
+    ]);
     expect(rules.map((rule) => rule.keyword)).toEqual(['a1', 'b2', 'c3']);
   });
 
@@ -20,16 +28,25 @@ describe('rule list editing', () => {
   });
 
   it('removes a rule', () => {
-    expect(removeRule(rules, 0).map((rule) => rule.keyword)).toEqual(['b2', 'c3']);
+    expect(removeRule(rules, 0).map((rule) => rule.keyword)).toEqual([
+      'b2',
+      'c3',
+    ]);
   });
 
   it('adds a trimmed rule at the end', () => {
     const result = addRule(rules, '  cinema ', 'PLAISIR');
-    expect(result).toEqual({ ok: true, rules: [...rules, { keyword: 'cinema', target: 'PLAISIR' }] });
+    expect(result).toEqual({
+      ok: true,
+      rules: [...rules, { keyword: 'cinema', target: 'PLAISIR' }],
+    });
   });
 
   it('refuses short keywords and duplicates', () => {
     expect(addRule(rules, 'x', 'FIXE')).toMatchObject({ ok: false });
-    expect(addRule(rules, 'B2', 'FIXE')).toEqual({ ok: false, error: 'Une règle existe déjà pour ce mot-clé.' });
+    expect(addRule(rules, 'B2', 'FIXE')).toEqual({
+      ok: false,
+      error: 'Une règle existe déjà pour ce mot-clé.',
+    });
   });
 });

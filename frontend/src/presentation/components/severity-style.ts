@@ -10,8 +10,24 @@ export interface SeverityStyle {
 }
 
 export const SEVERITY_STYLE: Record<InsightSeverity, SeverityStyle> = {
-  WARNING: { icon: AlertIcon, accent: 'border-l-error', badge: 'bg-error/10 text-error' },
-  ACTION: { icon: FlagIcon, accent: 'border-l-plaisir', badge: 'bg-plaisir/15 text-plaisir' },
-  INFO: { icon: InfoIcon, accent: 'border-l-fixe', badge: 'bg-fixe/10 text-fixe' },
-  GOOD: { icon: CheckIcon, accent: 'border-l-success', badge: 'bg-success/10 text-success' },
+  WARNING: {
+    icon: AlertIcon,
+    accent: 'border-l-error',
+    badge: 'bg-error/10 text-error',
+  },
+  ACTION: {
+    icon: FlagIcon,
+    accent: 'border-l-plaisir',
+    badge: 'bg-plaisir/15 text-plaisir',
+  },
+  INFO: {
+    icon: InfoIcon,
+    accent: 'border-l-fixe',
+    badge: 'bg-fixe/10 text-fixe',
+  },
+  GOOD: {
+    icon: CheckIcon,
+    accent: 'border-l-success',
+    badge: 'bg-success/10 text-success',
+  },
 };

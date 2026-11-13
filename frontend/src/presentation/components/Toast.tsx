@@ -1,4 +1,13 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 type ToastTone = 'info' | 'error';
 
@@ -12,7 +21,9 @@ interface ToastContextValue {
   show: (message: string, tone?: ToastTone) => void;
 }
 
-const ToastContext = createContext<ToastContextValue>({ show: () => undefined });
+const ToastContext = createContext<ToastContextValue>({
+  show: () => undefined,
+});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);

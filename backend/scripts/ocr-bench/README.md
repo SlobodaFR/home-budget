@@ -31,15 +31,15 @@ l'identique, puis exactitude des champs extraits (justes / faux / faux **avec co
 
 Variantes lisibles (clean300, dpi150, noisy, blur, dpi100) :
 
-| Configuration | CER % | accents % | chiffres,%€ % | champs justes % | faux (dont HIGH) | s/page |
-|---|---|---|---|---|---|---|
-| tesseract fra (fast) psm 6 + espaces conservés (**adaptateur**) | 0,17 | 100 | 99,5 | 98,7 | 1 (1) | 0,4 |
-| tesseract fra psm 6 sans `preserve_interword_spaces` | 0,17 | 100 | 99,5 | 95,5 | 6 (1) | 0,4 |
-| tesseract fra psm 4 | 0,29 | 100 | 99,6 | 98,1 | 2 (2) | 0,5 |
-| tesseract fra psm 3 | 0,14 | 100 | 99,7 | 99,4 | 1 (1) | 0,5 |
-| tesseract fra **best** psm 6 + espaces | 0,14 | 100 | 99,9 | 99,4 | 1 (0) | 0,5 |
-| tesseract eng psm 6 (témoin : sans accents) | 1,5 | 67 | 100 | 96,8 | 2 (2) | 0,5 |
-| ocrs | non mesuré : modèles non téléchargeables ici (accès bloqué par la politique réseau) | | | | | |
+| Configuration                                                   | CER %                                                                               | accents % | chiffres,%€ % | champs justes % | faux (dont HIGH) | s/page |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------- | ------------- | --------------- | ---------------- | ------ |
+| tesseract fra (fast) psm 6 + espaces conservés (**adaptateur**) | 0,17                                                                                | 100       | 99,5          | 98,7            | 1 (1)            | 0,4    |
+| tesseract fra psm 6 sans `preserve_interword_spaces`            | 0,17                                                                                | 100       | 99,5          | 95,5            | 6 (1)            | 0,4    |
+| tesseract fra psm 4                                             | 0,29                                                                                | 100       | 99,6          | 98,1            | 2 (2)            | 0,5    |
+| tesseract fra psm 3                                             | 0,14                                                                                | 100       | 99,7          | 99,4            | 1 (1)            | 0,5    |
+| tesseract fra **best** psm 6 + espaces                          | 0,14                                                                                | 100       | 99,9          | 99,4            | 1 (0)            | 0,5    |
+| tesseract eng psm 6 (témoin : sans accents)                     | 1,5                                                                                 | 67        | 100           | 96,8            | 2 (2)            | 0,5    |
+| ocrs                                                            | non mesuré : modèles non téléchargeables ici (accès bloqué par la politique réseau) |           |               |                 |                  |        |
 
 Variante `hard` (illisible) : psm 6 reste le seul réglage qui sort du texte (champs justes 13 %, 5,5 s/page) ;
 psm 3 et 4 ne lisent presque rien (0 %). Aucune configuration n'est fiable à ce niveau : l'import doit

@@ -1,23 +1,50 @@
 import { useCallback, useState } from 'react';
-import { MonthlyReview, ReviewHistoryItem, ReviewPayload } from '../domain/review';
-import { ApiError, apiClient, NetworkError } from '../infrastructure/api-client';
+import {
+  MonthlyReview,
+  ReviewHistoryItem,
+  ReviewPayload,
+} from '../domain/review';
+import {
+  ApiError,
+  apiClient,
+  NetworkError,
+} from '../infrastructure/api-client';
 import { Resource, useResource } from './use-resource';
 
 /**
  * La revue d'un mois (réponses et bilan recalculé par le serveur). La fonction est `async` : une erreur de lecture, ou un
  * client incomplet, devient un état d'erreur de la ressource plutôt qu'une exception dans le rendu.
  */
-export function useReview(spaceId: string, month: string | null, refreshToken = 0): Resource<MonthlyReview | null> {
-  return useResource(async () => (month === null ? null : apiClient.fetchReview(spaceId, month)), [spaceId, month], refreshToken);
+export function useReview(
+  spaceId: string,
+  month: string | null,
+  refreshToken = 0,
+): Resource<MonthlyReview | null> {
+  return useResource(
+    async () => (month === null ? null : apiClient.fetchReview(spaceId, month)),
+    [spaceId, month],
+    refreshToken,
+  );
 }
 
 /** L'historique des revues commencées, de la plus récente à la plus ancienne. */
-export function useReviewHistory(spaceId: string, refreshToken = 0): Resource<ReviewHistoryItem[]> {
-  return useResource(async () => apiClient.fetchReviews(spaceId), [spaceId], refreshToken);
+export function useReviewHistory(
+  spaceId: string,
+  refreshToken = 0,
+): Resource<ReviewHistoryItem[]> {
+  return useResource(
+    async () => apiClient.fetchReviews(spaceId),
+    [spaceId],
+    refreshToken,
+  );
 }
 
 /** Enregistrement d'un brouillon ou fin de la revue ; `onSaved` recharge la revue et l'historique. */
-export function useReviewActions(spaceId: string, month: string, onSaved: () => void) {
+export function useReviewActions(
+  spaceId: string,
+  month: string,
+  onSaved: () => void,
+) {
   const [busy, setBusy] = useState(false);
 
   const save = useCallback(

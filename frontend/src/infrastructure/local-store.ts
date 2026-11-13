@@ -1,6 +1,12 @@
 import { Bloc, isBloc } from '../domain/bloc';
 import { Household, SpaceKind } from '../domain/household';
-import { enqueue, parseQueue, PendingTransaction, removeFromQueue, serializeQueue } from '../domain/offline-queue';
+import {
+  enqueue,
+  parseQueue,
+  PendingTransaction,
+  removeFromQueue,
+  serializeQueue,
+} from '../domain/offline-queue';
 import { CurrentUser } from './api-client';
 
 const PREFIX = 'foyer-budget:';
@@ -75,18 +81,29 @@ interface CachedSession {
 export const sessionCache = {
   load(): CachedSession | null {
     try {
-      const parsed = JSON.parse(read('session') ?? 'null') as { user?: { id?: string } | null } | null;
+      const parsed = JSON.parse(read('session') ?? 'null') as {
+        user?: { id?: string } | null;
+      } | null;
       return parsed?.user?.id ? (parsed as CachedSession) : null;
     } catch {
       return null;
     }
   },
   saveUser(user: CurrentUser): void {
-    write('session', JSON.stringify({ user, household: this.load()?.household ?? null }));
+    write(
+      'session',
+      JSON.stringify({ user, household: this.load()?.household ?? null }),
+    );
   },
   saveHousehold(user: CurrentUser, household: Household | null): void {
     const sanitized = household
-      ? { ...household, members: household.members.map((member) => ({ ...member, netMonthlyIncomeCents: null })) }
+      ? {
+          ...household,
+          members: household.members.map((member) => ({
+            ...member,
+            netMonthlyIncomeCents: null,
+          })),
+        }
       : null;
     write('session', JSON.stringify({ user, household: sanitized }));
   },

@@ -1,10 +1,34 @@
 import { Bloc } from './bloc';
-import { centsToInputValue, formatCentsShort, parseAmountToCents } from './money';
-import { currentMonth, formatLongDateInput, isMonth, isValidDateInput, shiftMonth, todayInputValue } from './month';
+import {
+  centsToInputValue,
+  formatCentsShort,
+  parseAmountToCents,
+} from './money';
+import {
+  currentMonth,
+  formatLongDateInput,
+  isMonth,
+  isValidDateInput,
+  shiftMonth,
+  todayInputValue,
+} from './month';
 
-export type ContributionStatus = 'PAID' | 'PARTIAL' | 'PENDING' | 'OVERPAID' | 'NONE' | 'UNKNOWN';
+export type ContributionStatus =
+  | 'PAID'
+  | 'PARTIAL'
+  | 'PENDING'
+  | 'OVERPAID'
+  | 'NONE'
+  | 'UNKNOWN';
 
-export const CONTRIBUTION_STATUSES: readonly ContributionStatus[] = ['PAID', 'PARTIAL', 'PENDING', 'OVERPAID', 'NONE', 'UNKNOWN'];
+export const CONTRIBUTION_STATUSES: readonly ContributionStatus[] = [
+  'PAID',
+  'PARTIAL',
+  'PENDING',
+  'OVERPAID',
+  'NONE',
+  'UNKNOWN',
+];
 
 /** Au-delà de cette marge (1 €), un versement plus grand que prévu est dit « en trop » (règle du serveur). */
 export const OVERPAID_MARGIN_CENTS = 100;
@@ -59,11 +83,18 @@ export interface ContributionPaymentResult {
 // Lecture tolérante des réponses du serveur
 // ---------------------------------------------------------------------------------------------------------------------
 
-const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
-const asObject = (value: unknown): Record<string, unknown> => (value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {});
+const isNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+const asObject = (value: unknown): Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 
 /** Le statut quand le serveur ne l'envoie pas (ou en envoie un inconnu) : on le déduit des montants plutôt que de le supposer. */
-export function deduceStatus(expectedCents: number | null, paidCents: number): ContributionStatus {
+export function deduceStatus(
+  expectedCents: number | null,
+  paidCents: number,
+): ContributionStatus {
   if (expectedCents === null) {
     return 'UNKNOWN';
   }
@@ -84,21 +115,37 @@ function parseMember(raw: unknown): MemberContribution | null {
   if (typeof item.userId !== 'string' || typeof item.name !== 'string') {
     return null;
   }
-  const expectedCents = isNumber(item.expectedCents) ? Math.max(0, Math.round(item.expectedCents)) : null;
-  const paidCents = isNumber(item.paidCents) ? Math.max(0, Math.round(item.paidCents)) : 0;
-  const status = CONTRIBUTION_STATUSES.includes(item.status as ContributionStatus) ? (item.status as ContributionStatus) : deduceStatus(expectedCents, paidCents);
+  const expectedCents = isNumber(item.expectedCents)
+    ? Math.max(0, Math.round(item.expectedCents))
+    : null;
+  const paidCents = isNumber(item.paidCents)
+    ? Math.max(0, Math.round(item.paidCents))
+    : 0;
+  const status = CONTRIBUTION_STATUSES.includes(
+    item.status as ContributionStatus,
+  )
+    ? (item.status as ContributionStatus)
+    : deduceStatus(expectedCents, paidCents);
   return {
     userId: item.userId,
     name: item.name,
     expectedCents,
     paidCents,
-    remainingCents: expectedCents === null ? null : isNumber(item.remainingCents) ? Math.max(0, Math.round(item.remainingCents)) : Math.max(0, expectedCents - paidCents),
+    remainingCents:
+      expectedCents === null
+        ? null
+        : isNumber(item.remainingCents)
+          ? Math.max(0, Math.round(item.remainingCents))
+          : Math.max(0, expectedCents - paidCents),
     status,
     isMe: item.isMe === true,
   };
 }
 
-export function parseContributionReport(raw: unknown, fallbackMonth: string): ContributionReport {
+export function parseContributionReport(
+  raw: unknown,
+  fallbackMonth: string,
+): ContributionReport {
   const source = asObject(raw);
   const members: MemberContribution[] = [];
   if (Array.isArray(source.members)) {
@@ -109,21 +156,36 @@ export function parseContributionReport(raw: unknown, fallbackMonth: string): Co
       }
     }
   }
-  const incomplete = source.incomplete === true || members.some((member) => member.expectedCents === null);
+  const incomplete =
+    source.incomplete === true ||
+    members.some((member) => member.expectedCents === null);
   return {
-    month: typeof source.month === 'string' && isMonth(source.month) ? source.month : fallbackMonth,
+    month:
+      typeof source.month === 'string' && isMonth(source.month)
+        ? source.month
+        : fallbackMonth,
     incomplete,
     members,
-    totalExpectedCents: incomplete ? null : isNumber(source.totalExpectedCents) ? Math.max(0, Math.round(source.totalExpectedCents)) : members.reduce((sum, member) => sum + (member.expectedCents ?? 0), 0),
-    totalPaidCents: isNumber(source.totalPaidCents) ? Math.max(0, Math.round(source.totalPaidCents)) : members.reduce((sum, member) => sum + member.paidCents, 0),
+    totalExpectedCents: incomplete
+      ? null
+      : isNumber(source.totalExpectedCents)
+        ? Math.max(0, Math.round(source.totalExpectedCents))
+        : members.reduce((sum, member) => sum + (member.expectedCents ?? 0), 0),
+    totalPaidCents: isNumber(source.totalPaidCents)
+      ? Math.max(0, Math.round(source.totalPaidCents))
+      : members.reduce((sum, member) => sum + member.paidCents, 0),
   };
 }
 
 export function parsePaymentResult(raw: unknown): ContributionPaymentResult {
   const source = asObject(raw);
   return {
-    transactionId: typeof source.transactionId === 'string' ? source.transactionId : '',
-    personalTransactionId: typeof source.personalTransactionId === 'string' ? source.personalTransactionId : null,
+    transactionId:
+      typeof source.transactionId === 'string' ? source.transactionId : '',
+    personalTransactionId:
+      typeof source.personalTransactionId === 'string'
+        ? source.personalTransactionId
+        : null,
   };
 }
 
@@ -136,26 +198,45 @@ export function maxContributionMonth(now: Date = new Date()): string {
   return shiftMonth(currentMonth(now), 1);
 }
 
-export const myContribution = (report: Pick<ContributionReport, 'members'>): MemberContribution | null => report.members.find((member) => member.isMe) ?? null;
+export const myContribution = (
+  report: Pick<ContributionReport, 'members'>,
+): MemberContribution | null =>
+  report.members.find((member) => member.isMe) ?? null;
 
 /** Une contribution est encore à faire (ou à compléter, ou à calculer) : on propose alors le bouton de versement en avant. */
-export const needsPayment = (member: Pick<MemberContribution, 'status'>): boolean => member.status === 'PENDING' || member.status === 'PARTIAL';
+export const needsPayment = (
+  member: Pick<MemberContribution, 'status'>,
+): boolean => member.status === 'PENDING' || member.status === 'PARTIAL';
 
 /** Avancement (0-100) du versé sur l'attendu ; `null` quand il n'y a rien à comparer. */
-export function progressPercent(member: Pick<MemberContribution, 'expectedCents' | 'paidCents'>): number | null {
+export function progressPercent(
+  member: Pick<MemberContribution, 'expectedCents' | 'paidCents'>,
+): number | null {
   if (member.expectedCents === null || member.expectedCents <= 0) {
     return null;
   }
-  return Math.min(100, Math.max(0, Math.floor((member.paidCents / member.expectedCents) * 100)));
+  return Math.min(
+    100,
+    Math.max(0, Math.floor((member.paidCents / member.expectedCents) * 100)),
+  );
 }
 
 /** « 1 200 € versés sur 1 750 € attendus » : lu par les lecteurs d'écran et affiché sous la barre. */
-export function describeProgress(member: Pick<MemberContribution, 'expectedCents' | 'paidCents'>): string | null {
-  return member.expectedCents === null || member.expectedCents <= 0 ? null : `${formatCentsShort(member.paidCents)} versés sur ${formatCentsShort(member.expectedCents)} attendus`;
+export function describeProgress(
+  member: Pick<MemberContribution, 'expectedCents' | 'paidCents'>,
+): string | null {
+  return member.expectedCents === null || member.expectedCents <= 0
+    ? null
+    : `${formatCentsShort(member.paidCents)} versés sur ${formatCentsShort(member.expectedCents)} attendus`;
 }
 
 /** La phrase qui dit où en est un membre, en toutes lettres. */
-export function describeMemberStatus(member: Pick<MemberContribution, 'status' | 'expectedCents' | 'paidCents' | 'remainingCents'>): string {
+export function describeMemberStatus(
+  member: Pick<
+    MemberContribution,
+    'status' | 'expectedCents' | 'paidCents' | 'remainingCents'
+  >,
+): string {
   const remaining = formatCentsShort(member.remainingCents ?? 0);
   switch (member.status) {
     case 'PAID':
@@ -169,11 +250,15 @@ export function describeMemberStatus(member: Pick<MemberContribution, 'status' |
     case 'NONE':
       return 'Rien à verser ce mois-ci.';
     default:
-      return member.paidCents > 0 ? 'Le montant attendu ne peut pas encore être calculé.' : 'Le montant attendu ne peut pas encore être calculé : il manque des revenus.';
+      return member.paidCents > 0
+        ? 'Le montant attendu ne peut pas encore être calculé.'
+        : 'Le montant attendu ne peut pas encore être calculé : il manque des revenus.';
   }
 }
 
-export function describeTotals(report: Pick<ContributionReport, 'totalExpectedCents' | 'totalPaidCents'>): string {
+export function describeTotals(
+  report: Pick<ContributionReport, 'totalExpectedCents' | 'totalPaidCents'>,
+): string {
   return report.totalExpectedCents === null
     ? `Total versé : ${formatCentsShort(report.totalPaidCents)}`
     : `Total versé : ${formatCentsShort(report.totalPaidCents)} sur ${formatCentsShort(report.totalExpectedCents)} attendus`;
@@ -205,12 +290,17 @@ export interface ContributionFormErrors {
   month?: string;
 }
 
-export type ContributionFormResult = { ok: true; payload: ContributionPaymentPayload } | { ok: false; errors: ContributionFormErrors };
+export type ContributionFormResult =
+  | { ok: true; payload: ContributionPaymentPayload }
+  | { ok: false; errors: ContributionFormErrors };
 
 export const DEFAULT_PERSONAL_BLOC: Bloc = 'FIXE';
 
 /** Le montant est prérempli avec ce qu'il reste à verser ; la date du jour ; « Fixe » comme bloc perso. */
-export function emptyContributionForm(member: Pick<MemberContribution, 'remainingCents'> | null, now: Date = new Date()): ContributionFormValues {
+export function emptyContributionForm(
+  member: Pick<MemberContribution, 'remainingCents'> | null,
+  now: Date = new Date(),
+): ContributionFormValues {
   const remaining = member?.remainingCents ?? 0;
   return {
     amount: remaining > 0 ? centsToInputValue(remaining) : '',
@@ -222,7 +312,10 @@ export function emptyContributionForm(member: Pick<MemberContribution, 'remainin
   };
 }
 
-export function buildContributionPayload(values: ContributionFormValues, month: string): ContributionFormResult {
+export function buildContributionPayload(
+  values: ContributionFormValues,
+  month: string,
+): ContributionFormResult {
   const errors: ContributionFormErrors = {};
 
   if (!isMonth(month)) {
@@ -233,7 +326,8 @@ export function buildContributionPayload(values: ContributionFormValues, month: 
   if (values.amount.trim() === '') {
     errors.amount = 'Indiquez le montant que vous avez versé.';
   } else if (cents === null) {
-    errors.amount = 'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 1 200 ou 875,50).';
+    errors.amount =
+      'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 1 200 ou 875,50).';
   } else if (cents === 0) {
     errors.amount = 'Le montant doit être supérieur à 0.';
   }
@@ -246,7 +340,11 @@ export function buildContributionPayload(values: ContributionFormValues, month: 
     return { ok: false, errors };
   }
 
-  const payload: ContributionPaymentPayload = { month, amountCents: cents, date: values.date };
+  const payload: ContributionPaymentPayload = {
+    month,
+    amountCents: cents,
+    date: values.date,
+  };
   if (values.accountId !== '') {
     payload.accountId = values.accountId;
   }
@@ -262,6 +360,8 @@ export function buildContributionPayload(values: ContributionFormValues, month: 
 }
 
 /** « Contribution de novembre 2026 : 1 200 € le 3 novembre 2026. » */
-export function describePayment(payload: Pick<ContributionPaymentPayload, 'amountCents' | 'date'>): string {
+export function describePayment(
+  payload: Pick<ContributionPaymentPayload, 'amountCents' | 'date'>,
+): string {
   return `${formatCentsShort(payload.amountCents)} le ${formatLongDateInput(payload.date)}`;
 }

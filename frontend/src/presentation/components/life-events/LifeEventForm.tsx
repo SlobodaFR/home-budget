@@ -26,14 +26,27 @@ interface Props {
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
-    <p id={id} role="alert" className="mt-1 font-body-sm text-body-sm text-error">
+    <p
+      id={id}
+      role="alert"
+      className="mt-1 font-body-sm text-body-sm text-error"
+    >
       {message}
     </p>
   ) : null;
 }
 
-export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDelete, now = () => new Date() }: Props) {
-  const [values, setValues] = useState(() => (editing ? lifeEventToForm(editing) : emptyLifeEventForm()));
+export function LifeEventForm({
+  editing,
+  busy = false,
+  onClose,
+  onSubmit,
+  onDelete,
+  now = () => new Date(),
+}: Props) {
+  const [values, setValues] = useState(() =>
+    editing ? lifeEventToForm(editing) : emptyLifeEventForm(),
+  );
   const [errors, setErrors] = useState<LifeEventFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +60,10 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
     if (submittingRef.current) {
       return;
     }
-    const result = buildLifeEventPayload(values, { now: now(), labelRequired: editing !== null });
+    const result = buildLifeEventPayload(values, {
+      now: now(),
+      labelRequired: editing !== null,
+    });
     if (!result.ok) {
       setErrors(result.errors);
       return;
@@ -59,7 +75,9 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
     try {
       await onSubmit(result.payload);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'L’enregistrement a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'L’enregistrement a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
     }
@@ -75,7 +93,9 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
     try {
       await onDelete(editing);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'La suppression a échoué.');
+      setSubmitError(
+        error instanceof Error ? error.message : 'La suppression a échoué.',
+      );
       submittingRef.current = false;
       setSubmitting(false);
       setConfirmingDelete(false);
@@ -84,7 +104,11 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
 
   return (
     <BottomSheet title={title} onClose={onClose}>
-      <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-lg">
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        className="flex flex-col gap-lg"
+      >
         <div>
           <label htmlFor="life-event-date" className={labelClass}>
             Date de naissance (prévue ou réelle)
@@ -95,14 +119,27 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
             min={bounds.min}
             max={bounds.max}
             value={values.eventDate}
-            onChange={(event) => setValues((previous) => ({ ...previous, eventDate: event.target.value }))}
+            onChange={(event) =>
+              setValues((previous) => ({
+                ...previous,
+                eventDate: event.target.value,
+              }))
+            }
             aria-invalid={errors.eventDate ? true : undefined}
-            aria-describedby={errors.eventDate ? 'life-event-date-error' : 'life-event-date-hint'}
+            aria-describedby={
+              errors.eventDate
+                ? 'life-event-date-error'
+                : 'life-event-date-hint'
+            }
             className={inputClass}
           />
-          <p id="life-event-date-hint" className="mt-1 font-body-sm text-body-sm text-mute">
-            La date prévue si l’enfant n’est pas encore né, sinon la vraie date. Vous pourrez la corriger : les échéances sont alors recalculées et les démarches déjà
-            faites restent faites.
+          <p
+            id="life-event-date-hint"
+            className="mt-1 font-body-sm text-body-sm text-mute"
+          >
+            La date prévue si l’enfant n’est pas encore né, sinon la vraie date.
+            Vous pourrez la corriger : les échéances sont alors recalculées et
+            les démarches déjà faites restent faites.
           </p>
           <FieldError id="life-event-date-error" message={errors.eventDate} />
         </div>
@@ -117,13 +154,25 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
             autoComplete="off"
             placeholder={BIRTH_DEFAULT_LABEL}
             value={values.label}
-            onChange={(event) => setValues((previous) => ({ ...previous, label: event.target.value }))}
+            onChange={(event) =>
+              setValues((previous) => ({
+                ...previous,
+                label: event.target.value,
+              }))
+            }
             aria-invalid={errors.label ? true : undefined}
-            aria-describedby={errors.label ? 'life-event-label-error' : 'life-event-label-hint'}
+            aria-describedby={
+              errors.label ? 'life-event-label-error' : 'life-event-label-hint'
+            }
             className={inputClass}
           />
-          <p id="life-event-label-hint" className="mt-1 font-body-sm text-body-sm text-mute">
-            {MAX_EVENT_LABEL_LENGTH} caractères au plus. Tous les membres du foyer le voient : inutile d’y mettre un prénom ou une information sensible.
+          <p
+            id="life-event-label-hint"
+            className="mt-1 font-body-sm text-body-sm text-mute"
+          >
+            {MAX_EVENT_LABEL_LENGTH} caractères au plus. Tous les membres du
+            foyer le voient : inutile d’y mettre un prénom ou une information
+            sensible.
           </p>
           <FieldError id="life-event-label-error" message={errors.label} />
         </div>
@@ -134,17 +183,31 @@ export function LifeEventForm({ editing, busy = false, onClose, onSubmit, onDele
           </p>
         )}
 
-        <button type="submit" disabled={submitting || busy} className={`${buttonPrimary} w-full`}>
-          {submitting ? 'Enregistrement…' : editing ? 'Enregistrer' : 'Afficher mes démarches'}
+        <button
+          type="submit"
+          disabled={submitting || busy}
+          className={`${buttonPrimary} w-full`}
+        >
+          {submitting
+            ? 'Enregistrement…'
+            : editing
+              ? 'Enregistrer'
+              : 'Afficher mes démarches'}
         </button>
 
         {editing && onDelete && (
           <div className="border-t border-hairline-soft pt-md">
             {confirmingDelete ? (
               <div className="flex flex-col gap-md">
-                <p className="font-body-md text-body-md font-semibold">Supprimer cet événement et le suivi de ses démarches ?</p>
+                <p className="font-body-md text-body-md font-semibold">
+                  Supprimer cet événement et le suivi de ses démarches ?
+                </p>
                 <div className="flex gap-sm">
-                  <button type="button" onClick={() => setConfirmingDelete(false)} className="min-h-[44px] rounded-full border border-hairline px-lg font-button-md text-body-sm font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    className="min-h-[44px] rounded-full border border-hairline px-lg font-button-md text-body-sm font-semibold"
+                  >
                     Non, la garder
                   </button>
                   <button

@@ -14,11 +14,18 @@ export function formatCents(cents: number): string {
   return FORMATTER.format(cents / 100);
 }
 
-const WHOLE_FORMATTER = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const WHOLE_FORMATTER = new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
 /** Comme `formatCents`, mais sans les centimes quand le montant est rond : « 3 000 € », « 12,50 € ». */
 export function formatCentsShort(cents: number): string {
-  return cents % 100 === 0 ? WHOLE_FORMATTER.format(cents / 100) : FORMATTER.format(cents / 100);
+  return cents % 100 === 0
+    ? WHOLE_FORMATTER.format(cents / 100)
+    : FORMATTER.format(cents / 100);
 }
 
 /** Arrondi à l'euro, pour les moyennes et les estimations : « 1 367 € ». */
@@ -43,14 +50,17 @@ export function parseAmountToCents(input: string): number | null {
     return null;
   }
   const [integerPart, decimalPart = ''] = cleaned.replace(',', '.').split('.');
-  const cents = Number(integerPart || '0') * 100 + Number(decimalPart.padEnd(2, '0'));
+  const cents =
+    Number(integerPart || '0') * 100 + Number(decimalPart.padEnd(2, '0'));
   return cents <= MAX_AMOUNT_CENTS ? cents : null;
 }
 
 export function centsToInputValue(cents: number): string {
   const euros = Math.floor(cents / 100);
   const remainder = cents % 100;
-  return remainder === 0 ? String(euros) : `${euros},${String(remainder).padStart(2, '0')}`;
+  return remainder === 0
+    ? String(euros)
+    : `${euros},${String(remainder).padStart(2, '0')}`;
 }
 
 /** Montant signé en euros (« -150 », « − 1 200,50 », « +30 ») → centimes, ou `null` si illisible. Le découvert se saisit avec un « - ». */

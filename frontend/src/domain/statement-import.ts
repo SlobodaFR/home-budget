@@ -5,7 +5,11 @@ import { defaultLabel } from './transaction-form';
 
 export type ImportTarget = Bloc | 'INCOME' | 'IGNORE';
 
-export const IMPORT_TARGETS: readonly ImportTarget[] = [...BLOCS, 'INCOME', 'IGNORE'];
+export const IMPORT_TARGETS: readonly ImportTarget[] = [
+  ...BLOCS,
+  'INCOME',
+  'IGNORE',
+];
 
 export const TARGET_LABEL: Record<ImportTarget, string> = {
   FIXE: 'Fixe',
@@ -113,7 +117,10 @@ export function groupRows(rows: readonly PreviewRow[]): RowGroups {
   return groups;
 }
 
-export function computeTotals(rows: readonly PreviewRow[], choices: Choices): ImportTotals {
+export function computeTotals(
+  rows: readonly PreviewRow[],
+  choices: Choices,
+): ImportTotals {
   const totals: ImportTotals = {
     byBloc: { FIXE: 0, COURANT: 0, PLAISIR: 0, EPARGNE: 0 },
     incomeCents: 0,
@@ -135,7 +142,10 @@ export function computeTotals(rows: readonly PreviewRow[], choices: Choices): Im
   return totals;
 }
 
-export function buildCommitItems(rows: readonly PreviewRow[], choices: Choices): CommitItem[] {
+export function buildCommitItems(
+  rows: readonly PreviewRow[],
+  choices: Choices,
+): CommitItem[] {
   const items: CommitItem[] = [];
   for (const row of rows) {
     const choice = choices[row.index] ?? null;
@@ -144,14 +154,23 @@ export function buildCommitItems(rows: readonly PreviewRow[], choices: Choices):
     }
     const kind: TransactionKind = choice === 'INCOME' ? 'INCOME' : 'EXPENSE';
     const bloc = choice === 'INCOME' ? undefined : choice;
-    const label = row.label.trim() === '' ? defaultLabel(kind, bloc ?? 'COURANT') : row.label.slice(0, MAX_COMMIT_LABEL_LENGTH);
+    const label =
+      row.label.trim() === ''
+        ? defaultLabel(kind, bloc ?? 'COURANT')
+        : row.label.slice(0, MAX_COMMIT_LABEL_LENGTH);
     const amountCents = Math.abs(row.amountCents);
-    items.push(bloc ? { kind, bloc, label, amountCents, date: row.date } : { kind, label, amountCents, date: row.date });
+    items.push(
+      bloc
+        ? { kind, bloc, label, amountCents, date: row.date }
+        : { kind, label, amountCents, date: row.date },
+    );
   }
   return items;
 }
 
-export function dominantMonth(items: readonly { date: string }[]): string | null {
+export function dominantMonth(
+  items: readonly { date: string }[],
+): string | null {
   const counts = new Map<string, number>();
   for (const item of items) {
     const month = item.date.slice(0, 7);
@@ -159,18 +178,27 @@ export function dominantMonth(items: readonly { date: string }[]): string | null
   }
   let best: string | null = null;
   for (const [month, count] of counts) {
-    if (best === null || count > (counts.get(best) ?? 0) || (count === (counts.get(best) ?? 0) && month > best)) {
+    if (
+      best === null ||
+      count > (counts.get(best) ?? 0) ||
+      (count === (counts.get(best) ?? 0) && month > best)
+    ) {
       best = month;
     }
   }
   return best;
 }
 
-export function isManualChoice(choice: ImportTarget | null, initial: ImportTarget | null): boolean {
+export function isManualChoice(
+  choice: ImportTarget | null,
+  initial: ImportTarget | null,
+): boolean {
   return choice !== null && choice !== initial;
 }
 
-export function keywordsByIndex(rows: readonly PreviewRow[]): Map<number, string> {
+export function keywordsByIndex(
+  rows: readonly PreviewRow[],
+): Map<number, string> {
   const keywords = new Map<number, string>();
   for (const row of rows) {
     const keyword = deriveKeyword(row.label);
@@ -192,7 +220,11 @@ export function findSimilarUnclassified(
   }
   const similar: number[] = [];
   for (const [index, other] of keywords) {
-    if (index !== sourceIndex && other === keyword && (choices[index] ?? null) === null) {
+    if (
+      index !== sourceIndex &&
+      other === keyword &&
+      (choices[index] ?? null) === null
+    ) {
       similar.push(index);
     }
   }
@@ -208,7 +240,11 @@ export function collectLearnedRules(
   for (const row of rows) {
     const keyword = learn[row.index];
     const choice = choices[row.index] ?? null;
-    if (keyword !== undefined && choice !== null && isManualChoice(choice, initialChoice(row))) {
+    if (
+      keyword !== undefined &&
+      choice !== null &&
+      isManualChoice(choice, initialChoice(row))
+    ) {
       learned.push({ keyword, target: choice });
     }
   }

@@ -9,7 +9,13 @@ import { useSpace } from '../../application/use-space';
 import { Transaction } from '../../domain/budget';
 import { pendingForMonth } from '../../domain/offline-queue';
 import { ErrorNotice, OfflineNotice } from '../components/ErrorNotice';
-import { BankIcon, ChartIcon, ClipboardCheckIcon, TargetIcon, UploadIcon } from '../components/Icons';
+import {
+  BankIcon,
+  ChartIcon,
+  ClipboardCheckIcon,
+  TargetIcon,
+  UploadIcon,
+} from '../components/Icons';
 import { DebtsHomeLink } from '../components/debts/DebtsHomeLink';
 import { AccountsSummary } from '../components/AccountsSummary';
 import { InsightsCard } from '../components/InsightsCard';
@@ -25,7 +31,10 @@ import { useQuickEntry } from '../layout/QuickEntryContext';
 export function HomePage() {
   const { space } = useSpace();
   const { month, setMonth } = useSelectedMonth();
-  const { summary, transactions, removeTransaction } = useMonthData(space.id, month);
+  const { summary, transactions, removeTransaction } = useMonthData(
+    space.id,
+    month,
+  );
   const { pending, dataVersion } = useOfflineQueue();
   const insights = useInsights(space.id, month, dataVersion);
   const quickEntry = useQuickEntry();
@@ -41,7 +50,8 @@ export function HomePage() {
   };
 
   const pendingItems = pendingForMonth(pending, space.id, month);
-  const offline = isOfflineError(summary.error) || isOfflineError(transactions.error);
+  const offline =
+    isOfflineError(summary.error) || isOfflineError(transactions.error);
   const retry = () => {
     summary.reload();
     transactions.reload();
@@ -102,14 +112,37 @@ export function HomePage() {
         <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-6">
           <InsightsCard state={insights} />
 
-          <section aria-label="Opérations du mois" className="order-2 xl:order-none">
-            <h3 className="mb-sm font-label-caps text-label-caps uppercase text-mute">Opérations</h3>
+          <section
+            aria-label="Opérations du mois"
+            className="order-2 xl:order-none"
+          >
+            <h3 className="mb-sm font-label-caps text-label-caps uppercase text-mute">
+              Opérations
+            </h3>
             {transactions.data ? (
-              <TransactionList transactions={transactions.data} pending={pendingItems} onEdit={quickEntry.openEdit} onDelete={handleDelete} />
+              <TransactionList
+                transactions={transactions.data}
+                pending={pendingItems}
+                onEdit={quickEntry.openEdit}
+                onDelete={handleDelete}
+              />
             ) : offline ? (
-              pendingItems.length > 0 && <TransactionList transactions={[]} pending={pendingItems} onEdit={quickEntry.openEdit} onDelete={handleDelete} />
+              pendingItems.length > 0 && (
+                <TransactionList
+                  transactions={[]}
+                  pending={pendingItems}
+                  onEdit={quickEntry.openEdit}
+                  onDelete={handleDelete}
+                />
+              )
             ) : transactions.error ? (
-              <ErrorNotice message={describeError(transactions.error, 'Impossible de charger les opérations.')} onRetry={transactions.reload} />
+              <ErrorNotice
+                message={describeError(
+                  transactions.error,
+                  'Impossible de charger les opérations.',
+                )}
+                onRetry={transactions.reload}
+              />
             ) : (
               <LoadingScreen />
             )}
@@ -118,11 +151,23 @@ export function HomePage() {
 
         <div className="order-1 flex flex-col gap-gutter md:grid md:grid-cols-2 md:gap-6 xl:order-none xl:flex xl:flex-col">
           {summary.data ? (
-            <SummaryCard summary={summary.data} className="md:col-span-2 xl:col-span-1" />
+            <SummaryCard
+              summary={summary.data}
+              className="md:col-span-2 xl:col-span-1"
+            />
           ) : offline ? (
-            <OfflineNotice message="Hors ligne : les chiffres du mois reviendront avec le réseau." onRetry={retry} />
+            <OfflineNotice
+              message="Hors ligne : les chiffres du mois reviendront avec le réseau."
+              onRetry={retry}
+            />
           ) : summary.error ? (
-            <ErrorNotice message={describeError(summary.error, 'Impossible de charger la synthèse du mois.')} onRetry={summary.reload} />
+            <ErrorNotice
+              message={describeError(
+                summary.error,
+                'Impossible de charger la synthèse du mois.',
+              )}
+              onRetry={summary.reload}
+            />
           ) : (
             <LoadingScreen />
           )}

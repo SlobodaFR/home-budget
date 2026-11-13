@@ -12,8 +12,16 @@ export interface MonthData {
 
 export function useMonthData(spaceId: string, month: string): MonthData {
   const { dataVersion, notifyChanged } = useOfflineQueue();
-  const summary = useResource(() => apiClient.fetchSummary(spaceId, month), [spaceId, month], dataVersion);
-  const transactions = useResource(() => apiClient.fetchTransactions(spaceId, month), [spaceId, month], dataVersion);
+  const summary = useResource(
+    () => apiClient.fetchSummary(spaceId, month),
+    [spaceId, month],
+    dataVersion,
+  );
+  const transactions = useResource(
+    () => apiClient.fetchTransactions(spaceId, month),
+    [spaceId, month],
+    dataVersion,
+  );
 
   const removeTransaction = useCallback(
     async (id: string) => {

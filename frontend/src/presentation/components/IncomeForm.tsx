@@ -8,7 +8,9 @@ interface Props {
 }
 
 export function IncomeForm({ currentCents, onSave }: Props) {
-  const [value, setValue] = useState(currentCents === null ? '' : centsToInputValue(currentCents));
+  const [value, setValue] = useState(
+    currentCents === null ? '' : centsToInputValue(currentCents),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -16,7 +18,9 @@ export function IncomeForm({ currentCents, onSave }: Props) {
     event.preventDefault();
     const cents = value.trim() === '' ? null : parseAmountToCents(value);
     if (value.trim() !== '' && cents === null) {
-      setError('Revenu invalide : utilisez des chiffres (ex. 2 300 ou 2300,50).');
+      setError(
+        'Revenu invalide : utilisez des chiffres (ex. 2 300 ou 2300,50).',
+      );
       return;
     }
     setError(null);
@@ -31,7 +35,11 @@ export function IncomeForm({ currentCents, onSave }: Props) {
   };
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} noValidate className="flex flex-col gap-md">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      noValidate
+      className="flex flex-col gap-md"
+    >
       <div>
         <label htmlFor="my-income" className="sr-only">
           Revenu net mensuel
@@ -47,7 +55,9 @@ export function IncomeForm({ currentCents, onSave }: Props) {
             onChange={(event) => setValue(event.target.value)}
             aria-invalid={error ? true : undefined}
           />
-          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">€</span>
+          <span className="pointer-events-none absolute right-gutter top-1/2 -translate-y-1/2 text-mute">
+            €
+          </span>
         </div>
         {error && (
           <p role="alert" className="mt-1 font-body-sm text-body-sm text-error">

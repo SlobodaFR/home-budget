@@ -1,14 +1,31 @@
-import { formatCents, parseSignedAmountToCents, signedCentsToInputValue } from './money';
+import {
+  formatCents,
+  parseSignedAmountToCents,
+  signedCentsToInputValue,
+} from './money';
 import { isValidDateInput, todayInputValue } from './month';
 
 export type AccountKind = 'CHECKING' | 'SAVINGS' | 'CASH';
 
-export const ACCOUNT_KINDS: readonly AccountKind[] = ['CHECKING', 'SAVINGS', 'CASH'];
+export const ACCOUNT_KINDS: readonly AccountKind[] = [
+  'CHECKING',
+  'SAVINGS',
+  'CASH',
+];
 
-export const ACCOUNT_KIND_INFO: Record<AccountKind, { label: string; description: string }> = {
-  CHECKING: { label: 'Compte courant', description: 'Là où arrivent les revenus et partent les paiements.' },
+export const ACCOUNT_KIND_INFO: Record<
+  AccountKind,
+  { label: string; description: string }
+> = {
+  CHECKING: {
+    label: 'Compte courant',
+    description: 'Là où arrivent les revenus et partent les paiements.',
+  },
   SAVINGS: { label: 'Livret ou épargne', description: 'L’argent mis de côté.' },
-  CASH: { label: 'Espèces', description: 'Le porte-monnaie ou la cagnotte à la maison.' },
+  CASH: {
+    label: 'Espèces',
+    description: 'Le porte-monnaie ou la cagnotte à la maison.',
+  },
 };
 
 export const MAX_ACCOUNT_NAME_LENGTH = 60;
@@ -48,10 +65,17 @@ export interface AccountFormErrors {
   openingDate?: string;
 }
 
-export type AccountFormResult = { ok: true; payload: AccountPayload } | { ok: false; errors: AccountFormErrors };
+export type AccountFormResult =
+  | { ok: true; payload: AccountPayload }
+  | { ok: false; errors: AccountFormErrors };
 
 export function emptyAccountForm(now: Date = new Date()): AccountFormValues {
-  return { name: '', kind: 'CHECKING', openingBalance: '', openingDate: todayInputValue(now) };
+  return {
+    name: '',
+    kind: 'CHECKING',
+    openingBalance: '',
+    openingDate: todayInputValue(now),
+  };
 }
 
 export function accountToForm(account: Account): AccountFormValues {
@@ -83,13 +107,24 @@ export function buildAccountPayload(
     errors.name = 'Donnez un nom à ce compte (ex. Compte commun).';
   } else if (name.length > MAX_ACCOUNT_NAME_LENGTH) {
     errors.name = `Le nom est trop long (${MAX_ACCOUNT_NAME_LENGTH} caractères au plus).`;
-  } else if (existing.some((account) => account.id !== editingId && normalizeName(account.name) === normalizeName(name))) {
-    errors.name = 'Un compte porte déjà ce nom dans cet espace : choisissez-en un autre.';
+  } else if (
+    existing.some(
+      (account) =>
+        account.id !== editingId &&
+        normalizeName(account.name) === normalizeName(name),
+    )
+  ) {
+    errors.name =
+      'Un compte porte déjà ce nom dans cet espace : choisissez-en un autre.';
   }
 
-  const openingBalanceCents = values.openingBalance.trim() === '' ? 0 : parseSignedAmountToCents(values.openingBalance);
+  const openingBalanceCents =
+    values.openingBalance.trim() === ''
+      ? 0
+      : parseSignedAmountToCents(values.openingBalance);
   if (openingBalanceCents === null) {
-    errors.openingBalance = 'Montant invalide : utilisez des chiffres, au plus 2 décimales, et « - » pour un découvert (ex. 1 200 ou -150).';
+    errors.openingBalance =
+      'Montant invalide : utilisez des chiffres, au plus 2 décimales, et « - » pour un découvert (ex. 1 200 ou -150).';
   }
 
   if (!isValidDateInput(values.openingDate)) {
@@ -99,10 +134,21 @@ export function buildAccountPayload(
   if (Object.keys(errors).length > 0 || openingBalanceCents === null) {
     return { ok: false, errors };
   }
-  return { ok: true, payload: { name, kind: values.kind, openingBalanceCents, openingDate: values.openingDate } };
+  return {
+    ok: true,
+    payload: {
+      name,
+      kind: values.kind,
+      openingBalanceCents,
+      openingDate: values.openingDate,
+    },
+  };
 }
 
-export function accountToPayload(account: Account, overrides: Partial<AccountPayload> = {}): AccountPayload {
+export function accountToPayload(
+  account: Account,
+  overrides: Partial<AccountPayload> = {},
+): AccountPayload {
   return {
     name: account.name,
     kind: account.kind,
@@ -122,24 +168,47 @@ export function archivedAccounts(accounts: readonly Account[]): Account[] {
 }
 
 /** Comptes proposables dans un sélecteur : les non archivés, plus le compte déjà choisi même archivé (pour ne pas le perdre en silence). */
-export function selectableAccounts(accounts: readonly Account[], currentId: string | null = null): Account[] {
-  return accounts.filter((account) => !account.archived || account.id === currentId);
+export function selectableAccounts(
+  accounts: readonly Account[],
+  currentId: string | null = null,
+): Account[] {
+  return accounts.filter(
+    (account) => !account.archived || account.id === currentId,
+  );
 }
 
 /** Le dernier compte choisi dans l'espace, s'il existe encore et n'est pas archivé ; sinon « Aucun ». */
-export function resolveDefaultAccount(accounts: readonly Account[], rememberedId: string | null): string | null {
-  return rememberedId !== null && activeAccounts(accounts).some((account) => account.id === rememberedId) ? rememberedId : null;
+export function resolveDefaultAccount(
+  accounts: readonly Account[],
+  rememberedId: string | null,
+): string | null {
+  return rememberedId !== null &&
+    activeAccounts(accounts).some((account) => account.id === rememberedId)
+    ? rememberedId
+    : null;
 }
 
-export function accountName(accounts: readonly Account[], id: string | null | undefined): string | null {
-  return id ? (accounts.find((account) => account.id === id)?.name ?? null) : null;
+export function accountName(
+  accounts: readonly Account[],
+  id: string | null | undefined,
+): string | null {
+  return id
+    ? (accounts.find((account) => account.id === id)?.name ?? null)
+    : null;
 }
 
-export function goesNegative(account: Pick<Account, 'archived' | 'projectedMonthEndCents'>): boolean {
+export function goesNegative(
+  account: Pick<Account, 'archived' | 'projectedMonthEndCents'>,
+): boolean {
   return !account.archived && account.projectedMonthEndCents < 0;
 }
 
-export function describeProjection(account: Pick<Account, 'archived' | 'balanceCents' | 'projectedMonthEndCents'>): string | null {
+export function describeProjection(
+  account: Pick<
+    Account,
+    'archived' | 'balanceCents' | 'projectedMonthEndCents'
+  >,
+): string | null {
   if (!goesNegative(account)) {
     return null;
   }
@@ -149,12 +218,18 @@ export function describeProjection(account: Pick<Account, 'archived' | 'balanceC
 }
 
 export function describeTransactionCount(count: number): string {
-  return count === 0 ? 'Aucune opération' : count === 1 ? '1 opération' : `${count} opérations`;
+  return count === 0
+    ? 'Aucune opération'
+    : count === 1
+      ? '1 opération'
+      : `${count} opérations`;
 }
 
 export const DELETE_REFUSED_MESSAGE =
   'Ce compte contient encore des opérations ou des paiements récurrents : archivez-le plutôt, son historique sera conservé.';
 
 export function describeDeleteError(status: number | null): string {
-  return status === 400 ? DELETE_REFUSED_MESSAGE : 'Suppression impossible pour le moment, réessayez dans un instant.';
+  return status === 400
+    ? DELETE_REFUSED_MESSAGE
+    : 'Suppression impossible pour le moment, réessayez dans un instant.';
 }

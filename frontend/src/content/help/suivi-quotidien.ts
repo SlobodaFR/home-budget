@@ -4,7 +4,8 @@ export const suiviQuotidien: HelpSection = {
   id: 'suivi-quotidien',
   kind: 'guide',
   title: 'Le suivi au quotidien',
-  summary: 'Importer un relevé, paiements récurrents et prévisionnel, comptes bancaires, contributions au commun, revue mensuelle et tendances.',
+  summary:
+    'Importer un relevé, paiements récurrents et prévisionnel, comptes bancaires, contributions au commun, revue mensuelle et tendances.',
   keywords: ['mensuel', 'quotidien', 'suivi'],
   entries: [
     {
@@ -25,9 +26,14 @@ export const suiviQuotidien: HelpSection = {
             'Validez : seules les lignes que vous avez gardées sont enregistrées, et l’enregistrement se fait en une fois (tout ou rien).',
           ],
         },
-        { type: 'paragraph', text: 'L’import demande une connexion. Si vous avez des comptes bancaires dans l’application, vous choisissez celui du relevé.' },
+        {
+          type: 'paragraph',
+          text: 'L’import demande une connexion. Si vous avez des comptes bancaires dans l’application, vous choisissez celui du relevé.',
+        },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir l’import de relevé', to: '/import' }],
+      links: [
+        { kind: 'internal', label: 'Ouvrir l’import de relevé', to: '/import' },
+      ],
       keywords: ['csv', 'banque', 'fichier', 'doublon', 'règles', 'classement'],
     },
     {
@@ -54,8 +60,22 @@ export const suiviQuotidien: HelpSection = {
           text: 'Chaque paiement attendu porte un statut : « Retrouvé » (déjà dans vos opérations), « Non retrouvé » (attendu mais pas encore vu : le relevé n’est peut-être pas encore importé) ou « À venir ».',
         },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir le prévisionnel', to: '/previsionnel' }],
-      keywords: ['abonnement', 'loyer', 'solde', 'projeté', 'prudent', 'fin de mois', 'récurrent'],
+      links: [
+        {
+          kind: 'internal',
+          label: 'Ouvrir le prévisionnel',
+          to: '/previsionnel',
+        },
+      ],
+      keywords: [
+        'abonnement',
+        'loyer',
+        'solde',
+        'projeté',
+        'prudent',
+        'fin de mois',
+        'récurrent',
+      ],
     },
     {
       id: 'comptes-bancaires',
@@ -74,7 +94,9 @@ export const suiviQuotidien: HelpSection = {
           text: 'Les comptes de l’espace commun sont visibles par tout le foyer, ceux de l’espace perso par vous seul.',
         },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir les comptes', to: '/comptes' }],
+      links: [
+        { kind: 'internal', label: 'Ouvrir les comptes', to: '/comptes' },
+      ],
       keywords: ['livret', 'solde', 'espèces', 'banque', 'courant'],
     },
     {
@@ -103,7 +125,15 @@ export const suiviQuotidien: HelpSection = {
         },
       ],
       links: [{ kind: 'internal', label: 'Ouvrir le foyer', to: '/foyer' }],
-      keywords: ['contribution', 'part', 'prorata', 'moitié', 'verser', 'commun', 'revenu'],
+      keywords: [
+        'contribution',
+        'part',
+        'prorata',
+        'moitié',
+        'verser',
+        'commun',
+        'revenu',
+      ],
     },
     {
       id: 'revue-mensuelle',
@@ -115,11 +145,20 @@ export const suiviQuotidien: HelpSection = {
         },
         {
           type: 'list',
-          items: ['Qu’est-ce qui a bien marché ?', 'Qu’est-ce qui m’a surpris ?', 'Quelle décision pour le mois prochain ?'],
+          items: [
+            'Qu’est-ce qui a bien marché ?',
+            'Qu’est-ce qui m’a surpris ?',
+            'Quelle décision pour le mois prochain ?',
+          ],
         },
-        { type: 'paragraph', text: 'La revue de votre espace perso est privée : vous seul la voyez.' },
+        {
+          type: 'paragraph',
+          text: 'La revue de votre espace perso est privée : vous seul la voyez.',
+        },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir ma revue du mois', to: '/revue' }],
+      links: [
+        { kind: 'internal', label: 'Ouvrir ma revue du mois', to: '/revue' },
+      ],
       keywords: ['bilan', 'point', 'décision', 'mois'],
     },
     {
@@ -135,8 +174,15 @@ export const suiviQuotidien: HelpSection = {
           text: 'Elle signale aussi ce qui grimpe, c’est-à-dire les dépenses qui augmentent. Pour cela, il faut au moins 4 mois d’opérations.',
         },
       ],
-      links: [{ kind: 'internal', label: 'Ouvrir les tendances', to: '/tendances' }],
-      keywords: ['évolution', 'graphique', 'taux d’épargne', 'dépenses qui augmentent'],
+      links: [
+        { kind: 'internal', label: 'Ouvrir les tendances', to: '/tendances' },
+      ],
+      keywords: [
+        'évolution',
+        'graphique',
+        'taux d’épargne',
+        'dépenses qui augmentent',
+      ],
     },
     {
       id: 'conseils-de-laccueil',

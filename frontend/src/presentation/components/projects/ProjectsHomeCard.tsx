@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useProjects } from '../../../application/use-projects';
-import { describeMonthlyNeed, closestProjects, describeDeadline, Project } from '../../../domain/project';
+import {
+  describeMonthlyNeed,
+  closestProjects,
+  describeDeadline,
+  Project,
+} from '../../../domain/project';
 import { cardClass } from '../ui';
 import { KIND_ICON } from './project-style';
 import { ProjectProgress } from './ProjectProgress';
@@ -15,7 +20,9 @@ function Item({ project }: { project: Project }) {
           <Icon width={20} height={20} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-          <p className="break-words font-body-md text-body-md font-semibold">{project.name}</p>
+          <p className="break-words font-body-md text-body-md font-semibold">
+            {project.name}
+          </p>
           <ProjectStatusBadge status={project.status} />
         </div>
       </div>
@@ -40,8 +47,13 @@ export function ProjectsHomeCard({ spaceId }: { spaceId: string }) {
   return (
     <section aria-label="Mes projets" className={cardClass}>
       <div className="flex items-baseline justify-between gap-md">
-        <h3 className="font-label-caps text-label-caps uppercase text-mute">Mes projets</h3>
-        <Link to="/projets" className="inline-flex min-h-[44px] items-center font-body-sm text-body-sm font-semibold underline">
+        <h3 className="font-label-caps text-label-caps uppercase text-mute">
+          Mes projets
+        </h3>
+        <Link
+          to="/projets"
+          className="inline-flex min-h-[44px] items-center font-body-sm text-body-sm font-semibold underline"
+        >
           {projects.data.length === 0 ? 'Créer un projet' : 'Voir mes projets'}
         </Link>
       </div>

@@ -7,9 +7,20 @@ import { Resource, useResource } from './use-resource';
  * d'erreur de la ressource plutôt qu'une exception dans le rendu : l'accueil masque alors simplement son lien.
  */
 export function useDebts(spaceId: string, refreshToken = 0): Resource<Debt[]> {
-  return useResource(async () => apiClient.fetchDebts(spaceId), [spaceId], refreshToken);
+  return useResource(
+    async () => apiClient.fetchDebts(spaceId),
+    [spaceId],
+    refreshToken,
+  );
 }
 
-export function useDebtsSummary(spaceId: string, refreshToken = 0): Resource<DebtsSummary> {
-  return useResource(async () => apiClient.fetchDebtsSummary(spaceId), [spaceId], refreshToken);
+export function useDebtsSummary(
+  spaceId: string,
+  refreshToken = 0,
+): Resource<DebtsSummary> {
+  return useResource(
+    async () => apiClient.fetchDebtsSummary(spaceId),
+    [spaceId],
+    refreshToken,
+  );
 }

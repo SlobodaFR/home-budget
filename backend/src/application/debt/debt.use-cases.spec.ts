@@ -6,7 +6,8 @@ import {
   InMemoryDebtRepository,
   InMemoryHouseholdRepository,
   InMemoryRecurringItemRepository,
-  InMemoryUserRepository,InMemoryAccountRepository
+  InMemoryUserRepository,
+  InMemoryAccountRepository,
 } from '../../testing/in-memory-repositories';
 import { AccountAssignmentService } from '../account/account-assignment.service';
 import { CreateHouseholdUseCase } from '../household/create-household.use-case';

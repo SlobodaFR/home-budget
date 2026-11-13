@@ -1,14 +1,31 @@
 import { formatCents, formatSignedCents } from '../../../domain/money';
 import { pluralize } from '../../../domain/plural';
-import { mainExpenseItems, monthTitle, YearForecast, YearForecastMonth } from '../../../domain/year-forecast';
+import {
+  mainExpenseItems,
+  monthTitle,
+  YearForecast,
+  YearForecastMonth,
+} from '../../../domain/year-forecast';
 import { FlagIcon } from '../Icons';
 import { cardClass } from '../ui';
 
-function Figure({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Figure({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+}) {
   return (
     <div className="min-w-0">
       <dt className="text-[12px] leading-tight text-mute">{label}</dt>
-      <dd className={`tabular font-body-sm text-body-sm font-semibold ${tone ?? 'text-ink'}`}>{value}</dd>
+      <dd
+        className={`tabular font-body-sm text-body-sm font-semibold ${tone ?? 'text-ink'}`}
+      >
+        {value}
+      </dd>
     </div>
   );
 }
@@ -16,7 +33,9 @@ function Figure({ label, value, tone }: { label: string; value: string; tone?: s
 const tone = (cents: number) => (cents < 0 ? 'text-error' : 'text-ink');
 
 function MonthRow({ month }: { month: YearForecastMonth }) {
-  const { shown, hidden } = month.peak ? mainExpenseItems(month) : { shown: [], hidden: 0 };
+  const { shown, hidden } = month.peak
+    ? mainExpenseItems(month)
+    : { shown: [], hidden: 0 };
   return (
     <li
       className={`py-md ${month.peak ? 'my-1 rounded border-2 border-plaisir bg-plaisir/10 px-md' : ''}`}
@@ -33,7 +52,9 @@ function MonthRow({ month }: { month: YearForecastMonth }) {
             </span>
           )}
         </p>
-        <p className={`tabular shrink-0 font-body-md text-body-md font-semibold ${tone(month.balanceCents)}`}>
+        <p
+          className={`tabular shrink-0 font-body-md text-body-md font-semibold ${tone(month.balanceCents)}`}
+        >
           <span className="sr-only">Solde du mois : </span>
           {formatSignedCents(month.balanceCents)}
         </p>
@@ -41,20 +62,35 @@ function MonthRow({ month }: { month: YearForecastMonth }) {
       <dl className="mt-1 grid grid-cols-3 gap-sm">
         <Figure label="Revenus" value={formatCents(month.incomeCents)} />
         <Figure label="Dépenses" value={formatCents(month.expenseCents)} />
-        <Figure label="Cumul" value={formatSignedCents(month.cumulativeCents)} tone={tone(month.cumulativeCents)} />
+        <Figure
+          label="Cumul"
+          value={formatSignedCents(month.cumulativeCents)}
+          tone={tone(month.cumulativeCents)}
+        />
       </dl>
       {shown.length > 0 && (
         <div className="mt-sm">
-          <p className="font-body-sm text-body-sm font-semibold">Les plus gros paiements</p>
+          <p className="font-body-sm text-body-sm font-semibold">
+            Les plus gros paiements
+          </p>
           <ul className="mt-1 flex flex-col gap-1">
             {shown.map((item, index) => (
-              <li key={`${item.recurringId}-${index}`} className="flex items-baseline justify-between gap-md font-body-sm text-body-sm">
+              <li
+                key={`${item.recurringId}-${index}`}
+                className="flex items-baseline justify-between gap-md font-body-sm text-body-sm"
+              >
                 <span className="min-w-0 break-words">{item.label}</span>
-                <span className="tabular shrink-0 font-semibold">− {formatCents(item.amountCents)}</span>
+                <span className="tabular shrink-0 font-semibold">
+                  − {formatCents(item.amountCents)}
+                </span>
               </li>
             ))}
           </ul>
-          {hidden > 0 && <p className="mt-1 font-body-sm text-body-sm text-mute">et {pluralize(hidden, 'autre paiement', 'autres paiements')}</p>}
+          {hidden > 0 && (
+            <p className="mt-1 font-body-sm text-body-sm text-mute">
+              et {pluralize(hidden, 'autre paiement', 'autres paiements')}
+            </p>
+          )}
         </div>
       )}
     </li>
@@ -64,8 +100,12 @@ function MonthRow({ month }: { month: YearForecastMonth }) {
 export function YearMonthList({ forecast }: { forecast: YearForecast }) {
   return (
     <section aria-label="Mois par mois" className={cardClass}>
-      <h3 className="font-label-caps text-label-caps uppercase text-mute">Mois par mois</h3>
-      <p className="mt-1 font-body-sm text-body-sm text-mute">Le cumul additionne les soldes mois après mois.</p>
+      <h3 className="font-label-caps text-label-caps uppercase text-mute">
+        Mois par mois
+      </h3>
+      <p className="mt-1 font-body-sm text-body-sm text-mute">
+        Le cumul additionne les soldes mois après mois.
+      </p>
       <ul className="mt-sm divide-y divide-hairline-soft">
         {forecast.months.map((month) => (
           <MonthRow key={month.month} month={month} />

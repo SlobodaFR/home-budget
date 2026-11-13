@@ -4,14 +4,18 @@ export const aVenir: HelpSection = {
   id: 'a-venir',
   kind: 'guide',
   title: 'Ce qui est prévu',
-  summary: 'Les idées pour la suite et les limites connues de l’application, dites simplement.',
+  summary:
+    'Les idées pour la suite et les limites connues de l’application, dites simplement.',
   keywords: ['feuille de route', 'roadmap', 'futur', 'limites', 'bientôt'],
   entries: [
     {
       id: 'idees-pour-la-suite',
       title: 'Idées pour la suite',
       blocks: [
-        { type: 'paragraph', text: 'Ce sont des idées, pas des promesses : rien de tout cela n’existe encore.' },
+        {
+          type: 'paragraph',
+          text: 'Ce sont des idées, pas des promesses : rien de tout cela n’existe encore.',
+        },
         {
           type: 'list',
           items: [
@@ -24,13 +28,25 @@ export const aVenir: HelpSection = {
           ],
         },
       ],
-      keywords: ['virement', 'intelligence artificielle', 'ia', 'ticket', 'ocr', 'rappel', 'notification', 'déménagement'],
+      keywords: [
+        'virement',
+        'intelligence artificielle',
+        'ia',
+        'ticket',
+        'ocr',
+        'rappel',
+        'notification',
+        'déménagement',
+      ],
     },
     {
       id: 'limites-connues',
       title: 'Ce qui n’est pas encore éprouvé',
       blocks: [
-        { type: 'paragraph', text: 'L’application est récente. Voici, franchement, ce qui reste à confirmer :' },
+        {
+          type: 'paragraph',
+          text: 'L’application est récente. Voici, franchement, ce qui reste à confirmer :',
+        },
         {
           type: 'list',
           items: [
@@ -41,9 +57,21 @@ export const aVenir: HelpSection = {
             'Les règles officielles (plafonds, barème de crèche, délais) sont revérifiées chaque année : une règle peut avoir changé avant d’être mise à jour. La date de vérification est toujours affichée.',
           ],
         },
-        { type: 'paragraph', text: 'Si quelque chose ne se passe pas comme prévu, dites-le à la personne qui s’occupe de l’application : c’est précieux.' },
+        {
+          type: 'paragraph',
+          text: 'Si quelque chose ne se passe pas comme prévu, dites-le à la personne qui s’occupe de l’application : c’est précieux.',
+        },
       ],
-      keywords: ['limite', 'bug', 'iphone', 'ios', 'connexion', 'doublon', 'adoption', 'pas encore'],
+      keywords: [
+        'limite',
+        'bug',
+        'iphone',
+        'ios',
+        'connexion',
+        'doublon',
+        'adoption',
+        'pas encore',
+      ],
     },
     {
       id: 'ce-que-lapplication-ne-fait-pas',

@@ -9,7 +9,10 @@ import { useSpace } from '../../application/use-space';
 import { pluralize } from '../../domain/plural';
 import { mergeLearnedRules } from '../../domain/rule-keyword';
 import { dominantMonth, ImportPreview } from '../../domain/statement-import';
-import { statementSizeError, textByteLength } from '../../domain/statement-decoding';
+import {
+  statementSizeError,
+  textByteLength,
+} from '../../domain/statement-decoding';
 import { apiClient } from '../../infrastructure/api-client';
 import { AccountSelect } from '../components/AccountSelect';
 import { ChevronLeftIcon } from '../components/Icons';
@@ -45,16 +48,31 @@ function RulesSection({ spaceId }: { spaceId: string }) {
   );
 }
 
-function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string }) {
+function ImportFlow({
+  spaceId,
+  spaceName,
+}: {
+  spaceId: string;
+  spaceName: string;
+}) {
   const navigate = useNavigate();
   const toast = useToast();
   const online = useOnlineStatus();
   const { setMonth } = useSelectedMonth();
   const { notifyChanged } = useOfflineQueue();
-  const { accounts, hasSelectableAccount, defaultAccountId, rememberAccount, nameOf } = useAccounts();
+  const {
+    accounts,
+    hasSelectableAccount,
+    defaultAccountId,
+    rememberAccount,
+    nameOf,
+  } = useAccounts();
   // Tant que l'utilisateur n'a rien choisi, on suit le dernier compte retenu (les comptes peuvent charger après l'arrivée sur la page).
-  const [chosenAccount, setAccountId] = useState<string | null | undefined>(undefined);
-  const accountId = chosenAccount === undefined ? defaultAccountId() : chosenAccount;
+  const [chosenAccount, setAccountId] = useState<string | null | undefined>(
+    undefined,
+  );
+  const accountId =
+    chosenAccount === undefined ? defaultAccountId() : chosenAccount;
   const [text, setText] = useState('');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -93,7 +111,9 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
       setSubmitError(null);
       setPreview(result);
     } catch (error) {
-      setAnalyzeError(describeImportError(error, 'L’analyse du relevé a échoué.'));
+      setAnalyzeError(
+        describeImportError(error, 'L’analyse du relevé a échoué.'),
+      );
     } finally {
       analyzingRef.current = false;
       setAnalyzing(false);
@@ -117,16 +137,25 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
           }
         } catch (error) {
           setSubmitError(
-            describeImportError(error, 'Les règles à retenir n’ont pas pu être enregistrées : rien n’a été importé. Réessayez, ou décochez « Retenir ».'),
+            describeImportError(
+              error,
+              'Les règles à retenir n’ont pas pu être enregistrées : rien n’a été importé. Réessayez, ou décochez « Retenir ».',
+            ),
           );
           return;
         }
       }
       let created: number;
       try {
-        created = (await apiClient.commitImport(spaceId, items, accountId)).created;
+        created = (await apiClient.commitImport(spaceId, items, accountId))
+          .created;
       } catch (error) {
-        setSubmitError(describeImportError(error, 'L’import a échoué : rien n’a été créé, vos choix sont conservés.'));
+        setSubmitError(
+          describeImportError(
+            error,
+            'L’import a échoué : rien n’a été créé, vos choix sont conservés.',
+          ),
+        );
         return;
       }
       const month = dominantMonth(items);
@@ -137,7 +166,9 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
         rememberAccount(accountId);
       }
       notifyChanged();
-      toast.show(pluralize(created, 'opération importée', 'opérations importées'));
+      toast.show(
+        pluralize(created, 'opération importée', 'opérations importées'),
+      );
       navigate('/');
     } finally {
       submittingRef.current = false;
@@ -159,22 +190,31 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
             Changer de relevé
           </button>
         ) : (
-          <Link to="/" className="inline-flex min-h-[44px] items-center gap-1 font-body-sm text-body-sm font-semibold lg:hidden">
+          <Link
+            to="/"
+            className="inline-flex min-h-[44px] items-center gap-1 font-body-sm text-body-sm font-semibold lg:hidden"
+          >
             <ChevronLeftIcon width={18} height={18} />
             Accueil
           </Link>
         )}
-        <h2 ref={headingRef} tabIndex={-1} className="font-heading-lg text-heading-lg outline-none lg:sr-only">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="font-heading-lg text-heading-lg outline-none lg:sr-only"
+        >
           Importer un relevé
         </h2>
         <p className="font-body-sm text-body-sm text-mute">
-          Étape {step} sur 2 · {step === 1 ? 'Choisir le relevé' : 'Vérifier'} · Espace {spaceName}
+          Étape {step} sur 2 · {step === 1 ? 'Choisir le relevé' : 'Vérifier'} ·
+          Espace {spaceName}
         </p>
       </div>
 
       {preview && nameOf(accountId) && (
         <p className="rounded bg-soft-cloud p-md font-body-sm text-body-sm">
-          Les opérations importées seront rattachées au compte <span className="font-semibold">{nameOf(accountId)}</span>.
+          Les opérations importées seront rattachées au compte{' '}
+          <span className="font-semibold">{nameOf(accountId)}</span>.
         </p>
       )}
 
@@ -221,5 +261,7 @@ function ImportFlow({ spaceId, spaceName }: { spaceId: string; spaceName: string
 
 export function ImportPage() {
   const { space } = useSpace();
-  return <ImportFlow key={space.id} spaceId={space.id} spaceName={space.name} />;
+  return (
+    <ImportFlow key={space.id} spaceId={space.id} spaceName={space.name} />
+  );
 }

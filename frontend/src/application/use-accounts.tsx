@@ -1,5 +1,16 @@
-import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
-import { Account, accountName as findAccountName, activeAccounts, resolveDefaultAccount } from '../domain/account';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useMemo,
+} from 'react';
+import {
+  Account,
+  accountName as findAccountName,
+  activeAccounts,
+  resolveDefaultAccount,
+} from '../domain/account';
 import { apiClient } from '../infrastructure/api-client';
 import { preferences } from '../infrastructure/local-store';
 import { useOfflineQueue } from './use-offline-queue';
@@ -38,17 +49,30 @@ const AccountsContext = createContext<AccountsValue>({
 export function AccountsProvider({ children }: { children: ReactNode }) {
   const { space } = useSpace();
   const { dataVersion } = useOfflineQueue();
-  const resource = useResource(() => apiClient.fetchAccounts(space.id), [space.id], dataVersion);
+  const resource = useResource(
+    () => apiClient.fetchAccounts(space.id),
+    [space.id],
+    dataVersion,
+  );
   const { reload } = resource;
   const accounts = resource.data ?? NO_ACCOUNTS;
   const spaceId = space.id;
 
   const defaultAccountId = useCallback(
-    () => resolveDefaultAccount(accounts, preferences.getLastAccountId(spaceId)),
+    () =>
+      resolveDefaultAccount(accounts, preferences.getLastAccountId(spaceId)),
     [accounts, spaceId],
   );
-  const rememberAccount = useCallback((accountId: string | null) => preferences.setLastAccountId(spaceId, accountId), [spaceId]);
-  const nameOf = useCallback((accountId: string | null | undefined) => findAccountName(accounts, accountId), [accounts]);
+  const rememberAccount = useCallback(
+    (accountId: string | null) =>
+      preferences.setLastAccountId(spaceId, accountId),
+    [spaceId],
+  );
+  const nameOf = useCallback(
+    (accountId: string | null | undefined) =>
+      findAccountName(accounts, accountId),
+    [accounts],
+  );
 
   const value = useMemo<AccountsValue>(
     () => ({
@@ -61,9 +85,22 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       nameOf,
       hasSelectableAccount: activeAccounts(accounts).length > 0,
     }),
-    [accounts, resource.loading, resource.data, resource.error, reload, defaultAccountId, rememberAccount, nameOf],
+    [
+      accounts,
+      resource.loading,
+      resource.data,
+      resource.error,
+      reload,
+      defaultAccountId,
+      rememberAccount,
+      nameOf,
+    ],
   );
-  return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;
+  return (
+    <AccountsContext.Provider value={value}>
+      {children}
+    </AccountsContext.Provider>
+  );
 }
 
 export function useAccounts(): AccountsValue {

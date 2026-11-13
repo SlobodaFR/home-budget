@@ -7,19 +7,19 @@ securite, suivi mensuel).
 
 ## Fonctionnalites
 
-| Tranche | Fonctionnalite |
-| --- | --- |
-| 1 | Foyer, espace commun / espace personnel prive, 4 blocs, plan, operations, regle de contribution, PWA |
-| 2 | Import de releves bancaires (CSV) avec regles de classement et detection des doublons |
-| 3 | Paiements recurrents, previsionnel du mois, epargne de securite, conseils deterministes, aides officielles (credits d'impot garde d'enfants et services a la personne, estimateur du tarif de creche) |
-| 4 | Comptes bancaires (soldes, projection de fin de mois), commun finance par les contributions |
-| 5 | Paiements non mensuels, provisions lissees, vue des 12 mois |
-| 6 | Projets d'epargne (naissance, vacances, voiture...) avec versements |
-| 7 | Revue mensuelle guidee, export JSON et CSV des donnees |
-| 8 | Credits et dettes, simulateur de remboursement anticipe |
-| 9 | Tendances de depenses |
-| 10 | Suivi des contributions de chacun au commun |
-| 11 | Evenements de vie (naissance) : demarches sourcees, echeances, progression |
+| Tranche | Fonctionnalite                                                                                                                                                                                        |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1       | Foyer, espace commun / espace personnel prive, 4 blocs, plan, operations, regle de contribution, PWA                                                                                                  |
+| 2       | Import de releves bancaires (CSV) avec regles de classement et detection des doublons                                                                                                                 |
+| 3       | Paiements recurrents, previsionnel du mois, epargne de securite, conseils deterministes, aides officielles (credits d'impot garde d'enfants et services a la personne, estimateur du tarif de creche) |
+| 4       | Comptes bancaires (soldes, projection de fin de mois), commun finance par les contributions                                                                                                           |
+| 5       | Paiements non mensuels, provisions lissees, vue des 12 mois                                                                                                                                           |
+| 6       | Projets d'epargne (naissance, vacances, voiture...) avec versements                                                                                                                                   |
+| 7       | Revue mensuelle guidee, export JSON et CSV des donnees                                                                                                                                                |
+| 8       | Credits et dettes, simulateur de remboursement anticipe                                                                                                                                               |
+| 9       | Tendances de depenses                                                                                                                                                                                 |
+| 10      | Suivi des contributions de chacun au commun                                                                                                                                                           |
+| 11      | Evenements de vie (naissance) : demarches sourcees, echeances, progression                                                                                                                            |
 
 Le contrat de l'API est dans [`docs/api.md`](docs/api.md) ; la feuille de route et les limites connues dans
 [`docs/ROADMAP.md`](docs/ROADMAP.md). Les regles officielles (plafonds, delais, baremes) sont du code versionne
@@ -69,27 +69,27 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 
 ## Variables d'environnement (backend)
 
-| Variable | Requis | Defaut | Description |
-| --- | --- | --- | --- |
-| `AUTH_MODE` | non | `oauth` | `oauth` (auth.sloboda.fr) ou `dev` (connexion factice alice/bob, refuse de demarrer en production). |
-| `DEV_AUTH_SECRET` | non | - | Mode dev : secret de signature des jetons factices. |
-| `PERSONAL_DATA_KEY` | prod | - | Cle maitre (32 octets : 64 caracteres hexadecimaux ou base64) du chiffrement de l'espace personnel. Obligatoire en production. |
-| `AUTH_SERVICE_URL` | oui (oauth) | - | Base URL du service d'authentification central (`https://auth.sloboda.fr`). |
-| `AUTH_CLIENT_ID` | oui | - | Identifiant client OAuth2 enregistre aupres d'auth-service. |
-| `AUTH_CLIENT_SECRET` | oui | - | Secret client OAuth2 correspondant. |
-| `AUTH_WEBHOOK_SECRET` | oui | - | Secret partage pour le webhook `POST /api/auth/disconnect?secret=...` (serveur a serveur). |
-| `FRONTEND_URL` | non | `http://localhost:3000` | Base URL du frontend, utilisee pour le `redirect_uri` OAuth2 et la redirection apres connexion. |
-| `DATABASE_PATH` | non | - | Chemin du fichier SQLite. |
-| `NODE_ENV` | non | - | `production` active le flag `secure` sur le cookie de session. |
-| `PORT` | non | `3000` | Port d'ecoute du serveur. |
-| `OCR_ENGINE` | non | `tesseract` | Moteur d'OCR de l'import de contrat de pret (seul `tesseract` est disponible ; toute autre valeur est ignoree avec un avertissement). |
-| `OCR_LANG` | non | `fra` | Langue(s) tesseract de l'OCR (`fra`, ou `fra+eng`). Sans le binaire `tesseract`, `pdftotext` ou cette langue, l'import est desactive (`GET /api/debt-extractions/capabilities` renvoie `available: false`). |
-| `MINIO_ENDPOINT` | non | - | URL du serveur MinIO (S3-compatible). |
-| `MINIO_BUCKET` | non | - | Bucket de destination. Si defini, active la replication Litestream de la DB SQLite. |
-| `MINIO_REPLICA_PATH` | non | `foyer-budget` | Prefixe du chemin de replication dans le bucket. |
-| `MINIO_REGION` | non | `us-east-1` | Region S3 (requise par le SDK, peu importante pour MinIO). |
-| `MINIO_ACCESS_KEY_ID` | non | - | Cle d'acces MinIO. |
-| `MINIO_SECRET_ACCESS_KEY` | non | - | Cle secrete MinIO. |
+| Variable                  | Requis      | Defaut                  | Description                                                                                                                                                                                                 |
+| ------------------------- | ----------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AUTH_MODE`               | non         | `oauth`                 | `oauth` (auth.sloboda.fr) ou `dev` (connexion factice alice/bob, refuse de demarrer en production).                                                                                                         |
+| `DEV_AUTH_SECRET`         | non         | -                       | Mode dev : secret de signature des jetons factices.                                                                                                                                                         |
+| `PERSONAL_DATA_KEY`       | prod        | -                       | Cle maitre (32 octets : 64 caracteres hexadecimaux ou base64) du chiffrement de l'espace personnel. Obligatoire en production.                                                                              |
+| `AUTH_SERVICE_URL`        | oui (oauth) | -                       | Base URL du service d'authentification central (`https://auth.sloboda.fr`).                                                                                                                                 |
+| `AUTH_CLIENT_ID`          | oui         | -                       | Identifiant client OAuth2 enregistre aupres d'auth-service.                                                                                                                                                 |
+| `AUTH_CLIENT_SECRET`      | oui         | -                       | Secret client OAuth2 correspondant.                                                                                                                                                                         |
+| `AUTH_WEBHOOK_SECRET`     | oui         | -                       | Secret partage pour le webhook `POST /api/auth/disconnect?secret=...` (serveur a serveur).                                                                                                                  |
+| `FRONTEND_URL`            | non         | `http://localhost:3000` | Base URL du frontend, utilisee pour le `redirect_uri` OAuth2 et la redirection apres connexion.                                                                                                             |
+| `DATABASE_PATH`           | non         | -                       | Chemin du fichier SQLite.                                                                                                                                                                                   |
+| `NODE_ENV`                | non         | -                       | `production` active le flag `secure` sur le cookie de session.                                                                                                                                              |
+| `PORT`                    | non         | `3000`                  | Port d'ecoute du serveur.                                                                                                                                                                                   |
+| `OCR_ENGINE`              | non         | `tesseract`             | Moteur d'OCR de l'import de contrat de pret (seul `tesseract` est disponible ; toute autre valeur est ignoree avec un avertissement).                                                                       |
+| `OCR_LANG`                | non         | `fra`                   | Langue(s) tesseract de l'OCR (`fra`, ou `fra+eng`). Sans le binaire `tesseract`, `pdftotext` ou cette langue, l'import est desactive (`GET /api/debt-extractions/capabilities` renvoie `available: false`). |
+| `MINIO_ENDPOINT`          | non         | -                       | URL du serveur MinIO (S3-compatible).                                                                                                                                                                       |
+| `MINIO_BUCKET`            | non         | -                       | Bucket de destination. Si defini, active la replication Litestream de la DB SQLite.                                                                                                                         |
+| `MINIO_REPLICA_PATH`      | non         | `foyer-budget`          | Prefixe du chemin de replication dans le bucket.                                                                                                                                                            |
+| `MINIO_REGION`            | non         | `us-east-1`             | Region S3 (requise par le SDK, peu importante pour MinIO).                                                                                                                                                  |
+| `MINIO_ACCESS_KEY_ID`     | non         | -                       | Cle d'acces MinIO.                                                                                                                                                                                          |
+| `MINIO_SECRET_ACCESS_KEY` | non         | -                       | Cle secrete MinIO.                                                                                                                                                                                          |
 
 En production (`NODE_ENV=production`), le service refuse de demarrer si `AUTH_MODE` n'est pas `oauth`,
 si `AUTH_SERVICE_URL` ou `FRONTEND_URL` n'est pas une URL https, si `AUTH_CLIENT_ID`, `AUTH_CLIENT_SECRET` ou

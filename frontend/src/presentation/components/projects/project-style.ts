@@ -1,6 +1,18 @@
 import { ComponentType, SVGProps } from 'react';
 import { ProjectKind, ProjectStatus } from '../../../domain/project';
-import { AlertIcon, ArrowDownIcon, ArrowUpIcon, BabyIcon, CarIcon, CheckIcon, FlagIcon, GraduationIcon, HomeIcon, SunIcon, TargetIcon } from '../Icons';
+import {
+  AlertIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  BabyIcon,
+  CarIcon,
+  CheckIcon,
+  FlagIcon,
+  GraduationIcon,
+  HomeIcon,
+  SunIcon,
+  TargetIcon,
+} from '../Icons';
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -23,9 +35,21 @@ export interface StatusStyle {
 }
 
 export const STATUS_STYLE: Record<ProjectStatus, StatusStyle> = {
-  DONE: { icon: FlagIcon, badge: 'bg-success/10 text-success', bar: 'bg-success' },
-  AHEAD: { icon: ArrowUpIcon, badge: 'bg-success/10 text-success', bar: 'bg-success' },
+  DONE: {
+    icon: FlagIcon,
+    badge: 'bg-success/10 text-success',
+    bar: 'bg-success',
+  },
+  AHEAD: {
+    icon: ArrowUpIcon,
+    badge: 'bg-success/10 text-success',
+    bar: 'bg-success',
+  },
   ON_TRACK: { icon: CheckIcon, badge: 'bg-fixe/10 text-fixe', bar: 'bg-fixe' },
-  BEHIND: { icon: ArrowDownIcon, badge: 'bg-plaisir/15 text-ink', bar: 'bg-plaisir' },
+  BEHIND: {
+    icon: ArrowDownIcon,
+    badge: 'bg-plaisir/15 text-ink',
+    bar: 'bg-plaisir',
+  },
   LATE: { icon: AlertIcon, badge: 'bg-error/10 text-error', bar: 'bg-error' },
 };

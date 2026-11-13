@@ -15,14 +15,22 @@ interface Props<T extends string> {
 }
 
 export const tabId = (idPrefix: string, id: string) => `${idPrefix}-tab-${id}`;
-export const panelId = (idPrefix: string, id: string) => `${idPrefix}-panel-${id}`;
+export const panelId = (idPrefix: string, id: string) =>
+  `${idPrefix}-panel-${id}`;
 
 /** Onglets internes d'une page : flèches gauche/droite pour passer de l'un à l'autre, cibles de 48 px. */
-export function SegmentedTabs<T extends string>({ label, idPrefix, options, value, onChange }: Props<T>) {
+export function SegmentedTabs<T extends string>({
+  label,
+  idPrefix,
+  options,
+  value,
+  onChange,
+}: Props<T>) {
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const handleKeyDown = (event: KeyboardEvent, index: number) => {
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    const step =
+      event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (step === 0) {
       return;
     }
@@ -33,7 +41,11 @@ export function SegmentedTabs<T extends string>({ label, idPrefix, options, valu
   };
 
   return (
-    <div role="tablist" aria-label={label} className="grid grid-cols-3 rounded-full bg-soft-cloud p-1 lg:max-w-[520px]">
+    <div
+      role="tablist"
+      aria-label={label}
+      className="grid grid-cols-3 rounded-full bg-soft-cloud p-1 lg:max-w-[520px]"
+    >
       {options.map((option, index) => {
         const selected = option.id === value;
         return (

@@ -39,7 +39,8 @@ export function buildTransactionPayload(
   if (values.amount.trim() === '') {
     errors.amount = 'Saisissez un montant.';
   } else if (amountCents === null) {
-    errors.amount = 'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 12,50).';
+    errors.amount =
+      'Montant invalide : utilisez des chiffres et au plus 2 décimales (ex. 12,50).';
   } else if (amountCents === 0) {
     errors.amount = 'Le montant doit être supérieur à 0.';
   }
@@ -52,9 +53,13 @@ export function buildTransactionPayload(
     return { ok: false, errors };
   }
 
-  const label = values.label.trim().slice(0, MAX_LABEL_LENGTH) || defaultLabel(values.kind, values.bloc);
+  const label =
+    values.label.trim().slice(0, MAX_LABEL_LENGTH) ||
+    defaultLabel(values.kind, values.bloc);
   const date =
-    original && original.date.slice(0, 10) === values.date ? original.date : toApiDate(values.date, now);
+    original && original.date.slice(0, 10) === values.date
+      ? original.date
+      : toApiDate(values.date, now);
   const payload: TransactionPayload =
     values.kind === 'EXPENSE'
       ? { kind: 'EXPENSE', bloc: values.bloc, label, amountCents, date }

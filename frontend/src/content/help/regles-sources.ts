@@ -1,4 +1,8 @@
-import { HelpSection, HELP_SOURCES_DISCLAIMER, HELP_SOURCES_SECTION_ID } from '../../domain/help';
+import {
+  HelpSection,
+  HELP_SOURCES_DISCLAIMER,
+  HELP_SOURCES_SECTION_ID,
+} from '../../domain/help';
 
 const REFERENCES_GROUP = 'Repères et barèmes';
 
@@ -11,7 +15,8 @@ export const reglesSources: HelpSection = {
   id: HELP_SOURCES_SECTION_ID,
   kind: 'sources',
   title: 'Règles officielles et sources',
-  summary: 'Les règles utilisées par l’application, ce qu’elles font, leur source officielle et la date à laquelle elles ont été vérifiées.',
+  summary:
+    'Les règles utilisées par l’application, ce qu’elles font, leur source officielle et la date à laquelle elles ont été vérifiées.',
   keywords: ['plafond', 'taux', 'barème', 'source', 'officiel', 'vérifié'],
   disclaimer: HELP_SOURCES_DISCLAIMER,
   entries: [
@@ -29,8 +34,19 @@ export const reglesSources: HelpSection = {
           text: 'C’est un repère pédagogique courant, pas une règle de droit : l’application ne l’impose à personne, et votre banque peut raisonner autrement.',
         },
       ],
-      keywords: ['dette', 'endettement', 'crédit', 'taux d’endettement', 'mensualités'],
-      source: { label: 'Repère du cours de finances familiales (pas une source officielle)', url: null, verifiedOn: null },
+      keywords: [
+        'dette',
+        'endettement',
+        'crédit',
+        'taux d’endettement',
+        'mensualités',
+      ],
+      source: {
+        label:
+          'Repère du cours de finances familiales (pas une source officielle)',
+        url: null,
+        verifiedOn: null,
+      },
     },
     {
       id: 'bareme-creche-psu',
@@ -53,7 +69,16 @@ export const reglesSources: HelpSection = {
           text: 'À confirmer chaque année : le plancher et le plafond changent, et une crèche peut appliquer un plafond plus élevé. Votre crèche reste seule à fixer le tarif exact.',
         },
       ],
-      keywords: ['crèche', 'psu', 'caf', 'tarif', 'taux d’effort', 'plancher', 'plafond', 'ressources'],
+      keywords: [
+        'crèche',
+        'psu',
+        'caf',
+        'tarif',
+        'taux d’effort',
+        'plancher',
+        'plafond',
+        'ressources',
+      ],
       source: {
         label: 'caf.fr, guide de la prestation de service unique (PSU) 2026',
         url: 'https://www.caf.fr/sites/default/files/medias/493/Partenaires/Petite-enfance/EAJE/Guide_PSU_2026_02_V_Def.pdf',

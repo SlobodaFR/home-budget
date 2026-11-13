@@ -24,7 +24,8 @@ export interface Provisions {
   totalNextTwelveMonthsCents: number;
 }
 
-const isCents = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+const isCents = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
 
 /** Lit la réponse du serveur sans jamais planter : les lignes illisibles sont ignorées, les totaux manquants recalculés. */
 export function parseProvisions(raw: unknown): Provisions {
@@ -33,19 +34,32 @@ export function parseProvisions(raw: unknown): Provisions {
   const items: ProvisionItem[] = [];
   for (const entry of list) {
     const item = (entry ?? {}) as Record<string, unknown>;
-    if (typeof item.recurringId !== 'string' || typeof item.label !== 'string' || !isCents(item.amountCents)) {
+    if (
+      typeof item.recurringId !== 'string' ||
+      typeof item.label !== 'string' ||
+      !isCents(item.amountCents)
+    ) {
       continue;
     }
     items.push({
       recurringId: item.recurringId,
       label: item.label,
       bloc: isBloc(item.bloc) ? item.bloc : null,
-      frequency: item.frequency === 'QUARTERLY' || item.frequency === 'YEARLY' ? item.frequency : null,
+      frequency:
+        item.frequency === 'QUARTERLY' || item.frequency === 'YEARLY'
+          ? item.frequency
+          : null,
       amountCents: item.amountCents,
       nextDueDate: typeof item.nextDueDate === 'string' ? item.nextDueDate : '',
-      monthsUntilDue: isCents(item.monthsUntilDue) ? Math.max(0, Math.trunc(item.monthsUntilDue)) : 0,
-      monthlyProvisionCents: isCents(item.monthlyProvisionCents) ? item.monthlyProvisionCents : 0,
-      provisionedSoFarCents: isCents(item.provisionedSoFarCents) ? item.provisionedSoFarCents : null,
+      monthsUntilDue: isCents(item.monthsUntilDue)
+        ? Math.max(0, Math.trunc(item.monthsUntilDue))
+        : 0,
+      monthlyProvisionCents: isCents(item.monthlyProvisionCents)
+        ? item.monthlyProvisionCents
+        : 0,
+      provisionedSoFarCents: isCents(item.provisionedSoFarCents)
+        ? item.provisionedSoFarCents
+        : null,
     });
   }
   const sorted = sortProvisions(items);
@@ -55,12 +69,16 @@ export function parseProvisions(raw: unknown): Provisions {
     totalMonthlyProvisionCents: isCents(source.totalMonthlyProvisionCents)
       ? source.totalMonthlyProvisionCents
       : sorted.reduce((sum, item) => sum + item.monthlyProvisionCents, 0),
-    totalNextTwelveMonthsCents: isCents(source.totalNextTwelveMonthsCents) ? source.totalNextTwelveMonthsCents : 0,
+    totalNextTwelveMonthsCents: isCents(source.totalNextTwelveMonthsCents)
+      ? source.totalNextTwelveMonthsCents
+      : 0,
   };
 }
 
 /** Par prochaine échéance croissante (le serveur trie déjà : on ne s'y fie pas). Une date illisible passe en dernier. */
-export function sortProvisions(items: readonly ProvisionItem[]): ProvisionItem[] {
+export function sortProvisions(
+  items: readonly ProvisionItem[],
+): ProvisionItem[] {
   return [...items].sort((a, b) => {
     if (a.nextDueDate === b.nextDueDate) {
       return a.label.localeCompare(b.label, 'fr');
@@ -84,7 +102,9 @@ export function describeMonthsUntil(months: number): string {
 }
 
 /** Mois d'une échéance `AAAA-MM-JJ`, ou `null`. */
-export function dueMonthOf(item: Pick<ProvisionItem, 'nextDueDate'>): number | null {
+export function dueMonthOf(
+  item: Pick<ProvisionItem, 'nextDueDate'>,
+): number | null {
   const month = Number(item.nextDueDate.slice(5, 7));
   return isMonthOfYear(month) ? month : null;
 }

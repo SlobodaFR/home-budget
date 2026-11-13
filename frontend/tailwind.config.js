@@ -1,4 +1,14 @@
-const sans = ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'];
+const sans = [
+  'Inter',
+  'ui-sans-serif',
+  'system-ui',
+  '-apple-system',
+  'Segoe UI',
+  'Roboto',
+  'Helvetica Neue',
+  'Arial',
+  'sans-serif',
+];
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -46,19 +56,31 @@ export default {
         'body-sm': sans,
       },
       fontSize: {
-        'label-caps': ['12px', { lineHeight: '1.2', letterSpacing: '0.05em', fontWeight: '700' }],
+        'label-caps': [
+          '12px',
+          { lineHeight: '1.2', letterSpacing: '0.05em', fontWeight: '700' },
+        ],
         'heading-lg': ['24px', { lineHeight: '1.2', fontWeight: '600' }],
         'body-md': ['16px', { lineHeight: '1.5', fontWeight: '400' }],
         'heading-xl': ['32px', { lineHeight: '1.2', fontWeight: '700' }],
-        'display-campaign-mobile': ['56px', { lineHeight: '0.9', fontWeight: '500' }],
+        'display-campaign-mobile': [
+          '56px',
+          { lineHeight: '0.9', fontWeight: '500' },
+        ],
         'display-campaign': ['96px', { lineHeight: '0.9', fontWeight: '500' }],
         'button-md': ['16px', { lineHeight: '1.5', fontWeight: '600' }],
         'body-sm': ['14px', { lineHeight: '1.4', fontWeight: '400' }],
       },
       keyframes: {
-        'sheet-up': { from: { transform: 'translateY(24px)', opacity: '0' }, to: { transform: 'translateY(0)', opacity: '1' } },
+        'sheet-up': {
+          from: { transform: 'translateY(24px)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
-        'modal-in': { from: { transform: 'translateY(8px) scale(0.98)', opacity: '0' }, to: { transform: 'translateY(0) scale(1)', opacity: '1' } },
+        'modal-in': {
+          from: { transform: 'translateY(8px) scale(0.98)', opacity: '0' },
+          to: { transform: 'translateY(0) scale(1)', opacity: '1' },
+        },
       },
       animation: {
         'sheet-up': 'sheet-up 180ms ease-out',

@@ -13,6 +13,8 @@ export function LessonLink({ lesson }: { lesson: number }) {
       {reference.label}
     </a>
   ) : (
-    <span className="font-body-sm text-body-sm font-semibold text-mute">{reference.label}</span>
+    <span className="font-body-sm text-body-sm font-semibold text-mute">
+      {reference.label}
+    </span>
   );
 }

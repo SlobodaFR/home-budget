@@ -1,4 +1,7 @@
-import { describeError, isOfflineError } from '../../../application/error-message';
+import {
+  describeError,
+  isOfflineError,
+} from '../../../application/error-message';
 import { useProvisions } from '../../../application/use-provisions';
 import { ErrorNotice, OfflineNotice } from '../ErrorNotice';
 import { LoadingScreen } from '../LoadingScreen';
@@ -17,10 +20,23 @@ export function ProvisionsPanel({ spaceId, refreshToken, onAdd }: Props) {
     return <ProvisionsView provisions={provisions.data} onAdd={onAdd} />;
   }
   if (isOfflineError(provisions.error)) {
-    return <OfflineNotice message="Hors ligne : les provisions reviendront avec le réseau." onRetry={provisions.reload} />;
+    return (
+      <OfflineNotice
+        message="Hors ligne : les provisions reviendront avec le réseau."
+        onRetry={provisions.reload}
+      />
+    );
   }
   if (provisions.error) {
-    return <ErrorNotice message={describeError(provisions.error, 'Impossible de calculer les provisions.')} onRetry={provisions.reload} />;
+    return (
+      <ErrorNotice
+        message={describeError(
+          provisions.error,
+          'Impossible de calculer les provisions.',
+        )}
+        onRetry={provisions.reload}
+      />
+    );
   }
   return <LoadingScreen />;
 }

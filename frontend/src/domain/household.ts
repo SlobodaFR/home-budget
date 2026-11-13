@@ -47,24 +47,41 @@ export interface Invitation {
   expiresAt: string;
 }
 
-export const CONTRIBUTION_MODES: readonly ContributionMode[] = ['EQUAL', 'PROPORTIONAL', 'EQUAL_REMAINDER'];
+export const CONTRIBUTION_MODES: readonly ContributionMode[] = [
+  'EQUAL',
+  'PROPORTIONAL',
+  'EQUAL_REMAINDER',
+];
 
-export const CONTRIBUTION_MODE_INFO: Record<ContributionMode, { label: string; description: string }> = {
-  EQUAL: { label: 'Moitié-moitié', description: 'Chacun verse la même somme pour le commun.' },
+export const CONTRIBUTION_MODE_INFO: Record<
+  ContributionMode,
+  { label: string; description: string }
+> = {
+  EQUAL: {
+    label: 'Moitié-moitié',
+    description: 'Chacun verse la même somme pour le commun.',
+  },
   PROPORTIONAL: {
     label: 'Au prorata des revenus',
-    description: 'Chacun verse une part du commun proportionnelle à ce qu’il gagne.',
+    description:
+      'Chacun verse une part du commun proportionnelle à ce qu’il gagne.',
   },
   EQUAL_REMAINDER: {
     label: 'Même reste pour chacun',
-    description: 'Chacun verse ce qu’il faut pour qu’il reste autant à tous une fois le commun financé.',
+    description:
+      'Chacun verse ce qu’il faut pour qu’il reste autant à tous une fois le commun financé.',
   },
 };
 
-export function findSpace(household: Household, kind: SpaceKind): Space | undefined {
+export function findSpace(
+  household: Household,
+  kind: SpaceKind,
+): Space | undefined {
   return household.spaces.find((space) => space.kind === kind);
 }
 
 export function membersMissingIncome(household: Household): Member[] {
-  return household.members.filter((member) => member.netMonthlyIncomeCents === null);
+  return household.members.filter(
+    (member) => member.netMonthlyIncomeCents === null,
+  );
 }

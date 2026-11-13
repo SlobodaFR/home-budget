@@ -37,7 +37,9 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
     await user.click(screen.getByRole('button', { name: 'Ouvrir' }));
     const dialog = screen.getByRole('dialog', { name: 'Ma feuille' });
     expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(screen.getByRole('heading', { level: 2, name: 'Ma feuille' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Ma feuille' }),
+    ).toBeInTheDocument();
   });
 
   it('is a bottom sheet by default and a centred, rounded modal with its own scroll from `md`', async () => {
@@ -52,7 +54,9 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
     expect(dialog.className).toContain('md:max-h-[88dvh]');
     expect(dialog.parentElement?.className).toContain('items-end');
     expect(dialog.parentElement?.className).toContain('md:items-center');
-    expect(screen.getByTestId('sheet-backdrop').className).toContain('bg-ink/40');
+    expect(screen.getByTestId('sheet-backdrop').className).toContain(
+      'bg-ink/40',
+    );
   });
 
   it('closes with Escape', async () => {
@@ -111,7 +115,9 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
     expect(close).toHaveFocus();
     await user.tab({ shift: true });
     expect(validate).toHaveFocus();
-    expect(screen.getByRole('button', { name: 'Autre bouton' })).not.toHaveFocus();
+    expect(
+      screen.getByRole('button', { name: 'Autre bouton' }),
+    ).not.toHaveFocus();
   });
 
   it('pulls the focus back when something outside the dialog receives it', async () => {
@@ -119,7 +125,9 @@ describe('BottomSheet (feuille du bas sur mobile, fenêtre modale dès 768 px)',
     render(<Host />);
     await user.click(screen.getByRole('button', { name: 'Ouvrir' }));
     screen.getByRole('button', { name: 'Autre bouton' }).focus();
-    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(
+      true,
+    );
   });
 
   it('gives the focus back to the element that opened it', async () => {

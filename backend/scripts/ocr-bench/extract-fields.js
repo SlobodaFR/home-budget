@@ -3,7 +3,9 @@
 // et écrit { id: { fields, warnings } } sur la sortie. Usage : node extract-fields.js <dist>
 // où <dist> est le dossier compilé (backend/dist, après `npm run build`).
 const path = require('path');
-const dist = path.resolve(process.argv[2] || path.join(__dirname, '../../dist'));
+const dist = path.resolve(
+  process.argv[2] || path.join(__dirname, '../../dist'),
+);
 const { extractContractFields } = require(
   path.join(dist, 'domain/contract-extraction/contract-extractor.js'),
 );

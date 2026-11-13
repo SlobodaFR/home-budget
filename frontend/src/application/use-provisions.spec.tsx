@@ -4,14 +4,21 @@ import { ApiError } from '../infrastructure/api-client';
 import { useProvisions } from './use-provisions';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchProvisions: vi.fn<ApiMock<'fetchProvisions'>>() }));
+const api = vi.hoisted(() => ({
+  fetchProvisions: vi.fn<ApiMock<'fetchProvisions'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
   apiClient: api,
 }));
 
-const provisions = { asOf: '2026-10-30', items: [], totalMonthlyProvisionCents: 0, totalNextTwelveMonthsCents: 0 };
+const provisions = {
+  asOf: '2026-10-30',
+  items: [],
+  totalMonthlyProvisionCents: 0,
+  totalNextTwelveMonthsCents: 0,
+};
 
 describe('useProvisions', () => {
   beforeEach(() => {
@@ -27,17 +34,24 @@ describe('useProvisions', () => {
   });
 
   it('reloads when the token changes (a recurring payment was edited)', async () => {
-    const { result, rerender } = renderHook(({ token }) => useProvisions('s-common', token), { initialProps: { token: 0 } });
+    const { result, rerender } = renderHook(
+      ({ token }) => useProvisions('s-common', token),
+      { initialProps: { token: 0 } },
+    );
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ token: 1 });
     await waitFor(() => expect(api.fetchProvisions).toHaveBeenCalledTimes(2));
   });
 
   it('loads another space', async () => {
-    const { result, rerender } = renderHook(({ id }) => useProvisions(id), { initialProps: { id: 's-common' } });
+    const { result, rerender } = renderHook(({ id }) => useProvisions(id), {
+      initialProps: { id: 's-common' },
+    });
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ id: 's-alice' });
-    await waitFor(() => expect(api.fetchProvisions).toHaveBeenLastCalledWith('s-alice'));
+    await waitFor(() =>
+      expect(api.fetchProvisions).toHaveBeenLastCalledWith('s-alice'),
+    );
   });
 
   it('exposes the error and can retry', async () => {

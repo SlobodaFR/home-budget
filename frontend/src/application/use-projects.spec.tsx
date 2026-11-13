@@ -5,7 +5,10 @@ import { project } from '../test/fixtures';
 import { useProjects, useProjectsSummary } from './use-projects';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchProjects: vi.fn<ApiMock<'fetchProjects'>>(), fetchProjectsSummary: vi.fn<ApiMock<'fetchProjectsSummary'>>() }));
+const api = vi.hoisted(() => ({
+  fetchProjects: vi.fn<ApiMock<'fetchProjects'>>(),
+  fetchProjectsSummary: vi.fn<ApiMock<'fetchProjectsSummary'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
@@ -17,7 +20,12 @@ describe('useProjects', () => {
     api.fetchProjects.mockReset();
     api.fetchProjectsSummary.mockReset();
     api.fetchProjects.mockResolvedValue([project()]);
-    api.fetchProjectsSummary.mockResolvedValue({ totalMonthlyNeededCents: 32500, plannedEpargneCents: 20000, gapCents: 12500, activeCount: 1 });
+    api.fetchProjectsSummary.mockResolvedValue({
+      totalMonthlyNeededCents: 32500,
+      plannedEpargneCents: 20000,
+      gapCents: 12500,
+      activeCount: 1,
+    });
   });
 
   it('loads the projects of the space', async () => {
@@ -28,12 +36,17 @@ describe('useProjects', () => {
   });
 
   it('reloads when the token changes and when the space changes', async () => {
-    const { result, rerender } = renderHook(({ id, token }) => useProjects(id, token), { initialProps: { id: 's-common', token: 0 } });
+    const { result, rerender } = renderHook(
+      ({ id, token }) => useProjects(id, token),
+      { initialProps: { id: 's-common', token: 0 } },
+    );
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ id: 's-common', token: 1 });
     await waitFor(() => expect(api.fetchProjects).toHaveBeenCalledTimes(2));
     rerender({ id: 's-alice', token: 1 });
-    await waitFor(() => expect(api.fetchProjects).toHaveBeenLastCalledWith('s-alice'));
+    await waitFor(() =>
+      expect(api.fetchProjects).toHaveBeenLastCalledWith('s-alice'),
+    );
   });
 
   it('turns a failing or missing client method into an error state, never a crash', async () => {
@@ -43,7 +56,9 @@ describe('useProjects', () => {
     const original = api.fetchProjects;
     api.fetchProjects = undefined as never;
     const missing = renderHook(() => useProjects('s-common'));
-    await waitFor(() => expect(missing.result.current.error).toBeInstanceOf(TypeError));
+    await waitFor(() =>
+      expect(missing.result.current.error).toBeInstanceOf(TypeError),
+    );
     api.fetchProjects = original;
   });
 

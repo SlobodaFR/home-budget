@@ -21,11 +21,19 @@ const payload: TransactionPayload = {
   date: '2026-10-03T00:00:00.000Z',
 };
 
-const item = (id: string, spaceId = 'space-1'): PendingTransaction => createPendingTransaction(spaceId, payload, id, new Date('2026-10-03T10:00:00Z'));
+const item = (id: string, spaceId = 'space-1'): PendingTransaction =>
+  createPendingTransaction(
+    spaceId,
+    payload,
+    id,
+    new Date('2026-10-03T10:00:00Z'),
+  );
 
 describe('queue basics', () => {
   it('appends items in order', () => {
-    expect(enqueue(enqueue([], item('a')), item('b')).map((entry) => entry.clientId)).toEqual(['a', 'b']);
+    expect(
+      enqueue(enqueue([], item('a')), item('b')).map((entry) => entry.clientId),
+    ).toEqual(['a', 'b']);
   });
 
   it('never enqueues the same client id twice', () => {
@@ -34,13 +42,24 @@ describe('queue basics', () => {
   });
 
   it('removes an item by client id', () => {
-    expect(removeFromQueue([item('a'), item('b')], 'a').map((entry) => entry.clientId)).toEqual(['b']);
+    expect(
+      removeFromQueue([item('a'), item('b')], 'a').map(
+        (entry) => entry.clientId,
+      ),
+    ).toEqual(['b']);
   });
 
   it('keeps only the items of a space and month', () => {
     const other = { ...item('c', 'space-2') };
-    const november = { ...item('d'), payload: { ...payload, date: '2026-11-01T00:00:00.000Z' } };
-    expect(pendingForMonth([item('a'), other, november], 'space-1', '2026-10').map((entry) => entry.clientId)).toEqual(['a']);
+    const november = {
+      ...item('d'),
+      payload: { ...payload, date: '2026-11-01T00:00:00.000Z' },
+    };
+    expect(
+      pendingForMonth([item('a'), other, november], 'space-1', '2026-10').map(
+        (entry) => entry.clientId,
+      ),
+    ).toEqual(['a']);
   });
 });
 
@@ -54,7 +73,9 @@ describe('persistence', () => {
     expect(parseQueue(null)).toEqual([]);
     expect(parseQueue('{not json')).toEqual([]);
     expect(parseQueue('{"a":1}')).toEqual([]);
-    expect(parseQueue(JSON.stringify([item('a'), { clientId: 'x' }, null, 3]))).toEqual([item('a')]);
+    expect(
+      parseQueue(JSON.stringify([item('a'), { clientId: 'x' }, null, 3])),
+    ).toEqual([item('a')]);
   });
 
   it('drops duplicated client ids found in storage', () => {
@@ -64,11 +85,18 @@ describe('persistence', () => {
 
 describe('bank account in queued operations', () => {
   const withAccount = (accountId: string | null) =>
-    createPendingTransaction('space-1', { ...payload, accountId }, 'a', new Date('2026-10-03T10:00:00Z'));
+    createPendingTransaction(
+      'space-1',
+      { ...payload, accountId },
+      'a',
+      new Date('2026-10-03T10:00:00Z'),
+    );
 
   it('keeps the account through serialisation', () => {
     const queue = [withAccount('acc-1')];
-    expect(parseQueue(serializeQueue(queue))[0].payload.accountId).toBe('acc-1');
+    expect(parseQueue(serializeQueue(queue))[0].payload.accountId).toBe(
+      'acc-1',
+    );
   });
 
   it('keeps an explicit « no account » and an old item without the field', () => {
@@ -78,7 +106,11 @@ describe('bank account in queued operations', () => {
 
   it('drops an item whose account id is not a string', () => {
     const broken = { ...item('x'), payload: { ...payload, accountId: 42 } };
-    expect(parseQueue(JSON.stringify([broken, item('ok')])).map((entry) => entry.clientId)).toEqual(['ok']);
+    expect(
+      parseQueue(JSON.stringify([broken, item('ok')])).map(
+        (entry) => entry.clientId,
+      ),
+    ).toEqual(['ok']);
   });
 });
 
@@ -97,9 +129,14 @@ describe('classifyFailure', () => {
 
 describe('flushQueue', () => {
   it('sends every item once, in order, and empties the queue', async () => {
-    const send = vi.fn<(entry: PendingTransaction) => Promise<SendOutcome>>().mockResolvedValue('sent');
+    const send = vi
+      .fn<(entry: PendingTransaction) => Promise<SendOutcome>>()
+      .mockResolvedValue('sent');
     const result = await flushQueue([item('a'), item('b')], { send });
-    expect(send.mock.calls.map(([entry]) => entry.clientId)).toEqual(['a', 'b']);
+    expect(send.mock.calls.map(([entry]) => entry.clientId)).toEqual([
+      'a',
+      'b',
+    ]);
     expect(result.sent).toHaveLength(2);
     expect(result.remaining).toEqual([]);
   });
@@ -109,7 +146,9 @@ describe('flushQueue', () => {
       .fn<(entry: PendingTransaction) => Promise<SendOutcome>>()
       .mockResolvedValueOnce('sent')
       .mockResolvedValueOnce('retry');
-    const result = await flushQueue([item('a'), item('b'), item('c')], { send });
+    const result = await flushQueue([item('a'), item('b'), item('c')], {
+      send,
+    });
     expect(send).toHaveBeenCalledTimes(2);
     expect(result.sent.map((entry) => entry.clientId)).toEqual(['a']);
     expect(result.remaining.map((entry) => entry.clientId)).toEqual(['b', 'c']);
@@ -132,13 +171,20 @@ describe('flushQueue', () => {
       .fn<(entry: PendingTransaction) => Promise<SendOutcome>>()
       .mockResolvedValueOnce('sent')
       .mockResolvedValueOnce('retry');
-    await flushQueue([item('a'), item('b')], { send, onSettled: (entry) => settled.push(entry.clientId) });
+    await flushQueue([item('a'), item('b')], {
+      send,
+      onSettled: (entry) => settled.push(entry.clientId),
+    });
     expect(settled).toEqual(['a']);
   });
 
   it('does nothing on an empty queue', async () => {
     const send = vi.fn<(item: PendingTransaction) => Promise<SendOutcome>>();
-    expect(await flushQueue([], { send })).toEqual({ sent: [], rejected: [], remaining: [] });
+    expect(await flushQueue([], { send })).toEqual({
+      sent: [],
+      rejected: [],
+      remaining: [],
+    });
     expect(send).not.toHaveBeenCalled();
   });
 });

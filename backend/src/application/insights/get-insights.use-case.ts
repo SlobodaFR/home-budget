@@ -13,7 +13,7 @@ import {
   SPENDING_RISER_WINDOW_MONTHS,
 } from '../../domain/trend/trends';
 import { buildProvisions } from '../../domain/budget/provisions';
-import { parseMonth,currentMonth } from '../../domain/budget/month';
+import { parseMonth, currentMonth } from '../../domain/budget/month';
 import { summarizeMonth } from '../../domain/budget/month-summary';
 import { RecurringItemRepository } from '../../domain/recurring/recurring-item.repository';
 import { SafetyNetRepository } from '../../domain/safety-net/safety-net.repository';

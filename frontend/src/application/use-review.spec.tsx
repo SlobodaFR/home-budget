@@ -1,17 +1,32 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, NetworkError } from '../infrastructure/api-client';
-import { describeReviewSaveError, useReview, useReviewActions, useReviewHistory } from './use-review';
+import {
+  describeReviewSaveError,
+  useReview,
+  useReviewActions,
+  useReviewHistory,
+} from './use-review';
 import type { ApiMock } from '../test/api-mock';
 
-const api = vi.hoisted(() => ({ fetchReview: vi.fn<ApiMock<'fetchReview'>>(), fetchReviews: vi.fn<ApiMock<'fetchReviews'>>(), saveReview: vi.fn<ApiMock<'saveReview'>>() }));
+const api = vi.hoisted(() => ({
+  fetchReview: vi.fn<ApiMock<'fetchReview'>>(),
+  fetchReviews: vi.fn<ApiMock<'fetchReviews'>>(),
+  saveReview: vi.fn<ApiMock<'saveReview'>>(),
+}));
 
 vi.mock('../infrastructure/api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../infrastructure/api-client')>()),
   apiClient: api,
 }));
 
-const review = { month: '2026-10', status: 'TODO', answers: { wentWell: '', surprise: '', decision: '' }, completedAt: null, snapshot: {} };
+const review = {
+  month: '2026-10',
+  status: 'TODO',
+  answers: { wentWell: '', surprise: '', decision: '' },
+  completedAt: null,
+  snapshot: {},
+};
 
 describe('review hooks', () => {
   beforeEach(() => {
@@ -36,12 +51,19 @@ describe('review hooks', () => {
   });
 
   it('reloads when the month, the space or the token changes', async () => {
-    const { result, rerender } = renderHook(({ id, month, token }) => useReview(id, month, token), { initialProps: { id: 's-common', month: '2026-10', token: 0 } });
+    const { result, rerender } = renderHook(
+      ({ id, month, token }) => useReview(id, month, token),
+      { initialProps: { id: 's-common', month: '2026-10', token: 0 } },
+    );
     await waitFor(() => expect(result.current.data).toBeDefined());
     rerender({ id: 's-common', month: '2026-09', token: 0 });
-    await waitFor(() => expect(api.fetchReview).toHaveBeenLastCalledWith('s-common', '2026-09'));
+    await waitFor(() =>
+      expect(api.fetchReview).toHaveBeenLastCalledWith('s-common', '2026-09'),
+    );
     rerender({ id: 's-alice', month: '2026-09', token: 0 });
-    await waitFor(() => expect(api.fetchReview).toHaveBeenLastCalledWith('s-alice', '2026-09'));
+    await waitFor(() =>
+      expect(api.fetchReview).toHaveBeenLastCalledWith('s-alice', '2026-09'),
+    );
     rerender({ id: 's-alice', month: '2026-09', token: 1 });
     await waitFor(() => expect(api.fetchReview).toHaveBeenCalledTimes(4));
   });
@@ -53,12 +75,16 @@ describe('review hooks', () => {
     const original = api.fetchReviews;
     api.fetchReviews = undefined as never;
     const missing = renderHook(() => useReviewHistory('s-common'));
-    await waitFor(() => expect(missing.result.current.error).toBeInstanceOf(TypeError));
+    await waitFor(() =>
+      expect(missing.result.current.error).toBeInstanceOf(TypeError),
+    );
     api.fetchReviews = original;
   });
 
   it('loads the history of the space', async () => {
-    api.fetchReviews.mockResolvedValue([{ month: '2026-09', status: 'DONE', decision: 'x', completedAt: null }]);
+    api.fetchReviews.mockResolvedValue([
+      { month: '2026-09', status: 'DONE', decision: 'x', completedAt: null },
+    ]);
     const { result } = renderHook(() => useReviewHistory('s-common'));
     await waitFor(() => expect(result.current.data).toHaveLength(1));
     expect(api.fetchReviews).toHaveBeenCalledWith('s-common');
@@ -66,8 +92,13 @@ describe('review hooks', () => {
 
   it('saves then tells the page to refresh', async () => {
     const onSaved = vi.fn<() => void>();
-    const { result } = renderHook(() => useReviewActions('s-common', '2026-10', onSaved));
-    const payload = { answers: { wentWell: '', surprise: '', decision: 'Une liste' }, complete: true };
+    const { result } = renderHook(() =>
+      useReviewActions('s-common', '2026-10', onSaved),
+    );
+    const payload = {
+      answers: { wentWell: '', surprise: '', decision: 'Une liste' },
+      complete: true,
+    };
     await act(async () => {
       await result.current.save(payload);
     });
@@ -79,9 +110,16 @@ describe('review hooks', () => {
   it('rejects and does not refresh when saving fails', async () => {
     api.saveReview.mockRejectedValue(new NetworkError());
     const onSaved = vi.fn<() => void>();
-    const { result } = renderHook(() => useReviewActions('s-common', '2026-10', onSaved));
+    const { result } = renderHook(() =>
+      useReviewActions('s-common', '2026-10', onSaved),
+    );
     await act(async () => {
-      await expect(result.current.save({ answers: { wentWell: '', surprise: '', decision: '' }, complete: false })).rejects.toBeInstanceOf(NetworkError);
+      await expect(
+        result.current.save({
+          answers: { wentWell: '', surprise: '', decision: '' },
+          complete: false,
+        }),
+      ).rejects.toBeInstanceOf(NetworkError);
     });
     expect(onSaved).not.toHaveBeenCalled();
     expect(result.current.busy).toBe(false);
@@ -90,9 +128,17 @@ describe('review hooks', () => {
 
 describe('describeReviewSaveError', () => {
   it('always reassures that the text is kept, and explains offline, expired session and refusal', () => {
-    expect(describeReviewSaveError(new NetworkError())).toMatch(/Pas de connexion .* texte est conservé/);
-    expect(describeReviewSaveError(new ApiError(401, ''))).toMatch(/session a expiré/);
-    expect(describeReviewSaveError(new ApiError(400, ''))).toMatch(/500 caractères/);
-    expect(describeReviewSaveError(new ApiError(500, ''))).toMatch(/texte est conservé/);
+    expect(describeReviewSaveError(new NetworkError())).toMatch(
+      /Pas de connexion .* texte est conservé/,
+    );
+    expect(describeReviewSaveError(new ApiError(401, ''))).toMatch(
+      /session a expiré/,
+    );
+    expect(describeReviewSaveError(new ApiError(400, ''))).toMatch(
+      /500 caractères/,
+    );
+    expect(describeReviewSaveError(new ApiError(500, ''))).toMatch(
+      /texte est conservé/,
+    );
   });
 });
