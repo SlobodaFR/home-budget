@@ -45,6 +45,13 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 
+  it('rate-limits every route through the global ThrottlerGuard', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/auth/config')
+      .expect(200);
+    expect(res.headers['x-ratelimit-limit']).toBe('100');
+  });
+
   it('exposes the auth mode and rejects unknown dev users', async () => {
     const anonymous = request(app.getHttpServer());
     const config = await anonymous.get('/api/auth/config').expect(200);
