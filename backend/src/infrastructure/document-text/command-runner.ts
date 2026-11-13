@@ -80,7 +80,8 @@ export class ProcessCommandRunner extends CommandRunner {
         reject(new CommandError('NOT_ALLOWED'));
         return;
       }
-      // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process -- command is checked against a fixed allowlist above, args are an array, shell is disabled
+      // Programme vérifié contre la liste blanche ci-dessus ; arguments en tableau ; aucun shell.
+      // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
       const child = spawn(command, [...args], {
         cwd: options.cwd,
         env: options.env,

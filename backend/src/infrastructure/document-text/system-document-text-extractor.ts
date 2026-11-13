@@ -373,6 +373,8 @@ export class SystemDocumentTextExtractor extends DocumentTextExtractor {
             'Le texte lu dans ce document est démesuré : il n’a pas pu être traité.',
           );
         case 'ABORTED':
+        // Outil hors liste blanche : bug de programmation, pas un problème de document.
+        case 'NOT_ALLOWED':
           return error;
         default:
           return new DocumentExtractionError(
