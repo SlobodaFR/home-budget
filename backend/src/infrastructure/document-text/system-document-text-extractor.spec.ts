@@ -506,6 +506,18 @@ describe('SystemDocumentTextExtractor', () => {
       }
     });
 
+    it('laisse remonter un refus de liste blanche, bug interne et non problème de document', async () => {
+      const { extractor, runner } = setup();
+      runner.handlers.pdftotext = () => {
+        throw new CommandError('NOT_ALLOWED');
+      };
+      const error = await extractor
+        .extract(PDF, { kind: 'PDF', pages: 2 }, hooks().hooks)
+        .catch((e: unknown) => e);
+      expect(error).not.toBeInstanceOf(DocumentExtractionError);
+      expect(error).toMatchObject({ failure: 'NOT_ALLOWED' });
+    });
+
     it('applique un délai global à l’extraction entière', async () => {
       const { extractor, runner } = setup({ totalTimeoutMs: 80 });
       runner.handlers.pdftotext = (_args, options) =>

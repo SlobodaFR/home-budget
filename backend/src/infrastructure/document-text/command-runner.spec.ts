@@ -1,7 +1,7 @@
 import { CommandError, ProcessCommandRunner } from './command-runner';
 
-const runner = new ProcessCommandRunner();
 const node = process.execPath;
+const runner = new ProcessCommandRunner([node, 'programme-inexistant-hb']);
 const base = {
   cwd: process.cwd(),
   env: { PATH: process.env.PATH ?? '' },
@@ -48,6 +48,13 @@ describe('ProcessCommandRunner (avec node comme programme de test)', () => {
     expect(error).toBeInstanceOf(CommandError);
     expect(error).toMatchObject({ failure: 'EXIT', exitCode: 3 });
     expect((error as CommandError).stderr).toContain('oups');
+  });
+
+  it('refuse de lancer un programme hors liste blanche', async () => {
+    const strict = new ProcessCommandRunner();
+    await expect(
+      strict.run(node, ['-e', 'console.log("ne doit pas partir")'], base),
+    ).rejects.toMatchObject({ failure: 'NOT_ALLOWED' });
   });
 
   it('NOT_FOUND quand le programme est absent', async () => {
