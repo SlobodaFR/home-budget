@@ -1,4 +1,4 @@
-import { Controller, Get, Module } from '@nestjs/common';
+import { Body, Controller, Get, Module, Post } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -22,6 +22,11 @@ class ApiStub {
   @Get('ping')
   ping() {
     return { pong: true };
+  }
+
+  @Post('echo')
+  echo(@Body() body: { text?: string }) {
+    return { length: body.text?.length ?? 0 };
   }
 }
 
@@ -85,5 +90,19 @@ describe('fallback SPA (ServeStatic, Express 5)', () => {
   it('laisse passer /healthz', async () => {
     const res = await get('/healthz').expect(200);
     expect(res.body).toEqual({ status: 'ok' });
+  });
+  it('renvoie 404 JSON, pas le SPA, pour /api exact', async () => {
+    const res = await get('/api').expect(404);
+    expect(res.text).not.toContain('SPA');
+  });
+
+  // useBodyParser doit passer avant init() : sinon le parser par defaut de Nest (100 Ko) reprend la main.
+  it('accepte un corps JSON entre 100 Ko et 1 Mo, refuse au-dela', async () => {
+    const post = (size: number) =>
+      request(app.getHttpServer())
+        .post('/api/echo')
+        .send({ text: 'x'.repeat(size) });
+    expect((await post(300_000).expect(201)).body).toEqual({ length: 300_000 });
+    await post(1_200_000).expect(413);
   });
 });
