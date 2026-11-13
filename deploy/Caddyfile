@@ -1,3 +1,6 @@
 budget.sloboda.fr {
+    # Interne : etat du service, lisible seulement depuis le VPS (curl 127.0.0.1:3001/healthz).
+    # /healthz* : un matcher de chemin Caddy est exact, /healthz/ passerait sinon.
+    respond /healthz* 404
     reverse_proxy 127.0.0.1:3001
 }

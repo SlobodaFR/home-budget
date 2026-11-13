@@ -40,6 +40,11 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
     return agent;
   }
 
+  it('serves an internal /healthz outside the /api prefix', async () => {
+    const res = await request(app.getHttpServer()).get('/healthz').expect(200);
+    expect(res.body).toEqual({ status: 'ok' });
+  });
+
   it('exposes the auth mode and rejects unknown dev users', async () => {
     const anonymous = request(app.getHttpServer());
     const config = await anonymous.get('/api/auth/config').expect(200);
