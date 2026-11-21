@@ -6,6 +6,10 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
