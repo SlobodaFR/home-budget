@@ -2,14 +2,18 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   Post,
   Query,
+  RawBodyRequest,
+  Req,
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { AuthenticateLogoutWebhookUseCase } from '../../../application/auth/authenticate-logout-webhook.use-case';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { OAuthClient } from '../../../domain/auth/oauth-client';
@@ -28,6 +32,7 @@ export class AuthController {
     private readonly oauthClient: OAuthClient,
     private readonly handleOAuthCallback: HandleOAuthCallbackUseCase,
     private readonly handleSessionRevoked: HandleSessionRevokedUseCase,
+    private readonly authenticateLogoutWebhook: AuthenticateLogoutWebhookUseCase,
     private readonly config: ConfigService,
   ) {}
 
@@ -63,16 +68,29 @@ export class AuthController {
     return { user };
   }
 
-  /** Webhook called by the central auth service on global logout (logoutWebhookUrl). */
+  /**
+   * Webhook called by the central auth service on global logout (logoutWebhookUrl). Authenticated
+   * by its HMAC signature (X-Auth-Webhook-*), or by the legacy `?secret=` until
+   * `auth-webhook-require-signature` is on.
+   */
   @Public()
   @ServerToServer()
   @Post('disconnect')
   @HttpCode(204)
   async disconnect(
+    @Req() req: RawBodyRequest<Request>,
     @Body() dto: SessionRevokedDto,
+    @Headers('x-auth-webhook-id') id?: string,
+    @Headers('x-auth-webhook-timestamp') timestamp?: string,
+    @Headers('x-auth-webhook-signature') signature?: string,
     @Query('secret') secret?: string,
   ): Promise<void> {
-    if (secret !== this.config.getOrThrow<string>('AUTH_WEBHOOK_SECRET')) {
+    const authentic = await this.authenticateLogoutWebhook.execute({
+      headers: { id, timestamp, signature },
+      rawBody: req.rawBody,
+      querySecret: typeof secret === 'string' ? secret : undefined,
+    });
+    if (!authentic) {
       throw new UnauthorizedException();
     }
     await this.handleSessionRevoked.execute(dto.userId);
