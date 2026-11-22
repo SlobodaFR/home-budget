@@ -126,6 +126,12 @@ home-budget : c'est la copie de celui de home-auth, que tous les services home-*
 - `OFREP_ENDPOINT`, `OFREP_HEADERS` et `OFREP_TIMEOUT_MS`, que le provider lirait sinon, sont ignores
   et retires de l'environnement au demarrage (warn).
 
+### Flags utilises
+
+| Cle                        | Defaut du code | Effet                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth-verify-token-claims` | `false`        | `true` : `JwksAccessTokenVerifier` verifie aussi l'audience (`AUTH_CLIENT_ID`), l'emetteur (origine de `AUTH_SERVICE_URL`) et l'algorithme (`RS256`) des access tokens. `false` : seule la signature est verifiee (comportement historique). Evalue a chaque verification, sans bloquer (memo de 30 s). Le mode `AUTH_MODE=dev` n'est pas concerne. |
+
 ## Telemetrie
 
 Evenements anonymes vers PostHog (projet partage, `service=home-budget`), desactives sans `POSTHOG_API_KEY` (adaptateur NOOP : aucun client, aucun appel reseau, le demarrage ne depend jamais de PostHog) : `household_created`, `statement_imported` (nombre de lignes), `data_exported` (`json` ou `csv`), `debt_extraction_finished` (resultat `done`/`failed`, origine du texte et nombre de champs), `http_request` (requetes arrivees jusqu'a une route : route parametree, methode, statut, duree ; ni `/healthz`, ni les refus des guards — 401, 403, 429 —, ni les 404 hors route, ni les assets du SPA ; `/healthz` est la seule route sondee), `runtime_health` (convention harnais `ops-telemetry` : toutes les 60 s et par instance, `lag_p50_ms`, `lag_p99_ms`, `lag_max_ms`, `elu`, `rss_mb`, `heap_used_mb`, evenements operationnels sans utilisateur ni profil de personne). Les evenements metier ne sont emis qu'apres succes. La file est videe a l'arret (SIGTERM), bornee a 5 s.
