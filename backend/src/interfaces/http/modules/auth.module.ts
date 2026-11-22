@@ -15,6 +15,7 @@ import {
 } from '../../../infrastructure/auth/dev-auth';
 import { AuthConfigController } from '../controllers/auth-config.controller';
 import { HttpOAuthClient } from '../../../infrastructure/auth/http-oauth-client';
+import { SingleFlightOAuthClient } from '../../../infrastructure/auth/single-flight-oauth-client';
 import { JwksAccessTokenVerifier } from '../../../infrastructure/auth/jwks-access-token-verifier';
 import { RevokedSessionOrmEntity } from '../../../infrastructure/persistence/entities/revoked-session.orm-entity';
 import { UserOrmEntity } from '../../../infrastructure/persistence/entities/user.orm-entity';
@@ -38,7 +39,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
       useFactory: (config: ConfigService) =>
         resolveAuthMode(config) === 'dev'
           ? new UnavailableOAuthClient()
-          : new HttpOAuthClient(config),
+          : new SingleFlightOAuthClient(new HttpOAuthClient(config)),
     },
     {
       provide: AccessTokenVerifier,
