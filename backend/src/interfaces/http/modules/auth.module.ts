@@ -6,6 +6,7 @@ import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-se
 import { AccessTokenVerifier } from '../../../domain/auth/access-token-verifier';
 import { OAuthClient } from '../../../domain/auth/oauth-client';
 import { RevokedSessionRepository } from '../../../domain/auth/revoked-session.repository';
+import { FeatureFlags } from '../../../domain/shared/feature-flags';
 import { UserRepository } from '../../../domain/user/user.repository';
 import { ConfigService } from '@nestjs/config';
 import { resolveAuthMode } from '../../../infrastructure/auth/auth-mode';
@@ -43,11 +44,11 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
     },
     {
       provide: AccessTokenVerifier,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) =>
+      inject: [ConfigService, FeatureFlags],
+      useFactory: (config: ConfigService, flags: FeatureFlags) =>
         resolveAuthMode(config) === 'dev'
           ? new DevAccessTokenVerifier(config)
-          : new JwksAccessTokenVerifier(config),
+          : new JwksAccessTokenVerifier(config, flags),
     },
     HandleOAuthCallbackUseCase,
     HandleSessionRevokedUseCase,
