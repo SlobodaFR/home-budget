@@ -90,7 +90,11 @@ if [ -n "$DATA_VOLUME" ]; then
   fi
 fi
 
-docker compose up -d --remove-orphans
+# Convention harnais deploy-wait-healthy : `docker compose up -d --wait` (repli : boucle docker inspect) ; un conteneur
+# qui n'est pas sain après 180 s fait échouer le déploiement (logs, sauvegarde et restauration affichées), sans retour arrière automatique.
+sh "$DEPLOY_DIR/deploy/scripts/compose-up-healthy.sh" --service budget \
+  --restore-args "--project budget --volume budget-data --mount /app/backend/data --db-path ${DATABASE_PATH:-/app/backend/data/budget.sqlite}" \
+  -- --remove-orphans
 # Le service est relance dans tous les cas ; un echec du chown fait quand meme echouer le deploiement.
 if [ -n "$CHOWN_FAILED" ]; then
   echo "Echec du passage du volume $DATA_VOLUME a l'uid 1000 : verifier les droits." >&2

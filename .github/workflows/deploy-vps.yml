@@ -145,7 +145,7 @@ jobs:
           host: ${{ env.VPS_HOST }}
           username: ${{ env.VPS_USER }}
           key: ${{ env.VPS_SSH_KEY }}
-          source: 'deploy/docker-compose.yml,deploy/scripts/update-vps.sh,deploy/scripts/pre-deploy-backup.sh,deploy/scripts/restore-sqlite-backup.sh,deploy/Caddyfile'
+          source: 'deploy/docker-compose.yml,deploy/scripts/update-vps.sh,deploy/scripts/compose-up-healthy.sh,deploy/scripts/pre-deploy-backup.sh,deploy/scripts/restore-sqlite-backup.sh,deploy/Caddyfile'
           target: /opt/budget
           strip_components: 0
 
