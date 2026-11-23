@@ -1,7 +1,14 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import {
+  Controller,
+  ExecutionContext,
+  Get,
+  NotFoundException,
+  Param,
+} from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import { lastValueFrom, of } from 'rxjs';
 import request from 'supertest';
 import { Telemetry } from '../../domain/shared/telemetry';
 import { SpyTelemetry } from '../../testing/spy-telemetry';
@@ -71,5 +78,40 @@ describe('TelemetryInterceptor', () => {
     await request(app.getHttpServer()).get('/healthz').expect(200);
 
     expect(telemetry.captured).toEqual([]);
+  });
+
+  it('should report nothing for a request that matches no route', async () => {
+    await request(app.getHttpServer())
+      .get('/nope/alice@example.com?email=bob@example.com')
+      .expect(404);
+
+    expect(telemetry.captured).toEqual([]);
+  });
+
+  it('should ignore non-HTTP contexts: a WebSocket handler sharing the global interceptor emits nothing', async () => {
+    const interceptor = new TelemetryInterceptor(telemetry);
+    const next = { handle: () => of('pong') };
+    const wsContext = {
+      getType: () => 'ws',
+      switchToHttp: () => {
+        throw new Error('must not read an HTTP request on a ws context');
+      },
+    } as unknown as ExecutionContext;
+
+    await lastValueFrom(interceptor.intercept(wsContext, next));
+
+    expect(telemetry.captured).toEqual([]);
+  });
+
+  it('should never report an email carried by a query string or a path parameter', async () => {
+    await request(app.getHttpServer())
+      .get('/api/spaces/alice@example.com/transactions?email=bob@example.com')
+      .expect(200);
+
+    expect(telemetry.captured).toHaveLength(1);
+    expect(JSON.stringify(telemetry.captured)).not.toMatch(/alice|bob|@/);
+    expect(telemetry.captured[0]?.event).toMatchObject({
+      properties: { route: '/api/spaces/:spaceId/transactions' },
+    });
   });
 });

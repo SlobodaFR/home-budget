@@ -30,6 +30,15 @@ const imported = {
   properties: { rows: 12 },
 } as const;
 
+const runtimeHealth = {
+  lag_p50_ms: 1.2,
+  lag_p99_ms: 4.5,
+  lag_max_ms: 9,
+  elu: 0.012,
+  rss_mb: 120.5,
+  heap_used_mb: 60.1,
+};
+
 describe('PostHogTelemetry', () => {
   it('should create no client without POSTHOG_API_KEY', () => {
     const factory =
@@ -41,6 +50,39 @@ describe('PostHogTelemetry', () => {
     );
 
     expect(factory).not.toHaveBeenCalled();
+  });
+
+  it('should not throw when capturing without a client (NOOP adapter)', () => {
+    const telemetry = createPostHogTelemetry({}, vi.fn());
+
+    expect(() =>
+      telemetry.capture({
+        name: 'runtime_health',
+        properties: runtimeHealth,
+      }),
+    ).not.toThrow();
+  });
+
+  it('should send runtime_health anonymously, tagged with the service, with no member and no IP', () => {
+    const client = new FakeClient();
+
+    new PostHogTelemetry(client, SECRET).capture({
+      name: 'runtime_health',
+      properties: runtimeHealth,
+    });
+
+    const [message] = client.captured;
+    expect(message?.distinctId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(message).toMatchObject({
+      event: 'runtime_health',
+      properties: {
+        ...runtimeHealth,
+        service: 'home-budget',
+        $ip: null,
+        $process_person_profile: false,
+      },
+      disableGeoip: true,
+    });
   });
 
   it('should create an EU, geoip-free client when a key is set', () => {

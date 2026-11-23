@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Telemetry } from '../../domain/shared/telemetry';
+import { RuntimeHealthMonitor } from '../observability/runtime-health.monitor';
 import { TelemetryInterceptor } from '../../interfaces/http/telemetry.interceptor';
 import { createPostHogTelemetry } from './posthog-telemetry';
 
@@ -14,6 +15,7 @@ import { createPostHogTelemetry } from './posthog-telemetry';
       useFactory: () => createPostHogTelemetry(process.env),
     },
     { provide: APP_INTERCEPTOR, useClass: TelemetryInterceptor },
+    RuntimeHealthMonitor,
   ],
   exports: [Telemetry],
 })

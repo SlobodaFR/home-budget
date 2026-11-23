@@ -20,6 +20,18 @@ export type TelemetryEvent =
       };
     }
   | {
+      /** Santé du process (opérationnel, sans utilisateur) : toutes les 60 s par instance. */
+      name: 'runtime_health';
+      properties: {
+        lag_p50_ms: number;
+        lag_p99_ms: number;
+        lag_max_ms: number;
+        elu: number;
+        heap_used_mb: number;
+        rss_mb: number;
+      };
+    }
+  | {
       name: 'http_request';
       properties: {
         route: string;
