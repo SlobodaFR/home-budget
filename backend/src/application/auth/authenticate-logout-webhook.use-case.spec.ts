@@ -130,6 +130,19 @@ describe('AuthenticateLogoutWebhookUseCase', () => {
       expect(logger.warn).toEqual([]);
     });
 
+    it('refuse le rejeu avant le contrôle du corps brut (corps non lu, ?secret= valide)', async () => {
+      const uc = useCase();
+      expect(await uc.execute({ ...signed() })).toBe(true);
+      expect(
+        await uc.execute({
+          headers: signed().headers,
+          rawBody: undefined,
+          querySecret: LEGACY_SECRET,
+        }),
+      ).toBe(false);
+      expect(logger.warn).toEqual([]);
+    });
+
     it('refuse un id rejoué seul (autres en-têtes absents) même avec un ?secret= valide', async () => {
       const uc = useCase();
       expect(await uc.execute({ ...signed() })).toBe(true);
