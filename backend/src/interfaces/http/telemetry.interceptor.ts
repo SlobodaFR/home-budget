@@ -9,7 +9,12 @@ import type { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 import { Telemetry } from '../../domain/shared/telemetry';
 
-/** Sondé en continu : ni volume utile, ni durée qui ait un sens. */
+/**
+ * Routes jamais rapportées. Seule route sondée : /healthz (HEALTHCHECK Docker toutes les 30 s,
+ * bloqué côté public par Caddy) : ni volume utile, ni durée qui ait un sens. Aucun flux SSE ni
+ * WebSocket, aucun moniteur d'uptime externe. Une route sondée ou ouverte longtemps s'ajoute ici,
+ * avec son motif.
+ */
 const UNREPORTED_ROUTES = new Set(['/healthz']);
 
 /** Route paramétrée ('/api/spaces/:spaceId/transactions'), jamais l'URL brute : ni identifiant, ni query string. */
@@ -24,11 +29,15 @@ export class TelemetryInterceptor implements NestInterceptor {
   constructor(private readonly telemetry: Telemetry) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    // Un intercepteur global tourne aussi sur les handlers WebSocket : ni route ni méthode.
+    if (context.getType() !== 'http') return next.handle();
     const http = context.switchToHttp();
     const req = http.getRequest<Request>();
     const res = http.getResponse<Response>();
     const route = routeOf(req);
-    if (UNREPORTED_ROUTES.has(route)) return next.handle();
+    if (route === 'unknown' || UNREPORTED_ROUTES.has(route)) {
+      return next.handle();
+    }
     const startedAt = performance.now();
     const report = (status: number) =>
       this.telemetry.capture({

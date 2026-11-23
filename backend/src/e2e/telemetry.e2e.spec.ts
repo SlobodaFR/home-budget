@@ -11,6 +11,7 @@ import {
 import { CreateHouseholdUseCase } from '../application/household/create-household.use-case';
 import { CommitImportUseCase } from '../application/import/import.use-cases';
 import { NoTelemetry, Telemetry } from '../domain/shared/telemetry';
+import { RuntimeHealthMonitor } from '../infrastructure/observability/runtime-health.monitor';
 import { PostHogTelemetry } from '../infrastructure/telemetry/posthog-telemetry';
 import { SpyTelemetry } from '../testing/spy-telemetry';
 
@@ -91,6 +92,24 @@ describe('Télémétrie (AppModule réel, SQLite en mémoire)', () => {
       );
       expect(http?.event.properties).toMatchObject({ status: 201 });
       expect(JSON.stringify(spy.captured)).not.toContain('Dupont');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('ne rapporte ni /healthz ni la SPA servie hors route Nest, et enregistre le moniteur runtime_health', async () => {
+    const spy = new SpyTelemetry();
+    const app = await boot(spy);
+    try {
+      await request(app.getHttpServer()).get('/healthz').expect(200);
+      // Aucun build frontend en test : la requête passe par ServeStatic ou donne 404, jamais par une route Nest.
+      await request(app.getHttpServer()).get('/assets/app.js');
+      await request(app.getHttpServer()).get('/');
+
+      expect(spy.captured).toEqual([]);
+      expect(app.get(RuntimeHealthMonitor)).toBeInstanceOf(
+        RuntimeHealthMonitor,
+      );
     } finally {
       await app.close();
     }
