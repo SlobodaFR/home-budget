@@ -2,6 +2,7 @@ import { parseMasterKey } from '../infrastructure/crypto/aes-gcm-field-cipher';
 
 const AUTH_MODES = ['oauth', 'dev'];
 const MIN_SECRET_BYTES = 32;
+const SIGNING_SECRET_FORMAT = /^[0-9a-f]{64}$/;
 
 /**
  * Validation de l'environnement au demarrage, avant que l'app ne serve quoi que ce soit.
@@ -12,6 +13,13 @@ export function validateEnv(env: Record<string, string | undefined>): void {
   const mode = env.AUTH_MODE ?? 'oauth';
   if (!AUTH_MODES.includes(mode))
     throw new Error(`AUTH_MODE inconnu (attendu : ${AUTH_MODES.join(', ')})`);
+  // Optionnel, mais un secret mal forme serait ignore sans bruit : le webhook retomberait sur
+  // l'ancien ?secret=. Verifie hors production aussi.
+  const signingSecret = env.AUTH_WEBHOOK_SIGNING_SECRET;
+  if (signingSecret && !SIGNING_SECRET_FORMAT.test(signingSecret))
+    throw new Error(
+      'AUTH_WEBHOOK_SIGNING_SECRET doit faire 64 caracteres hexadecimaux en minuscules, sans espace (secret affiche par home-auth)',
+    );
   if (env.NODE_ENV !== 'production') return;
 
   // Le mode dev connecte sans mot de passe : jamais sur Internet.

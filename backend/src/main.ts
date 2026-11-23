@@ -3,12 +3,13 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { validateEnv } from './config/validate-env';
-import { configureApp } from './configure-app';
+import { configureApp, nestApplicationOptions } from './configure-app';
 
 async function bootstrap() {
   validateEnv(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
+    ...nestApplicationOptions,
   });
   app.useLogger(app.get(Logger));
   // SIGTERM (docker stop, chaque deploiement) declenche onApplicationShutdown : la telemetrie

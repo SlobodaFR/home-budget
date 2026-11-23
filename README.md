@@ -60,10 +60,66 @@ Authorization Code flow :
   par auth-service) et `refresh_token` (~30 jours). `JwtAuthGuard` verifie l'access token via JWKS
   (`/.well-known/jwks.json`) et tente un refresh silencieux si besoin.
 - `POST /api/auth/logout` ne fait que vider les cookies locaux (pas de logout global).
-- `POST /api/auth/disconnect?secret=AUTH_WEBHOOK_SECRET` est le `logoutWebhookUrl` enregistre aupres
-  d'auth-service (`{ "userId": "..." }`) : appele lors d'un logout global, il marque l'utilisateur
-  comme revoque (horodatage courant) ; tout access token emis avant cet instant est ensuite rejete par
-  `JwtAuthGuard`.
+- `POST /api/auth/disconnect` est le `logoutWebhookUrl` enregistre aupres d'auth-service
+  (`{ "userId": "..." }`) : appele lors d'un logout global, il marque l'utilisateur comme revoque
+  (horodatage courant) ; tout access token emis avant cet instant est ensuite rejete par
+  `JwtAuthGuard`. Il est authentifie par la **signature** de home-auth (contrat PC7, voir ci-dessous) ou,
+  pendant la transition, par l'ancien `?secret=AUTH_WEBHOOK_SECRET`.
+
+### Webhook de deconnexion signe (double acceptation)
+
+En-tetes envoyes par home-auth : `X-Auth-Webhook-Id` (uuid v4), `X-Auth-Webhook-Timestamp` (secondes unix),
+`X-Auth-Webhook-Signature: v1=<hex>[,v1=<hex>]` avec
+`hex = HMAC-SHA256(secret, id + "." + timestamp + "." + rawBody)` ; la cle est la chaine du secret
+(64 caracteres hexadecimaux, en UTF-8, pas ses octets decodes) et `rawBody` les octets recus.
+
+Verification (`backend/src/domain/auth/webhook-signature.ts`) :
+
+1. `|now - timestamp| <= 120 s` ;
+2. chaque entree `v1=` est decodee (hex, 32 octets ; tout format invalide : 401) puis comparee au HMAC
+   recalcule par `timingSafeEqual` ; une entree qui correspond suffit (deux entrees pendant le recouvrement
+   de 24 h apres une regeneration du secret) ;
+3. un `id` accepte est refuse s'il revient dans les 10 minutes (memoire du processus : un redemarrage
+   l'oublie ; seul un `id` dont la signature est valide est retenu). Le rejeu est **strict** : des qu'un
+   en-tete `X-Auth-Webhook-*` est present et que l'`id` a deja ete vu, la requete est refusee (401) meme
+   avec un `?secret=` valide.
+
+`rawBody` : `main.ts` cree l'application avec `rawBody: true` (`nestApplicationOptions`, partage avec les
+tests e2e) ; `req.rawBody` contient les octets exacts du corps JSON.
+
+Double acceptation (`AuthenticateLogoutWebhookUseCase`) :
+
+- aucun en-tete de signature (`X-Auth-Webhook-Id`, `-Timestamp` ou `-Signature` tous vides) : ancien
+  `?secret=` compare en `timingSafeEqual`, tant que le flag `auth-webhook-require-signature` vaut `false` ;
+- en-tetes presents et signature valide : accepte ; `id` deja vu : refuse (401), sans repli sur `?secret=` ;
+- en-tetes presents mais signature invalide (format, fenetre, hmac) ou non verifiable (pas de
+  `AUTH_WEBHOOK_SIGNING_SECRET`, corps brut indisponible) : repli sur l'ancien `?secret=` (flag a `false`) ;
+- flag a `true` : la signature est obligatoire et le `?secret=` n'est plus accepte ; sans
+  `AUTH_WEBHOOK_SIGNING_SECRET` configure, plus rien n'est accepte (echec ferme : ne pas activer le flag
+  avant d'avoir le secret).
+
+Journalisation des acceptations (sans jamais ecrire le secret, la signature ni l'`id`), une ligne par
+raison toutes les 5 minutes : INFO `signature` ; WARN `legacy ?secret=` avec la raison parmi
+`no-signature-headers`, `missing-signing-secret`, `format`, `window`, `hmac`, `raw-body-unavailable`. C'est
+ce qui permet de verifier la bascule avant d'activer le flag (plus aucun WARN = flag activable).
+
+`AUTH_WEBHOOK_SIGNING_SECRET` (optionnel, 64 hexadecimaux **en minuscules**, 1Password :
+`BUDGET_AUTH_WEBHOOK_SIGNING_SECRET`) est le secret affiche une seule fois par l'admin de home-auth
+(« Regenerer »). Absent ou vide : seul l'ancien chemin existe. Majuscules, espaces ou mauvaise longueur :
+le service refuse de demarrer.
+
+Vecteurs de test fixes du contrat (publies par home-auth, recopies dans
+`backend/src/domain/auth/webhook-signature.spec.ts`) :
+
+|     | secret | id                                     | timestamp    | corps                 | HMAC (hex)                                                         |
+| --- | ------ | -------------------------------------- | ------------ | --------------------- | ------------------------------------------------------------------ |
+| 1   | `S1`   | `3b241101-e2bb-4255-8caf-4136c566a962` | `1700000000` | `{"userId":"u1"}`     | `41294c53497c1d18871786b2d5c3ec091e6b357638e7104d826de50af8813242` |
+| 2   | `S2`   | `3b241101-e2bb-4255-8caf-4136c566a962` | `1700000000` | `{"userId":"u1"}`     | `89de6c4652b33d864427b3091771ed8b9266a99b3bf915b126eb4655a2dce09f` |
+| 3   | `S1`   | `9b2f0f6e-8d3a-4f6b-9c1e-2a7d5e4c1b30` | `1700000123` | `{"userId":"4b8f-é"}` | `d9a2c8cec34058ebb100f8b454ba46b1214cf777000d9aab00dda91205d5a3ac` |
+
+- `S1` = `000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f`
+- `S2` = `ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100`
+- Recoupement : `printf '%s' '3b241101-e2bb-4255-8caf-4136c566a962.1700000000.{"userId":"u1"}' | openssl dgst -sha256 -hmac <S1>`
 
 Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fourni par auth-service).
 
@@ -78,6 +134,7 @@ Comptes et transactions sont rattaches a l'utilisateur connecte (`id` = `sub` fo
 | `AUTH_CLIENT_ID`                         | oui         | -                          | Identifiant client OAuth2 enregistre aupres d'auth-service.                                                                                                                                                                          |
 | `AUTH_CLIENT_SECRET`                     | oui         | -                          | Secret client OAuth2 correspondant.                                                                                                                                                                                                  |
 | `AUTH_WEBHOOK_SECRET`                    | oui         | -                          | Secret partage pour le webhook `POST /api/auth/disconnect?secret=...` (serveur a serveur).                                                                                                                                           |
+| `AUTH_WEBHOOK_SIGNING_SECRET`            | non         | -                          | Secret de signature du webhook de deconnexion (64 hexadecimaux en minuscules, affiche une seule fois par l'admin home-auth). Absent : seul l'ancien `?secret=` authentifie. 1Password : `BUDGET_AUTH_WEBHOOK_SIGNING_SECRET`.        |
 | `FRONTEND_URL`                           | non         | `http://localhost:3000`    | Base URL du frontend, utilisee pour le `redirect_uri` OAuth2 et la redirection apres connexion.                                                                                                                                      |
 | `PSEUDONYM_SECRET`                       | prod        | -                          | Secret HMAC (32 octets minimum : `openssl rand -hex 32`) des pseudonymes : les logs n'identifient un membre que par un pseudonyme de son id (jamais email ni nom). Obligatoire en production. 1Password : `BUDGET_PSEUDONYM_SECRET`. |
 | `POSTHOG_API_KEY`                        | non         | -                          | Cle projet PostHog : active la telemetrie anonyme, produit et operationnelle (voir « Telemetrie »). Sans elle, aucun evenement n'est envoye. 1Password : `POSTHOG_API_KEY` (partage).                                                |
@@ -128,9 +185,10 @@ home-budget : c'est la copie de celui de home-auth, que tous les services home-*
 
 ### Flags utilises
 
-| Cle                        | Defaut du code | Effet                                                                                                                                                                                                                                                                                                                                               |
-| -------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth-verify-token-claims` | `false`        | `true` : `JwksAccessTokenVerifier` verifie aussi l'audience (`AUTH_CLIENT_ID`), l'emetteur (origine de `AUTH_SERVICE_URL`) et l'algorithme (`RS256`) des access tokens. `false` : seule la signature est verifiee (comportement historique). Evalue a chaque verification, sans bloquer (memo de 30 s). Le mode `AUTH_MODE=dev` n'est pas concerne. |
+| Cle                              | Defaut du code | Effet                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth-verify-token-claims`       | `false`        | `true` : `JwksAccessTokenVerifier` verifie aussi l'audience (`AUTH_CLIENT_ID`), l'emetteur (origine de `AUTH_SERVICE_URL`) et l'algorithme (`RS256`) des access tokens. `false` : seule la signature est verifiee (comportement historique). Evalue a chaque verification, sans bloquer (memo de 30 s). Le mode `AUTH_MODE=dev` n'est pas concerne. |
+| `auth-webhook-require-signature` | `false`        | `true` : le webhook `POST /api/auth/disconnect` n'accepte plus que la signature `X-Auth-Webhook-*` (l'ancien `?secret=` est refuse). `false` : signature valide ou ancien `?secret=`.                                                                                                                                                               |
 
 ## Telemetrie
 

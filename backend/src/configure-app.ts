@@ -3,6 +3,13 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { applySecurityHeaders } from './interfaces/http/security-headers';
 
+/**
+ * Options de creation Nest communes au demarrage reel et aux tests de bout en bout.
+ * `rawBody` garde les octets exacts du corps (req.rawBody) : le webhook de deconnexion de
+ * home-auth est signe sur ce qui a ete envoye, pas sur sa re-serialisation (contrat PC7).
+ */
+export const nestApplicationOptions = { rawBody: true } as const;
+
 /** Configuration HTTP commune au demarrage reel et aux tests de bout en bout. */
 export function configureApp(app: NestExpressApplication): void {
   applySecurityHeaders(app);

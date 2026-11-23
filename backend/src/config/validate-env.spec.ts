@@ -92,4 +92,68 @@ describe('validateEnv', () => {
       validateEnv({ ...production(), PSEUDONYM_SECRET: 'a'.repeat(32) }),
     ).not.toThrow();
   });
+
+  describe('AUTH_WEBHOOK_SIGNING_SECRET (optional)', () => {
+    const hex = 'ab'.repeat(32);
+
+    it('is not required, in production or outside', () => {
+      expect(() => validateEnv(production())).not.toThrow();
+      expect(() =>
+        validateEnv({ ...production(), AUTH_WEBHOOK_SIGNING_SECRET: '' }),
+      ).not.toThrow();
+      expect(() => validateEnv({})).not.toThrow();
+    });
+
+    it('accepts 64 lowercase hexadecimal characters', () => {
+      expect(() =>
+        validateEnv({ ...production(), AUTH_WEBHOOK_SIGNING_SECRET: hex }),
+      ).not.toThrow();
+      expect(() =>
+        validateEnv({ AUTH_WEBHOOK_SIGNING_SECRET: hex }),
+      ).not.toThrow();
+    });
+
+    it('refuses uppercase and whitespace-padded values', () => {
+      for (const value of [
+        hex.toUpperCase(),
+        `${'AB'.repeat(1)}${hex.slice(2)}`,
+        ` ${hex}`,
+        `${hex} `,
+        `${hex}\n`,
+        ` ${hex} `,
+        ' ',
+      ])
+        expect(() =>
+          validateEnv({ AUTH_WEBHOOK_SIGNING_SECRET: value }),
+        ).toThrow('AUTH_WEBHOOK_SIGNING_SECRET');
+    });
+
+    it('refuses 63 and 65 characters', () => {
+      for (const value of [hex.slice(1), `${hex}a`])
+        expect(() =>
+          validateEnv({ AUTH_WEBHOOK_SIGNING_SECRET: value }),
+        ).toThrow('AUTH_WEBHOOK_SIGNING_SECRET');
+    });
+
+    it('refuses any other value, everywhere, instead of silently ignoring a bad secret', () => {
+      for (const value of ['abc', 'g'.repeat(64), hex.slice(2), `${hex}00`]) {
+        expect(() =>
+          validateEnv({ ...production(), AUTH_WEBHOOK_SIGNING_SECRET: value }),
+        ).toThrow('AUTH_WEBHOOK_SIGNING_SECRET');
+        expect(() =>
+          validateEnv({ AUTH_WEBHOOK_SIGNING_SECRET: value }),
+        ).toThrow('AUTH_WEBHOOK_SIGNING_SECRET');
+      }
+    });
+
+    it('never echoes the value', () => {
+      expect(() =>
+        validateEnv({ AUTH_WEBHOOK_SIGNING_SECRET: 'tres-secret' }),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.not.stringContaining('tres-secret'),
+        }),
+      );
+    });
+  });
 });
