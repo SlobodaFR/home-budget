@@ -25,10 +25,7 @@ RUN npm install \
 COPY backend backend
 COPY --from=frontend-build /app/frontend/dist frontend/dist
 RUN npm run build --workspace=backend
-RUN npm prune --omit=dev \
-    # Prune laisse un dossier @typescript vide (binaires optionnels de typescript, tous dev) : on le retire
-    # (rmdir echoue s'il contenait encore un paquet, ce qui laisse le garde-fou --forbid-ts le signaler).
-    && (rmdir node_modules/@typescript 2>/dev/null || true)
+RUN npm prune --omit=dev
 
 # ---------- Runtime ----------
 FROM node:26-bookworm-slim AS runtime

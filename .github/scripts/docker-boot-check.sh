@@ -1,6 +1,6 @@
 #!/bin/sh
 # docker-boot-check.sh : démarre l'image construite par la CI et vérifie qu'elle DÉMARRE vraiment.
-# Convention du harnais `docker-boot-check` (home-harness, CONVENTIONS.md v1.9).
+# Convention du harnais `docker-boot-check` (home-harness, CONVENTIONS.md v1.9.1).
 # COPIE VERBATIM depuis home-harness/scripts/docker-boot-check.sh : ne jamais modifier la copie d'un repo
 # (l'audit compare les deux fichiers). Un changement se fait dans le harnais.
 #
@@ -11,7 +11,8 @@
 # Usage (dans le job CI, APRÈS `docker/build-push-action` avec `load: true` et `tags: <svc>:ci`) :
 #   sh .github/scripts/docker-boot-check.sh --service <svc> --image <svc>:ci [--env-file f] [--env K=V ...] [--secret NOM ...] \
 #        [--rsa-keypair PRIV:PUB] [--path /healthz | --no-http] [--port 3000] [--volume /app/backend/data] \
-#        [--expect /chemin=statut ...] [--forbid /chemin ... | --forbid-ts] [--sidecar image=alias ...] [--timeout 120] [--settle 10] [--log-lines 100] [--rm-image]
+#        [--expect /chemin=statut ...] [--forbid /chemin ... | --forbid-pkg /dossier ... | --forbid-ts] [--sidecar image=alias ...] \
+#        [--s3-stub alias [--s3-stub-image img]] [--timeout 120] [--settle 10] [--log-lines 100] [--rm-image]
 #
 # Arguments (forme `--flag=valeur` acceptée) :
 #   --service <svc>        nom du service (journal, noms des ressources temporaires).
@@ -29,10 +30,24 @@
 #   --volume <chemin>      volume de données jetable monté à ce chemin du conteneur (créé, puis supprimé).
 #   --expect <chemin>=<s>  sonde supplémentaire après le démarrage : le statut HTTP de GET <chemin> doit valoir <s> (répétable ;
 #                          ex. `/healthz=200`, `/api/inconnu=404`). Les redirections ne sont pas suivies.
-#   --forbid <chemin>      chemin ABSOLU qui ne doit PAS exister dans l'image (répétable ; test dans le conteneur, après la fenêtre
-#                          d'observation). `--forbid-ts` = raccourci des défauts pour un service Node : /app/node_modules/typescript et
-#                          /app/node_modules/@typescript (un override de dépendance, ex. @nestjs/swagger 12 -> typescript ^7, les garde après
-#                          `npm prune --omit=dev` : ~30 Mo de TypeScript et tsgo embarqués en production).
+#   --forbid <chemin>      chemin ABSOLU qui ne doit PAS exister dans l'image (répétable ; test d'existence dans le conteneur, après la fenêtre
+#                          d'observation).
+#   --forbid-pkg <dossier> dossier ABSOLU qui ne doit contenir AUCUN fichier ni lien symbolique (répétable). Absent ou arborescence de
+#                          dossiers vides (reste de `npm prune --omit=dev`, ex. /app/node_modules/@typescript) = OK ; un fichier, un lien ou un
+#                          chemin qui n'est pas un dossier = échec. Test dans le conteneur avec `sh` et `find` (-mindepth) : une image sans
+#                          l'un des deux (distroless) échoue avec « impossible de vérifier », jamais un vert.
+#   --forbid-ts            raccourci de `--forbid-pkg /app/node_modules/typescript --forbid-pkg /app/node_modules/@typescript` : un paquet
+#                          TypeScript (~30 Mo de tsc/tsgo) ne doit pas finir dans l'image de production (ex. une dépendance ou un `overrides`
+#                          qui rend typescript non dev et que `npm prune --omit=dev` garde). Un dossier vide laissé par le prune n'échoue plus.
+#   --s3-stub <alias>      stub S3 minimal (une seule fois) lancé sur le réseau jetable sous le nom <alias>, port 9000 (0.0.0.0), prêt AVANT
+#                          le service. Pour un entrypoint qui lance `litestream restore/replicate` quand MINIO_* est défini : donner au service
+#                          `--env MINIO_ENDPOINT=http://<alias>:9000 --env MINIO_BUCKET=<b> --env MINIO_ACCESS_KEY=<k> --env MINIO_SECRET_KEY=<s>`
+#                          (noms selon le service ; l'adressage par chemin est obligatoire : `force-path-style` de litestream, `forcePathStyle` du
+#                          SDK v3, minio-js l'utilise par défaut). Le stub exécute l'IMAGE TESTÉE (aucun téléchargement) avec `--entrypoint sh` et
+#                          y trouve `node`, sinon `python3`/`python`. Objets < 5 Mo uniquement, rien n'est conservé. Il répond : liste du bucket
+#                          vide (`?location` : us-east-1), HEAD bucket 200, GET/HEAD d'objet 404 NoSuchKey, PUT/DELETE 200/204, envoi
+#                          multipart simulé, tout le reste 501 ; une ligne de journal par requête (méthode, chemin, statut), jamais de corps.
+#   --s3-stub-image <img>  image du stub à la place de l'image testée (image sans node ni python, ex. distroless, ou service Python sans `sh`).
 #   --sidecar <img>=<alias> dépendance lancée sur un réseau jetable commun, jointe sous le nom <alias> (ex. `nats:2-alpine=nats` avec
 #                          `--env NATS_URL=nats://nats:4222`). Doit rester en vie ; répétable.
 #   --timeout <s>          délai pour devenir sain (défaut : $BOOT_TIMEOUT, sinon 120).
@@ -42,7 +57,8 @@
 #   --rm-image             supprime l'image <réf> à la fin (exécuteur auto-hébergé : évite d'accumuler les images `:ci`).
 # Étiquette d'image : utiliser une étiquette UNIQUE par run (`<svc>:ci-${{ github.run_id }}-${{ github.run_attempt }}`), le démon est partagé.
 # Variable réservée aux tests du harnais : BOOT_SETTLE_MIN (plancher de --settle avec --no-http, 5) ; l'audit refuse sa présence dans ci.yml.
-# Variable : BOOT_POLL_INTERVAL (secondes, défaut 2, décimales acceptées) = pas d'échantillonnage.
+# Variable : BOOT_POLL_INTERVAL (secondes, défaut 2, décimales acceptées) = pas d'échantillonnage ; BOOT_S3_READY_TIMEOUT (défaut 30) = délai du stub S3
+# pour être prêt (hors healthy_after).
 #
 # Déroulé : volume jetable -> `docker run -d --restart on-failure:5 --health-interval 2s` (une boucle de
 # plantage devient un RestartCount > 0 ; bornée à 5 essais : pas d'orphelin infini si le job est tué) -> attente (HEALTHCHECK de l'image `healthy` et/ou --path en 2xx) -> fenêtre d'observation
@@ -72,18 +88,22 @@ PORT=3000
 MOUNT=''
 EXPECTS=''
 FORBIDS=''
+FORBIDPKGS=''
+S3_ALIAS=''
+S3_IMAGE=''
 SIDECARS=''
 TIMEOUT="${BOOT_TIMEOUT:-120}"
 SETTLE="${BOOT_SETTLE:-10}"
 LOG_LINES=100
 RM_IMAGE=0
 POLL="${BOOT_POLL_INTERVAL:-2}"
+S3_READY="${BOOT_S3_READY_TIMEOUT:-30}"
 NL='
 '
 
 log() { printf '%s %s: %s\n' "$PREFIX" "${SERVICE:-?}" "$*"; }
 usage() {
-  printf 'Usage : sh docker-boot-check.sh --service <svc> --image <image> [--env-file f] [--env K=V] [--secret NOM] [--rsa-keypair PRIV:PUB] [--path /healthz | --no-http] [--port 3000] [--volume /chemin] [--expect /chemin=statut] [--forbid /chemin | --forbid-ts] [--sidecar image=alias] [--timeout 120] [--settle 10] [--log-lines 100] [--rm-image]\n' >&2
+  printf 'Usage : sh docker-boot-check.sh --service <svc> --image <image> [--env-file f] [--env K=V] [--secret NOM] [--rsa-keypair PRIV:PUB] [--path /healthz | --no-http] [--port 3000] [--volume /chemin] [--expect /chemin=statut] [--forbid /chemin | --forbid-pkg /dossier | --forbid-ts] [--sidecar image=alias] [--s3-stub alias [--s3-stub-image image]] [--timeout 120] [--settle 10] [--log-lines 100] [--rm-image]\n' >&2
   exit 2
 }
 die() {
@@ -113,7 +133,10 @@ while [ $# -gt 0 ]; do
     --volume) [ $# -ge 2 ] || usage; MOUNT="$2"; shift 2 ;;
     --expect) [ $# -ge 2 ] || usage; EXPECTS="$EXPECTS$2$NL"; shift 2 ;;
     --forbid) [ $# -ge 2 ] || usage; FORBIDS="$FORBIDS$2$NL"; shift 2 ;;
-    --forbid-ts) FORBIDS="$FORBIDS/app/node_modules/typescript$NL/app/node_modules/@typescript$NL"; shift ;;
+    --forbid-pkg) [ $# -ge 2 ] || usage; FORBIDPKGS="$FORBIDPKGS$2$NL"; shift 2 ;;
+    --forbid-ts) FORBIDPKGS="$FORBIDPKGS/app/node_modules/typescript$NL/app/node_modules/@typescript$NL"; shift ;;
+    --s3-stub) [ $# -ge 2 ] || usage; [ -z "$S3_ALIAS" ] || die "--s3-stub ne s'utilise qu'une fois"; S3_ALIAS="$2"; shift 2 ;;
+    --s3-stub-image) [ $# -ge 2 ] || usage; S3_IMAGE="$2"; shift 2 ;;
     --sidecar) [ $# -ge 2 ] || usage; SIDECARS="$SIDECARS$2$NL"; shift 2 ;;
     --timeout) [ $# -ge 2 ] || usage; TIMEOUT="$2"; shift 2 ;;
     --settle) [ $# -ge 2 ] || usage; SETTLE="$2"; shift 2 ;;
@@ -135,6 +158,7 @@ is_number "${BOOT_SETTLE_MIN:-5}" || die "BOOT_SETTLE_MIN doit être un entier (
 [ "$NO_HTTP" = 0 ] || [ "$SETTLE" -ge "${BOOT_SETTLE_MIN:-5}" ] || die "--no-http n'observe que l'état du conteneur : --settle >= ${BOOT_SETTLE_MIN:-5} exigé (un vert sans attente serait vide)"
 is_number "$LOG_LINES" || die "--log-lines doit être un entier"
 is_poll "$POLL" || die "BOOT_POLL_INTERVAL invalide"
+is_number "$S3_READY" && [ "$S3_READY" -ge 1 ] || die "BOOT_S3_READY_TIMEOUT doit être un entier >= 1"
 [ -z "$MOUNT" ] || is_mount "$MOUNT" || die "--volume doit être un chemin absolu simple"
 [ -z "$PROBE_PATH" ] || is_path "$PROBE_PATH" || die "--path invalide (chemin absolu, caractères d'URL simples)"
 [ -z "$PROBE_PATH" ] || [ "$NO_HTTP" = 0 ] || die "--path et --no-http s'excluent"
@@ -153,6 +177,11 @@ printf '%s' "$EXPECTS" | while IFS= read -r e; do
   is_path "${e%=*}" && case "${e##*=}" in [1-5][0-9][0-9]) true ;; *) false ;; esac || exit 1
 done || die "--expect attend <chemin>=<statut HTTP à 3 chiffres>"
 printf '%s' "$FORBIDS" | while IFS= read -r f; do [ -z "$f" ] || { case "$f" in /*) ;; *) exit 1 ;; esac; case "$f" in *[!A-Za-z0-9/_.@-]*) exit 1 ;; esac; }; done || die "--forbid attend un chemin absolu simple (lettres, chiffres, / _ . @ -)"
+printf '%s' "$FORBIDPKGS" | while IFS= read -r f; do [ -z "$f" ] || { case "$f" in /*) ;; *) exit 1 ;; esac; case "$f" in *[!A-Za-z0-9/_.@-]*) exit 1 ;; esac; }; done || die "--forbid-pkg attend un dossier absolu simple (lettres, chiffres, / _ . @ -)"
+[ -z "$S3_ALIAS" ] || is_name "$S3_ALIAS" || die "--s3-stub attend un alias valide (lettres, chiffres, _ . -)"
+[ -z "$S3_IMAGE" ] || [ -n "$S3_ALIAS" ] || die "--s3-stub-image sans --s3-stub"
+[ -z "$S3_IMAGE" ] || is_image "$S3_IMAGE" || die "--s3-stub-image invalide"
+printf '%s' "$SIDECARS" | while IFS= read -r s; do [ -z "$s" ] || [ -z "$S3_ALIAS" ] || [ "${s##*=}" != "$S3_ALIAS" ] || exit 1; done || die "--s3-stub : l'alias $S3_ALIAS est déjà celui d'une --sidecar (deux conteneurs, un nom : résolution DNS aléatoire)"
 printf '%s' "$SIDECARS" | while IFS= read -r s; do
   [ -n "$s" ] || continue
   case "$s" in *=*) is_image "${s%=*}" && is_name "${s##*=}" || exit 1 ;; *) exit 1 ;; esac
@@ -238,9 +267,12 @@ fi
 
 # --- ressources jetables ---
 EXTRA=''
-if [ -n "$SIDECARS" ]; then
+if [ -n "$SIDECARS" ] || [ -n "$S3_ALIAS" ]; then
   docker network create "$NET" >/dev/null 2>&1 || finish_fail "création du réseau jetable impossible"
   HAS_NET=1
+  EXTRA="--network $NET"
+fi
+if [ -n "$SIDECARS" ]; then
   i=0
   while IFS= read -r s; do
     [ -n "$s" ] || continue
@@ -252,7 +284,124 @@ if [ -n "$SIDECARS" ]; then
   done <<EOF
 $SIDECARS
 EOF
-  EXTRA="--network $NET"
+fi
+
+# --- stub S3 (--s3-stub) : serveur minimal exécuté par l'image testée (ou --s3-stub-image), prêt avant le service ---
+# Les programmes tiennent dans des variables d'environnement du stub (jamais d'argument de ligne de commande de l'entrypoint) ; `sh` choisit
+# l'interpréteur présent. Pas de --restart (un stub qui plante doit se voir), pas de HEALTHCHECK (celui de l'image sondait le port du service).
+S3_JS='const http=require("http");
+const NS="http://s3.amazonaws.com/doc/2006-03-01/";
+const send=(req,res,code,body,hdr)=>{
+  const b=body||"";
+  res.writeHead(code,Object.assign({"Content-Type":"application/xml","Server":"dbc-s3-stub","Content-Length":Buffer.byteLength(b)},hdr||{}));
+  res.end(req.method==="HEAD"?"":b);
+  console.log(req.method+" "+req.url.split("?")[0]+" "+code);
+};
+const fail=(req,res,code,c)=>send(req,res,code,`<Error><Code>${c}</Code><Message>${c}</Message><Resource>${req.url.split("?")[0]}</Resource><RequestId>stub</RequestId></Error>`);
+http.createServer((req,res)=>{
+  req.on("error",()=>{});
+  req.on("end",()=>{
+    const u=new URL(req.url,"http://stub");
+    const n=u.pathname.split("/").filter(Boolean).length;
+    const q=u.searchParams;
+    const m=req.method;
+    if(m==="POST"&&q.has("delete")&&n>=1) return send(req,res,200,`<DeleteResult xmlns="${NS}"></DeleteResult>`);
+    if(n===0&&m==="GET") return send(req,res,200,`<ListAllMyBucketsResult xmlns="${NS}"><Buckets></Buckets></ListAllMyBucketsResult>`);
+    if(n===1&&(m==="GET"||m==="HEAD")){
+      if(q.has("location")) return send(req,res,200,`<LocationConstraint xmlns="${NS}">us-east-1</LocationConstraint>`);
+      if(m==="HEAD") return send(req,res,200,"");
+      return send(req,res,200,`<ListBucketResult xmlns="${NS}"><Name>stub</Name><Prefix></Prefix><KeyCount>0</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListBucketResult>`);
+    }
+    if(n===1&&(m==="PUT"||m==="DELETE")) return send(req,res,200,"");
+    if(n>=2){
+      if(m==="GET"||m==="HEAD") return fail(req,res,404,"NoSuchKey");
+      if(m==="PUT") return send(req,res,200,"",{ETag:"\"stub\""});
+      if(m==="DELETE") return send(req,res,204,"");
+      if(m==="POST"&&q.has("uploads")) return send(req,res,200,`<InitiateMultipartUploadResult xmlns="${NS}"><Bucket>stub</Bucket><Key>stub</Key><UploadId>stub</UploadId></InitiateMultipartUploadResult>`);
+      if(m==="POST"&&q.has("uploadId")) return send(req,res,200,`<CompleteMultipartUploadResult xmlns="${NS}"><Bucket>stub</Bucket><Key>stub</Key><ETag>"stub"</ETag></CompleteMultipartUploadResult>`);
+    }
+    return fail(req,res,501,"NotImplemented");
+  });
+  req.resume();
+}).listen(9000,"0.0.0.0",()=>console.log("DBC_S3_STUB_READY"));'
+S3_PY='import sys
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlsplit, parse_qs
+NS = "http://s3.amazonaws.com/doc/2006-03-01/"
+class H(BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+    def send(self, code, body="", hdr=None):
+        b = body.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/xml")
+        self.send_header("Server", "dbc-s3-stub")
+        self.send_header("Content-Length", str(len(b)))
+        for k, v in (hdr or {}).items():
+            self.send_header(k, v)
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(b)
+        print(self.command, urlsplit(self.path).path, code, flush=True)
+    def fail(self, code, c):
+        self.send(code, "<Error><Code>%s</Code><Message>%s</Message><Resource>%s</Resource><RequestId>stub</RequestId></Error>" % (c, c, urlsplit(self.path).path))
+    def handle_any(self):
+        n = int(self.headers.get("Content-Length") or 0)
+        while n > 0:
+            n -= len(self.rfile.read(min(n, 65536)) or b"x" * n)
+        u = urlsplit(self.path)
+        k = len([x for x in u.path.split("/") if x])
+        q = parse_qs(u.query, keep_blank_values=True)
+        m = self.command
+        if m == "POST" and "delete" in q and k >= 1:
+            return self.send(200, "<DeleteResult xmlns=\"%s\"></DeleteResult>" % NS)
+        if k == 0 and m == "GET":
+            return self.send(200, "<ListAllMyBucketsResult xmlns=\"%s\"><Buckets></Buckets></ListAllMyBucketsResult>" % NS)
+        if k == 1 and m in ("GET", "HEAD"):
+            if "location" in q:
+                return self.send(200, "<LocationConstraint xmlns=\"%s\">us-east-1</LocationConstraint>" % NS)
+            if m == "HEAD":
+                return self.send(200)
+            return self.send(200, "<ListBucketResult xmlns=\"%s\"><Name>stub</Name><Prefix></Prefix><KeyCount>0</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListBucketResult>" % NS)
+        if k == 1 and m in ("PUT", "DELETE"):
+            return self.send(200)
+        if k >= 2:
+            if m in ("GET", "HEAD"):
+                return self.fail(404, "NoSuchKey")
+            if m == "PUT":
+                return self.send(200, "", {"ETag": "\"stub\""})
+            if m == "DELETE":
+                return self.send(204)
+            if m == "POST" and "uploads" in q:
+                return self.send(200, "<InitiateMultipartUploadResult xmlns=\"%s\"><Bucket>stub</Bucket><Key>stub</Key><UploadId>stub</UploadId></InitiateMultipartUploadResult>" % NS)
+            if m == "POST" and "uploadId" in q:
+                return self.send(200, "<CompleteMultipartUploadResult xmlns=\"%s\"><Bucket>stub</Bucket><Key>stub</Key><ETag>\"stub\"</ETag></CompleteMultipartUploadResult>" % NS)
+        return self.fail(501, "NotImplemented")
+    do_GET = do_HEAD = do_PUT = do_POST = do_DELETE = do_OPTIONS = handle_any
+srv = ThreadingHTTPServer(("0.0.0.0", 9000), H)
+print("DBC_S3_STUB_READY", flush=True)
+srv.serve_forever()'
+S3_SH='if command -v node >/dev/null 2>&1; then exec node -e "$DBC_STUB_NODE"; fi
+if command -v python3 >/dev/null 2>&1; then exec python3 -c "$DBC_STUB_PY"; fi
+if command -v python >/dev/null 2>&1; then exec python -c "$DBC_STUB_PY"; fi
+echo "DBC_S3_STUB_NO_RUNTIME : ni node ni python dans l image du stub (--s3-stub-image)"
+exit 127'
+if [ -n "$S3_ALIAS" ]; then
+  s3n="$C-s3stub"
+  SIDE_NAMES="$SIDE_NAMES $s3n"
+  S3_START=$(now)
+  docker run -d --name "$s3n" --label com.slobodafr.docker-boot-check=1 --network "$NET" --network-alias "$S3_ALIAS" --no-healthcheck \
+    --entrypoint sh -e NODE_OPTIONS= -e "DBC_STUB_NODE=$S3_JS" -e "DBC_STUB_PY=$S3_PY" "${S3_IMAGE:-$IMAGE}" -c "$S3_SH" >/dev/null 2>"$T/s3.err" \
+    || finish_fail "s3-stub non démarré : $(head -n 1 "$T/s3.err")"
+  S3_DEADLINE=$((S3_START + S3_READY))
+  while :; do
+    sst=$(docker inspect -f '{{.State.Status}}' "$s3n" 2>/dev/null) || sst=absent
+    [ "$sst" = running ] || finish_fail "s3-stub arrêté (état $sst) : ni node ni python dans l'image ? voir --s3-stub-image"
+    if docker logs "$s3n" 2>&1 | grep -q DBC_S3_STUB_READY; then break; fi
+    [ "$(now)" -lt "$S3_DEADLINE" ] || finish_fail "s3-stub non prêt après ${S3_READY}s"
+    sleep "$POLL"
+  done
+  log "s3-stub alias=$S3_ALIAS ready after $(($(now) - S3_START))s"
 fi
 VOLARG=''
 if [ -n "$MOUNT" ]; then
@@ -415,6 +564,28 @@ done <<EOF
 $FORBIDS
 EOF
 [ -z "$FOUND" ] || finish_fail "chemin(s) interdit(s) présent(s) dans l'image : $FOUND"
+
+# --- dossiers sans paquet (--forbid-pkg) : un dossier vide (reste de `npm prune`) est conforme ---
+# Protocole dans le conteneur : `absent`, `present <chemin>` ou `error` ; toute autre sortie (docker exec en échec, sh ou find absent) = échec.
+PKG_SCRIPT='p=$1
+if [ -L "$p" ]; then echo "present $p"; exit 0; fi
+[ -e "$p" ] || { echo absent; exit 0; }
+if [ ! -d "$p" ]; then echo "present $p"; exit 0; fi
+f=$(find "$p" -mindepth 1 \( -type f -o -type l \) 2>/dev/null) || { echo error; exit 0; }
+if [ -n "$f" ]; then printf "present %s\n" "$(printf "%s\n" "$f" | head -n 1)"; else echo absent; fi'
+FOUNDPKG=''
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  res=$(docker exec "$C" sh -c "$PKG_SCRIPT" sh "$f" 2>/dev/null)
+  case $res in
+    absent) ;;
+    "present "*) FOUNDPKG="$FOUNDPKG${FOUNDPKG:+, }$f (ex. ${res#present })" ;;
+    *) finish_fail "impossible de vérifier --forbid-pkg $f dans le conteneur (docker exec, sh ou find indisponible)" ;;
+  esac
+done <<EOF
+$FORBIDPKGS
+EOF
+[ -z "$FOUNDPKG" ] || finish_fail "paquet(s) interdit(s) présent(s) dans l'image : $FOUNDPKG"
 
 # --- sondes supplémentaires ---
 PROBES=0
