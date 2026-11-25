@@ -51,10 +51,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image (no push)
+      - name: Lockfile guard (runtime packages must live in /app/node_modules)
+        run: sh .github/scripts/lockfile-runtime-check.sh --service home-budget --dockerfile Dockerfile --workspace backend
+
+      - name: Build Docker image (loaded, no push)
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           context: .
+          load: true
           push: false
+          tags: home-budget:ci-${{ github.run_id }}-${{ github.run_attempt }}
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
+
+      - name: Boot check (the container must start and stay healthy)
+        run: |
+          sh .github/scripts/docker-boot-check.sh --service home-budget --image home-budget:ci-${{ github.run_id }}-${{ github.run_attempt }} --rm-image \
+            --volume /app/backend/data --path /healthz --expect /healthz=200 --expect /api/household=401 --expect /api/inconnu=404 --forbid-ts \
+            --env AUTH_SERVICE_URL=https://auth.example.test --env FRONTEND_URL=https://budget.example.test \
+            --env AUTH_CLIENT_ID=budget-ci --env AUTH_CLIENT_SECRET=ci-dummy-client-secret --env AUTH_WEBHOOK_SECRET=ci-dummy-webhook-secret \
+            --secret PERSONAL_DATA_KEY --secret PSEUDONYM_SECRET
