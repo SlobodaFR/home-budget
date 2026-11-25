@@ -32,7 +32,18 @@ Pose le cookie `access_token` (HS256, secret local) et redirige vers `/`. Refuse
 
 ### `POST /api/auth/logout`
 
-Efface les cookies de session locaux (`204`). Pas de déconnexion globale.
+Efface toujours les cookies de session locaux (`access_token`, `refresh_token`). Réponse `200` en
+`Cache-Control: no-store` : `{ "redirect_to": string | null }`. `redirect_to` est l'URL de déconnexion de
+home-auth (PC10) quand le flag `auth-rp-initiated-logout` est actif, `null` sinon (et en `AUTH_MODE=dev`) :
+la SPA y navigue alors par navigation de premier niveau. Flag actif, pose aussi le cookie `logout_state`
+(httpOnly, `SameSite=Lax`, `Path=/api/auth`, 10 min). Même origine exigée (`403` sinon). Pas de déconnexion
+globale.
+
+### `GET /api/auth/logged-out?state=` (public)
+
+Retour de home-auth après la déconnexion. `Cache-Control: no-store`, efface toujours `logout_state`, puis
+`302` vers `/login?logged_out=1` si `state` correspond au cookie, sinon vers `/login`. Ne lance jamais
+`/authorize`.
 
 ### `GET /api/auth/me`
 
