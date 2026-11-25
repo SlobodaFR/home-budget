@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuthConfig } from '../../application/use-auth-config';
 import { useAuth } from '../auth/AuthProvider';
 import { ErrorNotice } from '../components/ErrorNotice';
@@ -12,6 +12,8 @@ function capitalize(value: string): string {
 export function LoginPage() {
   const { user, loading: authLoading } = useAuth();
   const { config, loading, failed, retry } = useAuthConfig();
+  const [searchParams] = useSearchParams();
+  const loggedOut = searchParams.get('logged_out') === '1';
 
   if (authLoading) {
     return <LoadingScreen />;
@@ -31,6 +33,15 @@ export function LoginPage() {
             Le budget de la maison, ensemble, avec un espace perso pour chacun.
           </p>
         </div>
+
+        {loggedOut && (
+          <p
+            role="status"
+            className="text-center font-body-md text-body-md text-mute"
+          >
+            Vous avez été déconnecté.
+          </p>
+        )}
 
         {loading && <LoadingScreen />}
         {failed && (

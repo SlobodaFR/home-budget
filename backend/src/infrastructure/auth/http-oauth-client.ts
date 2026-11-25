@@ -41,6 +41,24 @@ export class HttpOAuthClient extends OAuthClient {
     return url.toString();
   }
 
+  logoutUrl(params: {
+    postLogoutRedirectUri: string;
+    state: string;
+    accessTokenHint?: string;
+  }): string {
+    const url = new URL('/logout', this.authServiceUrl);
+    url.searchParams.set('client_id', this.clientId);
+    url.searchParams.set(
+      'post_logout_redirect_uri',
+      params.postLogoutRedirectUri,
+    );
+    url.searchParams.set('state', params.state);
+    if (params.accessTokenHint) {
+      url.searchParams.set('access_token_hint', params.accessTokenHint);
+    }
+    return url.toString();
+  }
+
   async exchangeCode(code: string, redirectUri: string): Promise<TokenPair> {
     return this.requestToken({
       grant_type: 'authorization_code',

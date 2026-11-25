@@ -62,6 +62,9 @@ export class UnavailableOAuthClient extends OAuthClient {
   authorizeUrl(): string {
     throw new Error('OAuth indisponible en mode dev');
   }
+  logoutUrl(): string {
+    throw new Error('OAuth indisponible en mode dev');
+  }
   exchangeCode(): Promise<TokenPair> {
     return Promise.reject(new Error('OAuth indisponible en mode dev'));
   }
