@@ -22,6 +22,14 @@ export class SingleFlightOAuthClient extends OAuthClient {
     return this.inner.authorizeUrl(redirectUri);
   }
 
+  logoutUrl(params: {
+    postLogoutRedirectUri: string;
+    state: string;
+    accessTokenHint?: string;
+  }): string {
+    return this.inner.logoutUrl(params);
+  }
+
   exchangeCode(code: string, redirectUri: string): Promise<TokenPair> {
     return this.inner.exchangeCode(code, redirectUri);
   }

@@ -22,7 +22,18 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+/** Top-level navigation (never fetch): home-auth's logout needs its SSO cookie. */
+function navigateTo(url: string): void {
+  window.location.assign(url);
+}
+
+export function AuthProvider({
+  children,
+  navigate = navigateTo,
+}: {
+  children: ReactNode;
+  navigate?: (url: string) => void;
+}) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,13 +70,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    let redirectTo: string | null = null;
     try {
-      await apiClient.logout();
-    } finally {
+      ({ redirectTo } = await apiClient.logout());
+    } catch (error) {
       sessionCache.clear();
       setUser(null);
+      throw error;
     }
-  }, []);
+    // Always, before leaving: the offline fallback must not resurrect the user on return.
+    sessionCache.clear();
+    if (redirectTo) {
+      // The page leaves for home-auth, which sends the browser back to /login.
+      navigate(redirectTo);
+      return;
+    }
+    setUser(null);
+  }, [navigate]);
 
   const value = useMemo(
     () => ({ user, loading, logout }),

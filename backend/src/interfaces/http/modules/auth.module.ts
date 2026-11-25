@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthenticateLogoutWebhookUseCase } from '../../../application/auth/authenticate-logout-webhook.use-case';
+import { InitiateServiceLogoutUseCase } from '../../../application/auth/initiate-service-logout.use-case';
 import { HandleOAuthCallbackUseCase } from '../../../application/auth/handle-oauth-callback.use-case';
 import { HandleSessionRevokedUseCase } from '../../../application/auth/handle-session-revoked.use-case';
 import { AccessTokenVerifier } from '../../../domain/auth/access-token-verifier';
@@ -56,6 +57,15 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
     },
     HandleOAuthCallbackUseCase,
     HandleSessionRevokedUseCase,
+    {
+      provide: InitiateServiceLogoutUseCase,
+      inject: [FeatureFlags, AccessTokenVerifier, OAuthClient],
+      useFactory: (
+        flags: FeatureFlags,
+        verifier: AccessTokenVerifier,
+        oauthClient: OAuthClient,
+      ) => new InitiateServiceLogoutUseCase(flags, verifier, oauthClient),
+    },
     { provide: Clock, useClass: SystemClock },
     {
       provide: AuthenticateLogoutWebhookUseCase,

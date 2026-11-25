@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { TokenPair } from '../../domain/auth/oauth-client';
 import {
   ACCESS_TOKEN_COOKIE_NAME,
+  LOGOUT_STATE_COOKIE_NAME,
   REFRESH_TOKEN_COOKIE_NAME,
 } from './auth-session';
 
@@ -34,4 +35,38 @@ export function setAuthCookies(
 export function clearAuthCookies(response: Response): void {
   response.clearCookie(ACCESS_TOKEN_COOKIE_NAME);
   response.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+}
+
+const LOGOUT_STATE_MAX_AGE_MS = 10 * 60 * 1000;
+
+/** Same options for set and clear: express only clears a cookie whose Path matches. */
+function logoutStateCookieOptions(config: ConfigService) {
+  return {
+    httpOnly: true,
+    secure: config.get<string>('NODE_ENV') === 'production',
+    sameSite: 'lax' as const,
+    path: '/api/auth',
+  };
+}
+
+/** Short-lived anti-CSRF `state` of the service-initiated logout (PC10), checked on return. */
+export function setLogoutStateCookie(
+  response: Response,
+  state: string,
+  config: ConfigService,
+): void {
+  response.cookie(LOGOUT_STATE_COOKIE_NAME, state, {
+    ...logoutStateCookieOptions(config),
+    maxAge: LOGOUT_STATE_MAX_AGE_MS,
+  });
+}
+
+export function clearLogoutStateCookie(
+  response: Response,
+  config: ConfigService,
+): void {
+  response.clearCookie(
+    LOGOUT_STATE_COOKIE_NAME,
+    logoutStateCookieOptions(config),
+  );
 }

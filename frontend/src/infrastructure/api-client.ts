@@ -241,8 +241,19 @@ export const apiClient = {
       throw error;
     }
   },
-  logout(): Promise<void> {
-    return request<void>('/auth/logout', 'POST');
+  /**
+   * Local logout. `redirectTo` is home-auth's logout URL when the server runs the
+   * service-initiated flow (PC10), null for a local-only logout. Tolerates an empty body.
+   */
+  async logout(): Promise<{ redirectTo: string | null }> {
+    const response = await send('/auth/logout', 'POST');
+    const body = (await response.json().catch(() => null)) as {
+      redirect_to?: unknown;
+    } | null;
+    return {
+      redirectTo:
+        typeof body?.redirect_to === 'string' ? body.redirect_to : null,
+    };
   },
 
   async fetchHousehold(): Promise<Household | null> {

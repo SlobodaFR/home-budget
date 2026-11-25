@@ -59,12 +59,40 @@ Authorization Code flow :
 - La session cote budget est stockee dans deux cookies httpOnly : `access_token` (courte duree, fournie
   par auth-service) et `refresh_token` (~30 jours). `JwtAuthGuard` verifie l'access token via JWKS
   (`/.well-known/jwks.json`) et tente un refresh silencieux si besoin.
-- `POST /api/auth/logout` ne fait que vider les cookies locaux (pas de logout global).
+- `POST /api/auth/logout` vide toujours les cookies locaux (`access_token`, `refresh_token`) ; derriere le
+  flag `auth-rp-initiated-logout`, il lance aussi la deconnexion SSO de ce navigateur (voir
+  « Deconnexion initiee par le service (PC10) » ci-dessous). Ce n'est pas un logout global.
+- `GET /api/auth/logged-out` est le retour public de cette deconnexion (`post_logout_redirect_uri`).
 - `POST /api/auth/disconnect` est le `logoutWebhookUrl` enregistre aupres d'auth-service
   (`{ "userId": "..." }`) : appele lors d'un logout global, il marque l'utilisateur comme revoque
   (horodatage courant) ; tout access token emis avant cet instant est ensuite rejete par
   `JwtAuthGuard`. Il est authentifie par la **signature** de home-auth (contrat PC7, voir ci-dessous) ou,
   pendant la transition, par l'ancien `?secret=AUTH_WEBHOOK_SECRET`.
+
+### Deconnexion initiee par le service (PC10)
+
+Derriere le flag `auth-rp-initiated-logout` (defaut du code : `false`). `POST /api/auth/logout` (meme
+origine, `SameOriginGuard`) repond `200` en `Cache-Control: no-store`, efface toujours `access_token` et
+`refresh_token` (home-auth ne revoque rien) puis, flag actif, pose le cookie `logout_state` (httpOnly,
+`SameSite=Lax`, `Path=/api/auth`, 10 min, `Secure` en production) et renvoie `{ redirect_to }` =
+`GET <AUTH_SERVICE_URL>/logout?client_id&post_logout_redirect_uri&state[&access_token_hint]`. Flag
+inactif : `{ redirect_to: null }`, deconnexion locale seule. (`redirect_to` est en snake_case a dessein :
+c'est le nom du champ du contrat `POST /auth/rp-logout` de home-auth.) Le hint est l'access token du cookie
+s'il est valide, sinon un access token obtenu par refresh (3 s max ; le nouveau refresh token n'est jamais
+stocke ; un echec = pas de hint, donc ecran de confirmation de home-auth, jamais un signal de deconnexion).
+Le `post_logout_redirect_uri` est `FRONTEND_URL/api/auth/logged-out` (meme origine que la redirectUri
+`FRONTEND_URL/api/auth/callback`). `GET /api/auth/logged-out?state=` compare le `state` au cookie
+(absent, repete ou different : `/login` sans bandeau), efface le cookie et redirige vers
+`/login?logged_out=1` (bandeau « Vous avez ete deconnecte. », jamais d'`/authorize` automatique). Le
+cookie `logout_state` vit 10 min : rester plus longtemps sur l'ecran de confirmation de home-auth ramene sur
+`/login` sans bandeau (autorise par le contrat). En `AUTH_MODE=dev` (pas de client OAuth), la deconnexion
+reste locale. Cote SPA, la navigation vers home-auth est une navigation de premier niveau ; en PWA
+installee, verifier une fois sur appareil reel avant d'activer le flag.
+
+Ordre d'activation : activer d'abord le flag dans home-auth, puis celui de budget. Retour arriere :
+desactiver budget d'abord (ou `FEATURES_PIN_AUTH_RP_INITIATED_LOGOUT=false` + redemarrage). Budget actif
+alors que home-auth est inactif : l'utilisateur est deconnecte de budget puis arrive sur un `404` JSON de
+home-auth.
 
 ### Webhook de deconnexion signe (double acceptation)
 
@@ -189,6 +217,7 @@ home-budget : c'est la copie de celui de home-auth, que tous les services home-*
 | -------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `auth-verify-token-claims`       | `false`        | `true` : `JwksAccessTokenVerifier` verifie aussi l'audience (`AUTH_CLIENT_ID`), l'emetteur (origine de `AUTH_SERVICE_URL`) et l'algorithme (`RS256`) des access tokens. `false` : seule la signature est verifiee (comportement historique). Evalue a chaque verification, sans bloquer (memo de 30 s). Le mode `AUTH_MODE=dev` n'est pas concerne. |
 | `auth-webhook-require-signature` | `false`        | `true` : le webhook `POST /api/auth/disconnect` n'accepte plus que la signature `X-Auth-Webhook-*` (l'ancien `?secret=` est refuse). `false` : signature valide ou ancien `?secret=`.                                                                                                                                                               |
+| `auth-rp-initiated-logout`       | `false`        | `true` : `POST /api/auth/logout` renvoie `{ redirect_to }` (URL de deconnexion de home-auth, PC10) que la SPA ouvre par navigation de premier niveau. `false` : deconnexion locale seule (`redirect_to: null`). Flag propre a budget, distinct de celui de home-auth.                                                                               |
 
 ## Telemetrie
 
