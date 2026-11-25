@@ -9,56 +9,11 @@ cd "$DEPLOY_DIR/deploy"
 export IMAGE
 export IMAGE_TAG
 
-# Nombre de versions de l'image à garder après un déploiement : la version courante + la précédente.
-# Garder plus n'apporte presque rien : l'image de chaque version reste disponible sur GHCR, et revenir plus
-# d'une version en arrière est de toute façon risqué (les migrations de base ne se défont pas toutes seules).
-KEEP_VERSIONS="${KEEP_VERSIONS:-2}"
-
-# Projet docker compose de cette application (cf. `name:` dans docker-compose.yml). Sert à ne nettoyer QUE ce
-# projet : ce VPS héberge d'autres services dont on ne doit toucher ni les conteneurs, ni les images, ni les volumes.
 COMPOSE_PROJECT="${COMPOSE_PROJECT:-budget}"
 
-# Supprime les anciennes versions de $IMAGE au-delà des $1 plus récentes.
-# Ne touche jamais : à une image utilisée par un conteneur (même arrêté), au tag qui va être déployé, ni aux
-# images des autres applications du VPS.
-cleanup_old_images() {
-  keep="$1"
-  in_use=$(docker ps -a --format '{{.Image}}')
-  # `docker image ls` liste les images de la plus récente à la plus ancienne.
-  docker image ls "$IMAGE" --format '{{.Tag}}' \
-    | grep -v '^<none>$' \
-    | tail -n +"$((keep + 1))" \
-    | while read -r tag; do
-        [ "$tag" = "$IMAGE_TAG" ] && continue
-        if printf '%s\n' "$in_use" | grep -qxF "$IMAGE:$tag"; then
-          continue
-        fi
-        echo "Suppression de l'ancienne image $IMAGE:$tag"
-        docker image rm "$IMAGE:$tag" || true
-      done
-}
-
-# Nettoyage volontairement prudent, limité à cette application :
-# - conteneurs arrêtés : seulement ceux du projet compose ci-dessus (jamais ceux des autres services) ;
-# - images : anciennes versions de $IMAGE uniquement, plus les images orphelines (sans nom ni conteneur) de plus
-#   de 24 h, qui ne servent à personne ;
-# - cache de build : seulement s'il a plus de 7 jours ;
-# - VOLUMES : jamais supprimés (ni nommés, ni anonymes) : la base SQLite (budget-data) et les données des autres
-#   services ne doivent dépendre d'aucun nettoyage automatique.
-cleanup_docker() {
-  keep="$1"
-  docker container prune -f --filter "label=com.docker.compose.project=$COMPOSE_PROJECT"
-  cleanup_old_images "$keep"
-  docker image prune -f --filter "until=24h"
-  docker builder prune -f --filter "until=168h" || true
-}
-
-echo "Espace disque avant nettoyage :"
-df -h / | tail -n 1
-
-# Avant le pull : on libère de la place pour que le téléchargement passe
-# (la nouvelle image s'ajoutera aux $((KEEP_VERSIONS - 1)) conservées).
-cleanup_docker "$((KEEP_VERSIONS - 1))"
+# Convention harnais image-retention : AVANT le pull, fait de la place (garde 1 image du service en plus de celle en cours).
+sh "$DEPLOY_DIR/deploy/scripts/prune-service-images.sh" --phase pre \
+  --service budget --image ghcr.io/slobodafr/home-budget --tag "$IMAGE_TAG" --project budget
 
 docker compose pull
 
@@ -101,11 +56,9 @@ if [ -n "$CHOWN_FAILED" ]; then
   exit 1
 fi
 
-# Après le déploiement : on ne garde que la courante + les précédentes.
-cleanup_docker "$KEEP_VERSIONS"
-
-echo "Espace disque après déploiement :"
-df -h / | tail -n 1
+# Convention harnais image-retention : APRÈS un déploiement sain uniquement (set -e), garde la courante + la précédente.
+sh "$DEPLOY_DIR/deploy/scripts/prune-service-images.sh" --phase post \
+  --service budget --image ghcr.io/slobodafr/home-budget --tag "$IMAGE_TAG" --project budget
 
 if ! command -v caddy >/dev/null 2>&1; then
   sudo apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https curl
