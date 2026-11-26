@@ -21,6 +21,7 @@ import { SpaceOrmEntity } from './entities/space.orm-entity';
 import { TransactionOrmEntity } from './entities/transaction.orm-entity';
 import { UserOrmEntity } from './entities/user.orm-entity';
 import { MIGRATIONS } from './migrations';
+import { serializedDataSourceFactory } from './serialized-connection';
 
 export const ORM_ENTITIES = [
   UserOrmEntity,
@@ -60,6 +61,8 @@ export const ORM_ENTITIES = [
         migrationsRun: true,
         migrations: MIGRATIONS,
       }),
+      // Avant initialize() : les migrations tournent deja sur la connexion serialisee.
+      dataSourceFactory: serializedDataSourceFactory,
     }),
   ],
 })
