@@ -7,11 +7,14 @@
 //   node release-version.mjs next            version suivante (stdout ; GITHUB_OUTPUT : version, tag, previous, reused)
 //   node release-version.mjs publish <X.Y.Z> tag annoté vX.Y.Z sur HEAD, poussé, + release GitHub (sauter si elle existe)
 //   node release-version.mjs notes <de> <à>  notes de release : commits first-parent de (de, à]
+//   node release-version.mjs backfill-releases  releases GitHub des tags posés par le backfill (minor/major + dernier), via GITHUB_TOKEN (workflow backfill-releases.yml)
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 export const TAG_RE = /^v(\d+)\.(\d+)\.(\d+)$/;
+/** Préfixe du message des tags annotés posés par le backfill (ceux des releases du workflow commencent par `release `). */
+export const BACKFILL_MARK = 'backfill:';
 const RANK = { patch: 0, minor: 1, major: 2 };
 
 export const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 }).trim();
@@ -131,6 +134,44 @@ export function publish(cwd, version, { gh = 'gh', push = true } = {}) {
   return { tag, release: 'créée' };
 }
 
+/** Vrai si passer de `prev` à `cur` change le minor ou le major (versions qui reçoivent une release de backfill). */
+export const isRelease = (prev, cur) => {
+  const [a, b] = [prev.slice(1).split('.').map(Number), cur.slice(1).split('.').map(Number)];
+  return a[0] !== b[0] || a[1] !== b[1];
+};
+
+/** Releases rétroactives : première version, chaque changement de minor/major, dernière ; `from` = release précédente (changelog complet). */
+export function releasePlan(cwd, until = 'HEAD') {
+  const out = git(cwd, 'for-each-ref', '--format=%(refname:short)%09%(contents:subject)', 'refs/tags/v*');
+  const tags = out.split('\n').filter(Boolean).map((l) => l.split('\t')).filter(([t, m]) => TAG_RE.test(t) && (m ?? '').startsWith(BACKFILL_MARK)).map(([t]) => t).sort(compareVersions);
+  const merged = new Set(tagsMerged(cwd, until));
+  const mine = tags.filter((t) => merged.has(t));
+  const picks = mine.filter((t, i) => i > 0 && isRelease(mine[i - 1], t)).concat(mine.length ? [mine[mine.length - 1]] : []);
+  const unique = [...new Set([...(mine.length ? [mine[0]] : []), ...picks])].sort(compareVersions);
+  return unique.map((t, i) => ({ tag: t, from: i === 0 ? '' : unique[i - 1] }));
+}
+
+/**
+ * Crée les releases rétroactives manquantes (`--latest=false`, relançable). À exécuter dans Actions avec GITHUB_TOKEN (workflow backfill-releases.yml) :
+ * une release créée avec GITHUB_TOKEN ne déclenche aucun workflow, alors qu'avec un jeton personnel chaque release lance le workflow du commit du tag
+ * (ancien `release: published` → reconstruction d'une ancienne image).
+ */
+export function backfillReleases(cwd, { gh = 'gh', until = 'HEAD' } = {}) {
+  const run = (input, ...args) => execFileSync(gh, args, { cwd, encoding: 'utf8', input, stdio: ['pipe', 'pipe', 'pipe'] });
+  let made = 0;
+  let kept = 0;
+  for (const { tag, from } of releasePlan(cwd, until)) {
+    try {
+      run('', 'release', 'view', tag);
+      kept++;
+      continue;
+    } catch {}
+    run(releaseNotes(cwd, from, tag), 'release', 'create', tag, '--verify-tag', '--title', tag, '--notes-file', '-', '--latest=false');
+    made++;
+  }
+  return { made, kept };
+}
+
 function main() {
   const [cmd, ...args] = process.argv.slice(2);
   const cwd = process.cwd();
@@ -143,10 +184,14 @@ function main() {
     } else if (cmd === 'publish' && args[0]) {
       const r = publish(cwd, args[0]);
       console.log(`[release-version] ${r.tag} : tag poussé, release ${r.release}`);
+    } else if (cmd === 'backfill-releases') {
+      if (!process.env.GITHUB_ACTIONS) throw new Error('à lancer dans Actions (workflow backfill-releases.yml, GITHUB_TOKEN) : une release créée avec un jeton personnel déclencherait les workflows des anciens commits');
+      const r = backfillReleases(cwd);
+      console.log(`[release-version] releases : ${r.made} créées, ${r.kept} déjà présentes`);
     } else if (cmd === 'notes' && args.length === 2) {
       process.stdout.write(releaseNotes(cwd, args[0], args[1]));
     } else {
-      console.error('Usage : release-version.mjs next | publish <X.Y.Z> | notes <de> <à>');
+      console.error('Usage : release-version.mjs next | publish <X.Y.Z> | notes <de> <à> | backfill-releases');
       process.exit(2);
     }
   } catch (e) {

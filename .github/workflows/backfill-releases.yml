@@ -1,0 +1,30 @@
+# Outil ponctuel de la convention `release-versioning` : crée les releases GitHub des versions du backfill (minor/major + dernière), avec GITHUB_TOKEN.
+# À lancer à la main (workflow_dispatch) APRÈS le merge de la PR de convention. Une release créée avec GITHUB_TOKEN ne déclenche aucun workflow ;
+# avec un jeton personnel, chaque release relancerait le workflow du commit de son tag (ancien `release: published` : reconstruction d'une ancienne image).
+# Relançable : les releases existantes sont conservées.
+name: Backfill releases
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  releases:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Ensure gh CLI
+        run: command -v gh >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends gh; }
+      - name: Create backfill releases
+        run: node .github/scripts/release-version.mjs backfill-releases

@@ -16,7 +16,7 @@ env:
 
 jobs:
   version:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read
     outputs:
@@ -26,13 +26,16 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
       - name: Compute next version
         id: next
         run: node .github/scripts/release-version.mjs next
 
   build-and-push:
     needs: version
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: read
       packages: write
@@ -63,6 +66,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          platforms: linux/amd64
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -75,7 +79,7 @@ jobs:
 
   release:
     needs: [version, build-and-push]
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     permissions:
       contents: write
     env:
@@ -85,5 +89,11 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # Le runner auto-hébergé (RUNNER_LABEL) n'a pas forcément `gh`, que `release-version.mjs publish` utilise.
+      - name: Ensure gh CLI
+        run: command -v gh >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends gh; }
       - name: Tag and release
         run: node .github/scripts/release-version.mjs publish "${{ needs.version.outputs.version }}"
