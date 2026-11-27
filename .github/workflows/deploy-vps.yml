@@ -21,9 +21,17 @@ jobs:
 
       - name: Resolve image tag
         id: tag
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
         run: |
-          echo "value=sha-$(echo '${{ github.event.workflow_run.head_sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "value=sha-$(echo "$HEAD_SHA" | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/$(echo "$REPO" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          # Convention harnais release-versioning : la version ne sert qu'au journal (l'image reste épinglée sur sha-<7>) ; jamais un échec.
+          version="$(git ls-remote --tags origin 'refs/tags/v*^{}' | awk -v sha="$HEAD_SHA" '$1 == sha { sub("^refs/tags/v", "", $2); sub("\\^\\{\\}$", "", $2); print $2 }' | sort -V | tail -1 || true)"
+          [ -n "$version" ] || version=unknown
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "[deploy] version=$version image_tag=sha-$(echo "$HEAD_SHA" | cut -c1-7)"
 
       - name: Load secrets from 1Password
         uses: 1password/load-secrets-action@v2
@@ -179,3 +187,22 @@ jobs:
           DEPLOY_DIR: /opt/budget
           GHCR_PAT: ${{ env.GHCR_PAT }}
           GHCR_USER: ${{ github.repository_owner }}
+
+      - name: Verify deployed version (warning only)
+        if: success()
+        continue-on-error: true
+        env:
+          EXPECTED: ${{ steps.tag.outputs.version }}
+          SITE_URL: ${{ env.FRONTEND_URL }}
+        run: |
+          got=""
+          for i in 1 2 3 4 5 6; do
+            got="$(curl -fsS --max-time 10 "${SITE_URL%/}/version" 2>/dev/null | sed -n 's/.*"version":"\([^"]*\)".*/\1/p' || true)"
+            [ -n "$got" ] && break
+            sleep 5
+          done
+          if [ "$got" = "$EXPECTED" ]; then
+            echo "[deploy] verified version=$got"
+          else
+            echo "::warning::[deploy] version mismatch: expected=$EXPECTED got=${got:-none}"
+          fi

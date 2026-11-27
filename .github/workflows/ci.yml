@@ -71,7 +71,7 @@ jobs:
       - name: Boot check (the container must start and stay healthy)
         run: |
           sh .github/scripts/docker-boot-check.sh --service home-budget --image home-budget:ci-${{ github.run_id }}-${{ github.run_attempt }} --rm-image \
-            --volume /app/backend/data --path /healthz --expect /healthz=200 --expect /api/household=401 --expect /api/inconnu=404 --forbid-ts \
+            --volume /app/backend/data --path /healthz --expect /healthz=200 --expect /version=200 --expect /api/household=401 --expect /api/inconnu=404 --forbid-ts \
             --env AUTH_SERVICE_URL=https://auth.example.test --env FRONTEND_URL=https://budget.example.test \
             --env AUTH_CLIENT_ID=budget-ci --env AUTH_CLIENT_SECRET=ci-dummy-client-secret --env AUTH_WEBHOOK_SECRET=ci-dummy-webhook-secret \
             --secret PERSONAL_DATA_KEY --secret PSEUDONYM_SECRET

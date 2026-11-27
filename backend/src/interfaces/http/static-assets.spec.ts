@@ -18,6 +18,14 @@ class HealthStub {
 }
 
 @Controller()
+class VersionStub {
+  @Get('version')
+  version() {
+    return { version: 'dev' };
+  }
+}
+
+@Controller()
 class ApiStub {
   @Get('ping')
   ping() {
@@ -42,7 +50,7 @@ describe('fallback SPA (ServeStatic, Express 5)', () => {
 
     @Module({
       imports: [ServeStaticModule.forRoot(serveStaticOptions(root))],
-      controllers: [HealthStub, ApiStub],
+      controllers: [HealthStub, VersionStub, ApiStub],
     })
     class TestModule {}
 
@@ -85,6 +93,11 @@ describe('fallback SPA (ServeStatic, Express 5)', () => {
     const res = await get('/api/inconnu').expect(404);
     expect(res.text).not.toContain('SPA');
     expect(res.headers['content-type']).toMatch(/json/);
+  });
+
+  it('laisse passer /version', async () => {
+    const res = await get('/version').expect(200);
+    expect(res.body).toEqual({ version: 'dev' });
   });
 
   it('laisse passer /healthz', async () => {

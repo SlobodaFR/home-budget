@@ -26,6 +26,11 @@ class StubController {
   health(): string {
     return 'ok';
   }
+
+  @Get('version')
+  version(): string {
+    return 'ok';
+  }
 }
 
 describe('TelemetryInterceptor', () => {
@@ -76,6 +81,12 @@ describe('TelemetryInterceptor', () => {
 
   it('should not report the health check', async () => {
     await request(app.getHttpServer()).get('/healthz').expect(200);
+
+    expect(telemetry.captured).toEqual([]);
+  });
+
+  it('should not report /version (identité de release publique)', async () => {
+    await request(app.getHttpServer()).get('/version').expect(200);
 
     expect(telemetry.captured).toEqual([]);
   });

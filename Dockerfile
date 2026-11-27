@@ -52,6 +52,10 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
     && chown node:node /app/backend/data
 # Utilisateur non root (uid 1000) : le volume de donnees lui appartient (cf. deploy/scripts/update-vps.sh).
 USER node
+# Release identity (convention harnais release-versioning), en fin d'étage final : le cache de build reste valide.
+ARG APP_VERSION=dev
+ARG APP_COMMIT=dev
+ENV APP_VERSION=$APP_VERSION APP_COMMIT=$APP_COMMIT
 VOLUME ["/app/backend/data"]
 WORKDIR /app/backend
 EXPOSE 3000

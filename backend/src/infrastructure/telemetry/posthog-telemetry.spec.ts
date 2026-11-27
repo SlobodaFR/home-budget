@@ -78,6 +78,7 @@ describe('PostHogTelemetry', () => {
       properties: {
         ...runtimeHealth,
         service: 'home-budget',
+        version: 'dev',
         $ip: null,
         $process_person_profile: false,
       },
@@ -129,7 +130,12 @@ describe('PostHogTelemetry', () => {
       {
         distinctId: pseudonymize('user-1', SECRET),
         event: 'statement_imported',
-        properties: { rows: 12, service: 'home-budget', $ip: null },
+        properties: {
+          rows: 12,
+          service: 'home-budget',
+          version: 'dev',
+          $ip: null,
+        },
         disableGeoip: true,
       },
     ]);

@@ -10,6 +10,7 @@
     "coverage",
     "backend/data",
     "*.sqlite",
-    "*.tsbuildinfo"
+    "*.tsbuildinfo",
+    ".github/scripts/release-version.mjs"
   ]
 }

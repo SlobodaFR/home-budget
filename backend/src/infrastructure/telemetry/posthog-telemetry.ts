@@ -117,6 +117,8 @@ export class PostHogTelemetry
           ...sanitizeTelemetryProperties(event.properties),
           // Le projet PostHog est partagé par plusieurs services home-*.
           service: 'home-budget',
+          // Version de release cuite dans l'image (APP_VERSION, 'dev' hors CI), sur chaque événement.
+          version: process.env['APP_VERSION'] || 'dev',
           // Ceinture et bretelles : le vrai contrôle est le réglage projet « Discard client IP data ».
           $ip: null,
           ...(distinctId ? {} : { $process_person_profile: false }),

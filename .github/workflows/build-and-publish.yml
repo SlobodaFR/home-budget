@@ -1,10 +1,10 @@
+# Modèle de build-and-publish.yml (convention `release-versioning`) : adapter image, contexte et étapes ; ordre version -> build-and-push -> release.
+# Contrat et reprise (échec de `release` : « Re-run failed jobs ») : bloc `release-versioning` de CONVENTIONS.md du harnais.
 name: Build & Publish
 
 on:
   push:
     branches: [main]
-  release:
-    types: [published]
 
 concurrency:
   group: build-${{ github.ref }}
@@ -15,15 +15,27 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Compute next version
+        id: next
+        run: node .github/scripts/release-version.mjs next
+
   build-and-push:
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
-    outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -45,7 +57,7 @@ jobs:
           tags: |
             type=sha,prefix=sha-
             type=ref,event=branch
-            type=semver,pattern={{version}}
+            type=raw,value=${{ needs.version.outputs.version }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push
@@ -55,5 +67,23 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ needs.version.outputs.version }}
+            APP_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
+
+  release:
+    needs: [version, build-and-push]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Tag and release
+        run: node .github/scripts/release-version.mjs publish "${{ needs.version.outputs.version }}"

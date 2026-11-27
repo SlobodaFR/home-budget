@@ -11,7 +11,11 @@ describe('HealthController', () => {
       dataSource(() => Promise.resolve([{ 1: 1 }])),
     );
 
-    await expect(controller.health()).resolves.toEqual({ status: 'ok' });
+    await expect(controller.health()).resolves.toEqual({
+      status: 'ok',
+      version: 'dev',
+      commit: 'dev',
+    });
   });
 
   it('should answer 503 when the database does not answer', async () => {
