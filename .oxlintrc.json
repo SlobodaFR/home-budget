@@ -13,7 +13,8 @@
     "**/coverage/**",
     "**/node_modules/**",
     "frontend/public/**",
-    "backend/scripts/ocr-bench/**"
+    "backend/scripts/ocr-bench/**",
+    ".github/scripts/release-version.mjs"
   ],
   "rules": {
     "typescript/no-floating-promises": "error",

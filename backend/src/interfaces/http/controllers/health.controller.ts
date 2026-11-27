@@ -1,5 +1,6 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { buildInfo } from '../../../infrastructure/observability/build-info';
 import { Public } from '../decorators/public.decorator';
 
 /**
@@ -12,12 +13,12 @@ export class HealthController {
   constructor(private readonly dataSource: DataSource) {}
 
   @Get()
-  async health(): Promise<{ status: 'ok' }> {
+  async health(): Promise<{ status: 'ok'; version: string; commit: string }> {
     try {
       await this.dataSource.query('SELECT 1');
     } catch {
       throw new ServiceUnavailableException({ status: 'error' });
     }
-    return { status: 'ok' };
+    return { status: 'ok', ...buildInfo() };
   }
 }

@@ -16,7 +16,8 @@ export function configureApp(app: NestExpressApplication): void {
   // Un seul saut de confiance (Caddy) : req.ip, cle du rate limit, vient de X-Forwarded-For.
   app.set('trust proxy', 1);
   // /healthz reste hors du prefixe : route interne, bloquee par Caddy.
-  app.setGlobalPrefix('api', { exclude: ['healthz'] });
+  // /version (identité de release, publique) aussi : même racine, non bloquée par Caddy.
+  app.setGlobalPrefix('api', { exclude: ['healthz', 'version'] });
   // Un releve CSV d'un mois pese quelques dizaines de Ko ; 1 Mo est la limite assumee.
   app.useBodyParser('json', { limit: '1mb' });
   // Express 5 : parser de query « simple » (pas d'objets ni de tableaux imbriques) ; les DTO @Query()

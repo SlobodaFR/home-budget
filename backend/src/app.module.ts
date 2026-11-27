@@ -10,6 +10,7 @@ import { loggerParams } from './infrastructure/logging/logger.config';
 import { DatabaseModule } from './infrastructure/persistence/database.module';
 import { TelemetryModule } from './infrastructure/telemetry/telemetry.module';
 import { AuthModule } from './interfaces/http/modules/auth.module';
+import { VersionController } from './interfaces/http/controllers/version.controller';
 import { HealthController } from './interfaces/http/controllers/health.controller';
 import { SameOriginGuard } from './interfaces/http/guards/same-origin.guard';
 import { HouseholdModule } from './interfaces/http/modules/household.module';
@@ -31,7 +32,7 @@ import { throttlerOptions } from './interfaces/http/throttling';
     AuthModule,
     HouseholdModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, VersionController],
   // Throttler d'abord : les mutations refusees par SameOriginGuard sont aussi comptees.
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

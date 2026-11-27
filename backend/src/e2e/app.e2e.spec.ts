@@ -45,7 +45,13 @@ describe('API (end to end, AUTH_MODE=dev, in-memory SQLite)', () => {
 
   it('serves an internal /healthz outside the /api prefix', async () => {
     const res = await request(app.getHttpServer()).get('/healthz').expect(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toEqual({ status: 'ok', version: 'dev', commit: 'dev' });
+  });
+
+  it('serves the public release identity at /version, outside the /api prefix, never cached', async () => {
+    const res = await request(app.getHttpServer()).get('/version').expect(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(res.body).toEqual({ version: 'dev', commit: 'dev' });
   });
 
   it('rate-limits every route through the global ThrottlerGuard', async () => {

@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { validateEnv } from './config/validate-env';
+import { buildInfo } from './infrastructure/observability/build-info';
 import { configureApp, nestApplicationOptions } from './configure-app';
 
 async function bootstrap() {
@@ -19,6 +20,10 @@ async function bootstrap() {
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
+  const { version, commit } = buildInfo();
+  app
+    .get(Logger)
+    .log(`home-budget démarré version=${version} commit=${commit}`);
 }
 
 void bootstrap();

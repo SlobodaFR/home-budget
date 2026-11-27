@@ -102,6 +102,7 @@ describe('Télémétrie (AppModule réel, SQLite en mémoire)', () => {
     const app = await boot(spy);
     try {
       await request(app.getHttpServer()).get('/healthz').expect(200);
+      await request(app.getHttpServer()).get('/version').expect(200);
       // Aucun build frontend en test : la requête passe par ServeStatic ou donne 404, jamais par une route Nest.
       await request(app.getHttpServer()).get('/assets/app.js');
       await request(app.getHttpServer()).get('/');
